@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:nb;src:url(nb.woff2)}*{margin:0;box-sizing:border-box}
+body{width:1600px;height:900px;overflow:hidden;font-family:nb,monospace;color:#f2f0f7;text-transform:uppercase;
+background:radial-gradient(ellipse at 75% 45%,#2a1d4a 0%,#0b0814 55%,#000 100%)}
+.dots{position:absolute;inset:0}
+.logo{position:absolute;right:110px;top:190px;width:500px;height:500px;border-radius:50%;-webkit-mask-image:radial-gradient(circle,#000 58%,transparent 71%)}
+.brand{position:absolute;left:90px;top:70px;font-size:40px;letter-spacing:.06em}.brand span{color:#c4b0ed}
+.badge{position:absolute;right:90px;top:72px;display:flex;align-items:center;gap:14px;border:1px solid #c8f7dc88;color:#c8f7dc;border-radius:999px;padding:10px 22px;font-size:20px;letter-spacing:.16em}
+.badge i{width:12px;height:12px;border-radius:50%;background:#5ef2a0;box-shadow:0 0 14px #5ef2a0}
+.k{position:absolute;left:90px;top:240px;font-size:24px;letter-spacing:.22em;color:#c4b0ed}
+h1{position:absolute;left:84px;top:280px;font-size:190px;font-weight:normal;line-height:.95;letter-spacing:.02em}
+.s{position:absolute;left:90px;top:672px;font-size:30px;letter-spacing:.1em;color:#cfcbe0}
+.u{position:absolute;left:90px;top:752px;font-size:40px;letter-spacing:.08em;border:2px solid #c4b0ed;border-radius:14px;padding:12px 28px;box-shadow:0 0 30px #c4b0ed66}
+.x{position:absolute;right:90px;bottom:70px;font-size:20px;letter-spacing:.16em;color:#a9a4bd}
+</style></head><body>
+<svg class="dots" width="1600" height="900"><g id="g"></g></svg>
+<img class="logo" src="logo.jpg">
+<div class="brand">LUMA<span>✳</span></div>
+<div class="badge"><i></i>LIVE ON ROBINHOOD CHAIN</div>
+<div class="k">From payments to stocks</div>
+<h1>We are<br>live.</h1>
+<div class="s">Round up your payments · Invest the difference</div>
+<div class="u">tryluma.trade</div>
+<div class="x">X / @trylumarh</div>
+<script>let s=7,r=()=>(s=(s*16807)%2147483647)/2147483647,g=document.getElementById('g');
+for(let i=0;i<140;i++){const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',r()*1600);c.setAttribute('cy',r()*900);c.setAttribute('r',1+r()*3);c.setAttribute('fill',`hsla(${260+r()*70},70%,72%,${.15+r()*.45})`);g.append(c)}</script>
+</body></html>
