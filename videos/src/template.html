@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face{font-family:nb;src:url('nb.woff2')}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#000;color:#f2f0f7;font-family:nb,'DejaVu Sans Mono',monospace}
+#stage{position:absolute;inset:0;overflow:hidden;background:radial-gradient(ellipse at 70% 40%,#140f22 0%,#050409 60%,#000 100%)}
+canvas{position:absolute;inset:0}
+.layer{position:absolute;inset:0}
+.mono{letter-spacing:.18em;text-transform:uppercase}
+#topbar{position:absolute;left:96px;right:96px;top:64px;display:flex;justify-content:space-between;align-items:center;font-size:24px}
+#brand{font-size:44px;letter-spacing:.06em}
+#brand span{color:var(--accent);margin-left:6px}
+#badge{border:1px solid rgba(255,255,255,.35);padding:10px 18px;border-radius:999px;font-size:20px}
+#logo{position:absolute;width:520px;height:520px;right:150px;top:270px;border-radius:50%;
+  -webkit-mask-image:radial-gradient(circle,#000 58%,transparent 71%)}
+#perk{position:absolute;left:96px;top:250px;width:1100px}
+#num{font-size:26px;color:var(--accent)}
+#title{font-size:120px;line-height:1.02;margin-top:22px;text-transform:uppercase}
+#copy{font-size:40px;line-height:1.35;margin-top:36px;color:#cfcbe0;max-width:1020px;min-height:110px}
+#chips{display:flex;gap:22px;margin-top:48px}
+.chip{border:2px solid var(--accent);color:#fff;padding:18px 28px;border-radius:14px;font-size:34px;white-space:nowrap}
+.chip.fill{background:var(--accent);color:#0b0911}
+#bottom{position:absolute;left:96px;right:96px;bottom:56px;display:flex;justify-content:space-between;font-size:22px;color:#a9a4bd}
+#end{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#endlogo{width:300px;height:300px;border-radius:50%;-webkit-mask-image:radial-gradient(circle,#000 58%,transparent 71%)}
+#endtag{font-size:64px;margin-top:30px;text-transform:uppercase;letter-spacing:.08em}
+#endurl{margin-top:40px;font-size:88px;padding:22px 54px;border:3px solid var(--accent);border-radius:20px;letter-spacing:.06em}
+#endsub{margin-top:30px;font-size:26px;color:#a9a4bd}
+#grid{position:absolute;left:96px;right:96px;top:290px;display:grid;grid-template-columns:repeat(2,1fr);gap:30px 60px}
+.g{display:flex;align-items:baseline;gap:22px;font-size:34px;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:12px}
+.g b{font-weight:normal;font-size:22px;min-width:48px}
+.g i{font-style:normal;font-size:22px;color:#a9a4bd;margin-left:auto;letter-spacing:.12em}
+#recaphead{position:absolute;left:96px;top:150px;font-size:64px;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv" width="1920" height="1080"></canvas>
+  <div id="main" class="layer">
+    <div id="topbar"><div id="brand">luma<span>✳</span></div><div id="badge" class="mono">Live / Robinhood Chain</div></div>
+    <img id="logo" src="logo.jpg">
+    <div id="perk">
+      <div id="num" class="mono"></div>
+      <div id="title"></div>
+      <div id="copy"></div>
+      <div id="chips"><div id="c1" class="chip fill mono"></div><div id="c2" class="chip mono"></div></div>
+    </div>
+    <div id="recaphead"></div>
+    <div id="grid"></div>
+    <div id="bottom" class="mono"><span>On-chain investment · USDG</span><span>tryluma.trade</span></div>
+  </div>
+  <div id="end" class="layer">
+    <img id="endlogo" src="logo.jpg">
+    <div id="endtag">From payments to stocks</div>
+    <div id="endurl">tryluma.trade</div>
+    <div id="endsub" class="mono">Powered by the Spare protocol · X / @trylumarh</div>
+  </div>
+</div>
+<script src="content.js"></script>
+<script>
+const P=window.LUMA_CONTENT;
+const q=s=>document.getElementById(s);
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const ease=x=>{x=clamp(x);return 1-Math.pow(1-x,3)};
+const prog=(t,a,d)=>ease((t-a)/d);
+function rnd(seed){let s=seed>>>0;return()=>((s=Math.imul(s^s>>>15,1|s)+0x6D2B79F5|0,(s>>>0)/4294967296))}
+let cfg, parts=[];
+window.setup=function(c){
+  cfg=c;
+  const r=rnd(c.seed||7);
+  parts=[...Array(170)].map(()=>({x:r()*1920,y:r()*1080,z:.3+r()*1.2,h:260+r()*70,v:8+r()*30,p:r()*6.28}));
+  if(c.kind==='perk'){
+    const p=P.find(x=>x.slug===c.slug);
+    cfg.p=p;
+    document.documentElement.style.setProperty('--accent','#'+p.color);
+    q('num').textContent=`Perk ${String(p.index+1).padStart(2,'0')} / ${P.length} · ${p.slug}`;
+    q('title').textContent=p.title;
+    q('c1').textContent=p.headline;q('c2').textContent=p.detail;
+    q('grid').style.display=q('recaphead').style.display='none';
+  }else{
+    document.documentElement.style.setProperty('--accent','#c4b0ed');
+    q('perk').style.display='none';q('logo').style.display='none';
+    q('recaphead').textContent='Every Luma perk — in one app';
+    q('grid').innerHTML=P.map(p=>`<div class="g" style="--c:#${p.color}"><b class="mono" style="color:#${p.color}">${String(p.index+1).padStart(2,'0')}</b><span>${p.title}</span><i>${p.detail}</i></div>`).join('');
+  }
+  return document.fonts.ready.then(()=>Promise.all([...document.images].map(i=>i.decode().catch(()=>0))));
+};
+window.render=function(t){
+  const T=cfg.dur, endAt=T-3.2;
+  // particles
+  const cv=q('cv'),g=cv.getContext('2d');
+  g.clearRect(0,0,1920,1080);
+  for(const p of parts){
+    const y=((p.y-t*p.v*p.z)%1080+1080)%1080, x=p.x+Math.sin(t*.6+p.p)*30*p.z;
+    const a=.25+.35*Math.sin(t*1.3+p.p)**2;
+    g.fillStyle=`hsla(${p.h},70%,72%,${a*p.z/1.5})`;
+    g.beginPath();g.arc(x,y,1.2+2.6*p.z,0,6.283);g.fill();
+  }
+  const out=prog(t,endAt,.6), main=q('main'), end=q('end');
+  main.style.opacity=1-out; main.style.transform=`scale(${1+out*.06})`;
+  const ein=prog(t,endAt+.2,.8);
+  end.style.opacity=ein; end.style.transform=`translateY(${(1-ein)*40}px)`;
+  q('endurl').style.boxShadow=`0 0 ${30+20*Math.sin(t*4)}px var(--accent)`;
+  q('endlogo').style.transform=`rotate(${Math.sin(t)*4}deg) scale(${.9+.1*ein})`;
+  q('topbar').style.opacity=prog(t,.1,.6);
+  q('bottom').style.opacity=prog(t,.4,.8);
+  if(cfg.kind==='perk'){
+    const p=cfg.p;
+    const li=prog(t,0,1.2);
+    q('logo').style.opacity=li*.95;
+    q('logo').style.transform=`translateY(${Math.sin(t*1.1)*14}px) rotate(${(1-li)*-25+Math.sin(t*.7)*3}deg) scale(${.7+.3*li})`;
+    const n=prog(t,.5,.6); q('num').style.opacity=n; q('num').style.transform=`translateX(${(1-n)*-40}px)`;
+    const ti=prog(t,.8,.8); q('title').style.opacity=ti; q('title').style.transform=`translateY(${(1-ti)*60}px)`;
+    const chars=Math.floor(clamp((t-1.6)/2.4)*p.copy.length);
+    q('copy').textContent=p.copy.slice(0,chars)+(chars<p.copy.length&&t>1.6&&Math.floor(t*3)%2?'▍':'');
+    const c1=prog(t,4.2,.6),c2=prog(t,4.6,.6);
+    q('c1').style.opacity=c1;q('c1').style.transform=`scale(${.8+.2*c1})`;
+    q('c2').style.opacity=c2;q('c2').style.transform=`scale(${.8+.2*c2})`;
+  }else{
+    const h=prog(t,.3,.8); q('recaphead').style.opacity=h; q('recaphead').style.transform=`translateY(${(1-h)*30}px)`;
+    [...q('grid').children].forEach((el,i)=>{const a=prog(t,1+i*.45,.5);el.style.opacity=a;el.style.transform=`translateX(${(1-a)*-50}px)`});
+  }
+};
+</script>
+</body>
+</html>
