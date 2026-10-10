@@ -1,36 +1,28 @@
-import AnnouncementBar from "@/components/sections/AnnouncementBar";
+import Ticker from "@/components/sections/Ticker";
 import Header from "@/components/sections/Header";
 import Hero from "@/components/sections/Hero";
-import EarningsCalculator from "@/components/sections/EarningsCalculator";
-import Features from "@/components/sections/Features";
-import JobDemo from "@/components/sections/JobDemo";
-import LiveDemand from "@/components/sections/LiveDemand";
-import PayoutFeed from "@/components/sections/PayoutFeed";
-import HardwareCatalogue from "@/components/sections/HardwareCatalogue";
-import DashboardPreview from "@/components/sections/DashboardPreview";
-import Setup from "@/components/sections/Setup";
+import Statement from "@/components/sections/Statement";
+import HowItWorks from "@/components/sections/HowItWorks";
+import EarnMode from "@/components/sections/EarnMode";
+import Calculator from "@/components/sections/Calculator";
+import Network from "@/components/sections/Network";
+import Sandbox from "@/components/sections/Sandbox";
 import Faq from "@/components/sections/Faq";
 import Footer from "@/components/sections/Footer";
 
 export default function Home() {
   return (
     <>
-      <AnnouncementBar />
+      <Ticker />
       <Header />
       <main>
         <Hero />
-        <EarningsCalculator />
-        <Features />
-        <JobDemo />
-        <section className="border-t border-line">
-          <div className="mx-auto grid max-w-6xl gap-6 px-4 py-20 sm:px-6 lg:grid-cols-[1.25fr_1fr]">
-            <LiveDemand />
-            <PayoutFeed />
-          </div>
-        </section>
-        <HardwareCatalogue />
-        <DashboardPreview />
-        <Setup />
+        <Statement />
+        <HowItWorks />
+        <EarnMode />
+        <Calculator />
+        <Network />
+        <Sandbox />
         <Faq />
       </main>
       <Footer />

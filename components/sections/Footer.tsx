@@ -1,63 +1,80 @@
 import Logo from "@/components/Logo";
+import Mascot from "@/components/Mascot";
 
-const columns = [
-  { title: "Product", links: ["How it works", "Earnings", "Hardware", "Changelog"] },
-  { title: "Trust", links: ["Security", "Sandbox audit", "Open source", "Status"] },
-  { title: "Company", links: ["About", "For businesses", "Careers", "Contact"] },
+const platforms = [
+  { name: "Windows", note: "10 and 11" },
+  { name: "macOS", note: "Apple Silicon & Intel" },
+  { name: "Linux", note: "Ubuntu, Fedora, Arch" },
 ];
 
 export default function Footer() {
   return (
-    <footer className="bg-ink text-paper">
-      <div className="mx-auto max-w-6xl px-4 pt-16 sm:px-6">
-        <div className="rounded-2xl bg-violet p-6 sm:flex sm:items-center sm:justify-between sm:p-10">
-          <div>
-            <p className="font-serif text-3xl leading-tight tracking-tight sm:text-4xl">Tonight, let it earn.</p>
-            <p className="mt-2 text-white/75">Free to install. Pause or uninstall whenever you like.</p>
-          </div>
-          <a
-            href="#setup"
-            className="mt-6 inline-flex rounded-lg bg-lime px-5 py-3 text-[15px] font-medium text-ink transition-colors hover:bg-lime-deep sm:mt-0"
-          >
-            Download IdleAgents
-          </a>
-        </div>
-
-        <div className="grid gap-10 py-14 md:grid-cols-[1.4fr_repeat(3,1fr)]">
-          <div>
-            <Logo dark />
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-dark">
-              Spare compute from people&apos;s own computers, for companies that need it.
+    <footer>
+      <div id="download" className="scroll-mt-16 px-4 sm:px-6">
+        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[32px] bg-violet px-6 py-14 sm:px-14 sm:py-20">
+          <div className="relative z-10 max-w-2xl">
+            <h2 className="font-display text-5xl font-extrabold leading-[0.95] tracking-[-0.03em] sm:text-7xl">
+              Leave it on tonight.
+            </h2>
+            <p className="mt-5 max-w-md text-lg text-white/80">
+              Install takes two minutes. Pause or uninstall whenever you like, and keep everything you&apos;ve earned.
             </p>
-            <a href="mailto:hello@idleagents.com" className="mt-4 inline-block font-mono text-sm text-lime hover:underline">
-              hello@idleagents.com
-            </a>
+            <div className="mt-9 grid gap-3 sm:grid-cols-3">
+              {platforms.map((p) => (
+                <a
+                  key={p.name}
+                  href="#download"
+                  className="rounded-2xl bg-night px-5 py-4 transition-colors hover:bg-night-2"
+                >
+                  <span className="block font-semibold">Download for {p.name}</span>
+                  <span className="block text-sm text-muted">{p.note}</span>
+                </a>
+              ))}
+            </div>
           </div>
-          {columns.map((c) => (
-            <nav key={c.title} aria-label={c.title}>
-              <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted-dark">{c.title}</p>
-              <ul className="mt-4 space-y-2.5 text-sm">
-                {c.links.map((l) => (
-                  <li key={l}>
-                    <a href="#" className="text-paper/85 hover:text-lime">
-                      {l}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          ))}
+          <Mascot awake={false} className="absolute -bottom-6 right-4 hidden h-72 w-72 opacity-95 lg:block" />
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="flex flex-col gap-10 py-16 md:flex-row md:justify-between">
+          <div>
+            <Logo />
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
+              Spare computing power from people&apos;s own computers, for companies that need it.
+            </p>
+            <p className="mt-4 select-all font-mono text-sm text-amber">hello@idleagents.com</p>
+          </div>
+          <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
+            {[
+              ["Product", ["How it works", "Earnings", "Hardware list", "Changelog"]],
+              ["Trust", ["Safety", "Sandbox audit", "Source code", "Status"]],
+              ["Company", ["About", "For businesses", "Careers", "Press"]],
+            ].map(([title, links]) => (
+              <nav key={title as string} aria-label={title as string}>
+                <p className="text-sm font-semibold">{title}</p>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  {(links as string[]).map((l) => (
+                    <li key={l}>
+                      <a href="#" className="text-muted hover:text-fg">
+                        {l}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
+          </div>
         </div>
 
-        <div className="flex flex-col gap-4 border-t border-ink-line py-8 text-xs text-muted-dark md:flex-row md:justify-between">
+        <div className="flex flex-col gap-4 border-t border-line py-8 text-xs text-muted md:flex-row md:justify-between">
           <p className="max-w-2xl leading-relaxed">
-            Earnings depend on hardware, availability, electricity prices and market demand, and are not guaranteed.
-            Rates and figures shown are illustrative. You are responsible for any taxes on your earnings.
+            Earnings depend on your hardware, hours, electricity price and demand, and are not guaranteed. Figures on
+            this page are illustrative. You&apos;re responsible for taxes on your earnings.
           </p>
           <div className="flex shrink-0 gap-5">
-            <a href="#" className="hover:text-paper">Terms</a>
-            <a href="#" className="hover:text-paper">Privacy</a>
-            <a href="#" className="hover:text-paper">X / Twitter</a>
+            <a href="#" className="hover:text-fg">Terms</a>
+            <a href="#" className="hover:text-fg">Privacy</a>
             <span>© 2026 IdleAgents</span>
           </div>
         </div>

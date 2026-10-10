@@ -1,24 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Newsreader } from "next/font/google";
+import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
-const newsreader = Newsreader({
-  subsets: ["latin"],
-  variable: "--font-newsreader",
-  style: ["normal", "italic"],
-});
+const bricolage = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-bricolage" });
+const hanken = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-hanken" });
+const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" });
 
 export const metadata: Metadata = {
-  title: "IdleAgents — Get paid while your computer is idle",
+  title: "IdleAgents · Your PC works the night shift",
   description:
-    "IdleAgents rents your computer's unused CPU and GPU time to vetted, sandboxed workloads while you're away, and pays you every week.",
+    "IdleAgents puts your computer to work on sandboxed jobs while you're away, and pays you every Monday.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable} ${newsreader.variable}`}>
+    <html lang="en" className={`${bricolage.variable} ${hanken.variable} ${jetbrains.variable}`}>
       <body>{children}</body>
     </html>
   );

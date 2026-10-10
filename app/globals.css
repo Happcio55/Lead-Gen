@@ -1,25 +1,28 @@
 @import "tailwindcss";
 
+/* Night shift: a dark city where lit windows are working computers.
+   amber = a lit window / primary action, mint = money, violet = sky only. */
 @theme {
-  --color-paper: #f5f3ee;
-  --color-paper-2: #ebe8df;
-  --color-line: #d9d5ca;
-  --color-ink: #0b0d12;
-  --color-ink-2: #161922;
-  --color-ink-3: #232733;
-  --color-ink-line: #2c3140;
-  --color-muted: #5b5f6b;
-  --color-muted-dark: #9aa0ae;
-  --color-violet: #5b3df5;
-  --color-violet-deep: #3f24d1;
-  --color-violet-soft: #e6e1ff;
-  --color-lime: #c6f135;
-  --color-lime-deep: #a9d41a;
-  --color-coral: #ff6b3d;
+  --color-night: #0a0d1c;
+  --color-night-2: #11162b;
+  --color-night-3: #182040;
+  --color-line: #232a47;
+  --color-fg: #f1f2fa;
+  --color-muted: #8e95b5;
+  --color-amber: #ffb224;
+  --color-amber-deep: #f29b00;
+  --color-mint: #45f0b5;
+  --color-violet: #6e5bff;
+  --color-coral: #ff5a5f;
+  --color-frame: #c9cde8;
 
-  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
-  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  color-scheme: dark;
 }
 
 html {
@@ -27,48 +30,93 @@ html {
 }
 
 body {
-  background: var(--color-paper);
-  color: var(--color-ink);
+  background: var(--color-night);
+  color: var(--color-fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: var(--color-lime);
-  color: var(--color-ink);
+  background: var(--color-amber);
+  color: var(--color-night);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }
 
 .tabular {
   font-variant-numeric: tabular-nums;
 }
 
+/* Let grid columns shrink below their content (wide tables/code scroll inside instead). */
+.grid > * {
+  min-width: 0;
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
 @keyframes feed-in {
   from {
     opacity: 0;
     transform: translateY(-8px);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
-
 @keyframes pulse-dot {
+  50% {
+    opacity: 0.3;
+  }
+}
+@keyframes blink {
   0%,
+  92%,
   100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes float-z {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  30% {
     opacity: 1;
   }
-  50% {
-    opacity: 0.35;
+  100% {
+    opacity: 0;
+    transform: translate(3px, -6px);
   }
 }
 
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
 .animate-feed-in {
   animation: feed-in 400ms ease-out both;
 }
-
 .animate-pulse-dot {
   animation: pulse-dot 1.6s ease-in-out infinite;
+}
+.animate-blink {
+  animation: blink 4s infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.animate-z {
+  animation: float-z 2.4s ease-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -82,9 +130,4 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-/* Let grid columns shrink below their content (wide tables/code scroll inside instead). */
-.grid > * {
-  min-width: 0;
 }

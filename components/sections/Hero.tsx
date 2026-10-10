@@ -1,62 +1,52 @@
-import MachineCard from "@/components/MachineCard";
+import NightCity from "@/components/NightCity";
+import ThisComputer from "@/components/ThisComputer";
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-14 sm:px-6 sm:pt-20 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pb-28">
+    <section className="relative isolate overflow-hidden bg-[radial-gradient(70%_60%_at_80%_0%,rgba(110,91,255,0.28),transparent_70%)]">
+      {/* moon */}
+      <div
+        className="absolute -right-6 -top-6 -z-10 h-24 w-24 rounded-full sm:right-[8%] sm:top-10 bg-[#f4efd9] shadow-[0_0_80px_20px_rgba(244,239,217,0.15)] sm:h-32 sm:w-32"
+        aria-hidden="true"
+      >
+        <span className="absolute left-5 top-6 h-4 w-4 rounded-full bg-[#e3dcc0]" />
+        <span className="absolute bottom-7 right-6 h-6 w-6 rounded-full bg-[#e3dcc0]" />
+      </div>
+      <NightCity className="absolute inset-x-0 bottom-0 -z-10 h-[300px] w-full sm:h-[380px]" />
+      <div
+        className="absolute inset-x-0 bottom-0 -z-10 h-24 bg-gradient-to-t from-night to-transparent"
+        aria-hidden="true"
+      />
+
+      <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 pb-48 pt-16 sm:px-6 sm:pb-64 sm:pt-24 lg:grid-cols-[1.15fr_1fr] lg:gap-10">
         <div>
-          <a
-            href="#how-it-works"
-            className="group inline-flex items-center gap-2 rounded-full border border-line bg-white/60 py-1 pl-1 pr-3 text-[13px] text-muted transition-colors hover:border-ink/30"
-          >
-            <span className="rounded-full bg-ink px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider text-lime">
-              Payouts
-            </span>
-            <span>
-              Weekly payouts are now live in 41 countries{" "}
-              <span className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
-            </span>
-          </a>
-
-          <h1 className="mt-6 font-serif text-[44px] leading-[0.98] tracking-tight text-ink sm:text-6xl lg:text-[76px]">
-            Your computer
+          <h1 className="font-display text-[52px] font-extrabold leading-[0.92] tracking-[-0.035em] sm:text-7xl lg:text-[96px]">
+            Go to sleep.
             <br />
-            works the <em className="text-violet">night shift.</em>
+            <span className="text-amber">Your PC</span> clocks in.
           </h1>
-
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted sm:text-xl">
-            IdleAgents puts your idle CPU and GPU to work on sandboxed jobs from verified companies while you&apos;re
-            away, and stops the second you&apos;re back. You get paid every Monday.
+          <p className="mt-7 max-w-lg text-lg leading-relaxed text-muted sm:text-xl">
+            IdleAgents rents out your computer&apos;s spare power to verified companies while you&apos;re away. It stops
+            the moment you&apos;re back, and the money lands every Monday.
           </p>
-
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <a
-              href="#setup"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet px-5 py-3 text-[15px] font-medium text-white transition-colors hover:bg-violet-deep"
+              href="#download"
+              className="inline-flex items-center justify-center rounded-full bg-amber px-7 py-3.5 text-base font-semibold text-night transition-colors hover:bg-amber-deep"
             >
-              Download for free
+              Download free
             </a>
             <a
               href="#earnings"
-              className="inline-flex items-center justify-center rounded-lg border border-ink/15 bg-white px-5 py-3 text-[15px] font-medium text-ink transition-colors hover:border-ink/40"
+              className="inline-flex items-center justify-center rounded-full border border-line bg-night-2/60 px-7 py-3.5 text-base font-semibold text-fg transition-colors hover:border-muted"
             >
-              Estimate my earnings
+              What would I earn?
             </a>
           </div>
-
-          <dl className="mt-12 grid max-w-md grid-cols-2 gap-6 border-t border-line pt-6">
-            <div>
-              <dt className="text-sm text-muted">Hands back control in</dt>
-              <dd className="mt-1 font-mono text-2xl text-ink">&lt;1 s</dd>
-            </div>
-            <div>
-              <dt className="text-sm text-muted">Setup or monthly fees</dt>
-              <dd className="mt-1 font-mono text-2xl text-ink">$0</dd>
-            </div>
-          </dl>
+          <p className="mt-6 text-sm text-muted">Windows, macOS and Linux · No card, no contract</p>
         </div>
 
-        <MachineCard />
+        <ThisComputer />
       </div>
     </section>
   );
