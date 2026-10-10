@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f5f3ee;
+  --color-paper-2: #ebe8df;
+  --color-line: #d9d5ca;
+  --color-ink: #0b0d12;
+  --color-ink-2: #161922;
+  --color-ink-3: #232733;
+  --color-ink-line: #2c3140;
+  --color-muted: #5b5f6b;
+  --color-muted-dark: #9aa0ae;
+  --color-violet: #5b3df5;
+  --color-violet-deep: #3f24d1;
+  --color-violet-soft: #e6e1ff;
+  --color-lime: #c6f135;
+  --color-lime-deep: #a9d41a;
+  --color-coral: #ff6b3d;
+
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-lime);
+  color: var(--color-ink);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes feed-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.animate-feed-in {
+  animation: feed-in 400ms ease-out both;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Let grid columns shrink below their content (wide tables/code scroll inside instead). */
+.grid > * {
+  min-width: 0;
+}
