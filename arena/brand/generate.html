@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Model Citizens brand kit</title>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;500&family=Schibsted+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#120c07;color:#f3e6c8;font:14px "Martian Mono",monospace;padding:20px;display:grid;gap:20px}canvas{display:block;max-width:100%;image-rendering:pixelated}</style>
+</head>
+<body>
+<p>Model Citizens brand kit. Banner 1500×500 (X header) and avatar 400×400. Regenerate by opening this page.</p>
+<canvas id="banner" width="1500" height="500"></canvas>
+<canvas id="avatar" width="400" height="400"></canvas>
+<script src="../quantum.js"></script>
+<script src="../sprites.js"></script>
+<script>
+Promise.all(['500 18px "Martian Mono"', '500 10px "Martian Mono"', '700 30px "Schibsted Grotesk"'].map((f) => document.fonts.load(f))).then(function () {
+  const { AGENTS } = Q;
+  const BONE = '#f3e6c8', AMBER = '#ffb000', AMBER2 = '#c98400', SHADOW = '#4a2e08', INK = '#120c07', TEAL = '#34d1bf';
+  const F = {
+    A: ['01110','10001','10001','11111','10001','10001','10001'], C: ['01111','10000','10000','10000','10000','10000','01111'],
+    D: ['11110','10001','10001','10001','10001','10001','11110'], E: ['11111','10000','10000','11110','10000','10000','11111'],
+    I: ['11111','00100','00100','00100','00100','00100','11111'], L: ['10000','10000','10000','10000','10000','10000','11111'],
+    M: ['10001','11011','10101','10101','10001','10001','10001'], N: ['10001','11001','10101','10011','10001','10001','10001'],
+    O: ['01110','10001','10001','10001','10001','10001','01110'], S: ['01111','10000','10000','01110','00001','00001','11110'],
+    T: ['11111','00100','00100','00100','00100','00100','00100'], Z: ['11111','00001','00010','00100','01000','10000','11111']
+  };
+  // draw text in the 5×7 font at pixel scale s, with a 1-pixel drop shadow
+  function word(g, text, x, y, s, top) {
+    for (const pass of [0, 1]) {
+      let cx = x;
+      for (const ch of text) {
+        if (ch === ' ') { cx += 4 * s; continue; }
+        const gl = F[ch];
+        for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++) if (gl[r][c] === '1') {
+          if (pass === 0) { g.fillStyle = SHADOW; g.fillRect(cx + (c + 1) * s, y + (r + 1) * s, s, s); }
+          else { g.fillStyle = top ? (r === 0 ? '#ffd36b' : r >= 5 ? AMBER2 : AMBER) : (r === 0 ? '#fffaf0' : r >= 5 ? '#d8c69c' : BONE); g.fillRect(cx + c * s, y + r * s, s, s); }
+        }
+        cx += 6 * s;
+      }
+    }
+  }
+  function hat(g, x, y, s) {
+    const rows = ['....oooo....', '...obbbbo...', '..obbbbbbo..', '..obbbbbbo..', '..ollllllo..', '.obbbbbbbbo.', 'oooooooooooo'];
+    const pal = { o: INK, b: BONE, l: AMBER };
+    rows.forEach((r, yy) => [...r].forEach((k, xx) => { if (k !== '.') { g.fillStyle = pal[k]; g.fillRect(x + xx * s, y + yy * s, s, s); } }));
+  }
+
+  /* ---------- banner 1500×500 ---------- */
+  const b = document.getElementById('banner'), bg = b.getContext('2d');
+  bg.imageSmoothingEnabled = false;
+  const P = 4, vw = 1500 / P, vh = 500 / P;
+  const land = document.createElement('canvas'); land.width = vw; land.height = vh;
+  const L = Sprites.makeLand(vw, vh, Math.round(vh * 0.86));
+  L.trees = L.trees.filter((t) => !(t.front && t.x > vw * 0.5 && t.x < vw * 0.97));
+  Sprites.paintLand(land.getContext('2d'), L, 2400, { moonX: 0.9 });
+  bg.drawImage(land, 0, 0, 1500, 500);
+  // darken the left for the wordmark
+  const grad = bg.createLinearGradient(0, 0, 960, 0);
+  grad.addColorStop(0, 'rgba(18,12,7,.92)'); grad.addColorStop(0.75, 'rgba(18,12,7,.6)'); grad.addColorStop(1, 'rgba(18,12,7,0)');
+  bg.fillStyle = grad; bg.fillRect(0, 0, 960, 500);
+  // kicker
+  bg.fillStyle = TEAL; bg.fillRect(250, 82, 10, 10);
+  bg.font = '500 18px "Martian Mono"'; bg.fillStyle = AMBER; bg.fillText('ROBINHOOD CHAIN · MAINNET · LIVE', 274, 93);
+  word(bg, 'MODEL', 250, 118, 11, true);
+  word(bg, 'CITIZENS', 250, 218, 11, false);
+  bg.font = '700 30px "Schibsted Grotesk"'; bg.fillStyle = BONE;
+  bg.fillText('Seven language models walk into', 250, 352);
+  bg.fillText('a meme coin market.', 250, 388);
+  // the lineup on the right, standing on the ground
+  const ground = L.ground * P;
+  const s = 6, step = 12 * s + 18, total = AGENTS.length * step - 8, x0 = 1440 - total;
+  AGENTS.forEach((a, i) => {
+    const x = x0 + i * step, y = ground - 14 * s + 4;
+    bg.fillStyle = 'rgba(0,0,0,.45)'; bg.fillRect(x + 6, ground + 2, 12 * s - 12, 6);
+    Sprites.drawSprite(bg, a.id, x, y, s, 0, a.glow);
+    bg.font = '500 10px "Martian Mono"';
+    const label = a.name;
+    const w = bg.measureText(label).width + 10;
+    bg.fillStyle = BONE; bg.fillRect(x + (12 * s - w) / 2, ground + 14, w, 18);
+    bg.fillStyle = INK; bg.fillText(label, x + (12 * s - w) / 2 + 5, ground + 27);
+  });
+
+  /* ---------- avatar 400×400 ---------- */
+  const av = document.getElementById('avatar'), ag = av.getContext('2d');
+  ag.fillStyle = AMBER; ag.fillRect(0, 0, 400, 400);
+  // dithered sunburst rings inside the circle-safe area
+  for (let y = 0; y < 100; y++) for (let x = 0; x < 100; x++) {
+    const d = Math.hypot(x - 50, y - 50);
+    if (d < 46 && (Math.sin(d * 0.9) * 0.5 + 0.5) * 0.35 > Sprites.bayer(x, y)) { ag.fillStyle = '#e09a00'; ag.fillRect(x * 4, y * 4, 4, 4); }
+  }
+  hat(ag, 200 - 12 * 11, 118, 22);
+  // redraw MC in ink for contrast on amber
+  (function () {
+    let cx = 200 - 55;
+    for (const ch of 'MC') { const gl = F[ch]; for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++) if (gl[r][c] === '1') { ag.fillStyle = INK; ag.fillRect(cx + c * 10, 290 + r * 10, 10, 10); } cx += 60; }
+  })();
+  window.BRAND_READY = true;
+});
+</script>
+</body>
+</html>
