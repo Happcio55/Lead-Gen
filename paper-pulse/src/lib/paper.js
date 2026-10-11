@@ -113,15 +113,15 @@ const snapshot = (pool) => ({
 
 const fmt4 = (n) => n.toLocaleString('en-US', { maximumFractionDigits: 4 })
 
-export function buy(pool, ethIn, via = 'market') {
+export function buy(pool, ethIn, via = 'market', { force = false } = {}) {
   const acct = account()
   const slip = paper.get().settings.slippage
   if (!(ethIn > 0)) return { ok: false, msg: 'Enter an ETH amount to buy.' }
   if (ethIn > acct.eth + 1e-12) return { ok: false, msg: `Insufficient balance. You have ${fmt4(acct.eth)} ETH available.` }
   const q = quoteBuy(pool, ethIn)
   if (!q) return { ok: false, msg: 'Price not loaded yet. Try again in a second.' }
-  if (q.impact * 100 > slip)
-    return { ok: false, msg: `Price impact ${(q.impact * 100).toFixed(1)}% exceeds your ${slip}% slippage. Buy less or raise slippage.` }
+  if (!force && q.impact * 100 > slip)
+    return { ok: false, slippage: true, impact: q.impact, msg: `Price impact ${(q.impact * 100).toFixed(1)}% exceeds your ${slip}% slippage. Buy less, raise slippage, or execute anyway.` }
   const t = { id: Date.now() + Math.random(), t: Date.now(), side: 'buy', via, eth: ethIn, tokens: q.tokens, price: q.fillPrice, mc: q.mcAtFill, impact: q.impact, ...snapshot(pool) }
   setAccount((a) => {
     const p = a.positions[pool.pool] || { ...snapshot(pool), tokens: 0, cost: 0, bought: 0, sold: 0, realized: 0, openedAt: Date.now(), entryMc: 0, boughtTokens: 0 }
@@ -143,7 +143,7 @@ export function buy(pool, ethIn, via = 'market') {
   return { ok: true, trade: t }
 }
 
-export function sell(pool, tokens, via = 'market') {
+export function sell(pool, tokens, via = 'market', { force = false } = {}) {
   const acct = account()
   const pos = acct.positions[pool.pool]
   if (!pos || pos.tokens <= 0) return { ok: false, msg: `You don't hold any ${pool.symbol}.` }
@@ -152,8 +152,10 @@ export function sell(pool, tokens, via = 'market') {
   const q = quoteSell(pool, tokens)
   if (!q) return { ok: false, msg: 'Price not loaded yet. Try again in a second.' }
   const slip = paper.get().settings.slippage
-  if (q.impact * 100 > slip)
-    return { ok: false, msg: `Price impact ${(q.impact * 100).toFixed(1)}% exceeds your ${slip}% slippage. Sell a smaller part or raise slippage.` }
+  // selling the whole bag always fills: you can always exit, just at a worse price
+  const all = tokens >= pos.tokens * 0.999999
+  if (!force && !all && q.impact * 100 > slip)
+    return { ok: false, slippage: true, impact: q.impact, msg: `Price impact ${(q.impact * 100).toFixed(1)}% exceeds your ${slip}% slippage. Sell less, raise slippage, or execute anyway.` }
   const frac = tokens / pos.tokens
   const costPart = pos.cost * frac
   const pnl = q.ethOut - costPart

@@ -35,17 +35,17 @@ function TradePanel({ pool }) {
   const trig = parseAmount(trigger)
   const buy_ = side === 'buy'
 
-  function submit() {
+  function submit(force = false) {
     setErr(null)
     if (type === 'limit') {
       const r = placeLimit(pool, side, trig, buy_ ? ethIn : pct)
-      if (!r.ok) return setErr(r.msg)
+      if (!r.ok) return setErr(r)
       toast('ok', `Limit ${side} placed`, `${buy_ ? fmtEth(ethIn) + ' ETH' : pct + '%'} of ${pool.symbol} when MC ${buy_ ? '≤' : '≥'} ${fmtUsdC(trig)}`)
       setAmt('')
       return
     }
-    const r = buy_ ? buy(pool, ethIn) : sell(pool, sellTokens)
-    if (!r.ok) return setErr(r.msg)
+    const r = buy_ ? buy(pool, ethIn, 'market', { force }) : sell(pool, sellTokens, 'market', { force })
+    if (!r.ok) return setErr(r)
     const t = r.trade
     if (buy_) toast('ok', `Bought ${fmtTokens(t.tokens)} ${pool.symbol}`, `${fmtEth(t.eth)} ETH at ${fmtUsdC(t.mc)} MC`)
     else toast(t.pnl >= 0 ? 'ok' : 'bad', `Sold ${pool.symbol} for ${fmtEth(t.eth)} ETH`, `Realized ${fmtSignedEth(t.pnl)} ETH (${fmtPct(t.pnlPct)})`)
@@ -125,9 +125,18 @@ function TradePanel({ pool }) {
         <div className="kv"><span>Price impact</span><span className={impactPct > slippage ? 'down' : impactPct > 5 ? '' : 'muted'}>{q ? impactPct.toFixed(2) + '%' : '—'}</span></div>
       </div>
 
-      {err && <div className="warn">{err}</div>}
+      {err && (
+        <div className="warn">
+          {err.msg}
+          {err.slippage && (
+            <button className="btn sm block" style={{ marginTop: 8 }} onClick={() => submit(true)}>
+              Execute anyway at {(err.impact * 100).toFixed(1)}% impact
+            </button>
+          )}
+        </div>
+      )}
 
-      <button className={'btn lg block ' + (buy_ ? 'lime' : 'red')} onClick={submit}>
+      <button className={'btn lg block ' + (buy_ ? 'lime' : 'red')} onClick={() => submit(false)}>
         {type === 'limit' ? `Place limit ${side}` : buy_ ? `Buy ${pool.symbol}` : `Sell ${pct}% ${pool.symbol}`}
       </button>
 
@@ -410,12 +419,16 @@ export default function TokenPage({ id, theme }) {
   const p = useStore(paper)
   const pools = useStore(market, (s) => s.pools)
   const ethUsd = useStore(market, (s) => s.ethUsd)
-  const [tf, setTf] = useState('1m')
+  const [tf, setTfState] = useState(() => storage.get('paperpulse:tf', '15s'))
+  const setTf = (v) => {
+    setTfState(v)
+    storage.set('paperpulse:tf', v)
+  }
   const [mode, setMode] = useState('mc')
-  const [view, setViewState] = useState(() => storage.get('paperpulse:chart', 'tv'))
+  const [view, setViewState] = useState(() => storage.get('paperpulse:chartview', 'pro'))
   const setView = (v) => {
     setViewState(v)
-    storage.set('paperpulse:chart', v)
+    storage.set('paperpulse:chartview', v)
   }
   const [missing, setMissing] = useState(false)
   const [share, setShare] = useState(null)
@@ -476,14 +489,14 @@ export default function TokenPage({ id, theme }) {
         <div className="tmain">
           <div className="chart-bar">
             <div className="seg">
+              <button className={view === 'pro' ? 'on' : ''} onClick={() => setView('pro')}>Chart + my trades</button>
               <button className={view === 'tv' ? 'on' : ''} onClick={() => setView('tv')}>TradingView</button>
-              <button className={view === 'lite' ? 'on' : ''} onClick={() => setView('lite')}>Lite + my trades</button>
             </div>
-            {view === 'lite' && (
+            {view === 'pro' && (
               <>
                 <span className="sep" />
                 <div className="seg">
-                  {['1m', '5m', '15m', '1h', '4h'].map((t) => (
+                  {['1s', '15s', '30s', '1m', '5m', '15m', '1h', '4h'].map((t) => (
                     <button key={t} className={tf === t ? 'on' : ''} onClick={() => setTf(t)}>{t}</button>
                   ))}
                 </div>
@@ -494,9 +507,9 @@ export default function TokenPage({ id, theme }) {
                 </div>
               </>
             )}
-            <span className="legend">{view === 'tv' ? <>Live chart by <b>DexScreener</b></> : <>Candles <b>GeckoTerminal</b> · live ticks <b>DexScreener</b></>}</span>
+            <span className="legend">{view === 'tv' ? <>Live chart by <b>DexScreener</b> · your trades show in Chart view</> : <>B/S markers = your paper trades · dashed line = avg entry</>}</span>
           </div>
-          {view === 'tv' ? <TvChart pool={pool} theme={theme} /> : <Chart pool={pool} tf={tf} mode={mode} myTrades={myTrades} />}
+          {view === 'tv' ? <TvChart pool={pool} theme={theme} /> : <Chart pool={pool} tf={tf} mode={mode} myTrades={myTrades} entryMc={pos?.tokens > 0 ? pos.entryMc : 0} />}
           <Bottom pool={pool} myTrades={myTrades} />
         </div>
         <aside className="tside">

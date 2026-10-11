@@ -30,7 +30,7 @@ export function fmtCompact(n, digits = 1) {
   return sign + fmtTiny(abs, 3)
 }
 
-export const fmtUsdC = (n) => (!isFinite(n) || n === null ? '—' : (n < 0 ? '-$' : '$') + fmtCompact(Math.abs(n)))
+export const fmtUsdC = (n, d = 2) => (!isFinite(n) || n === null ? '—' : (n < 0 ? '-$' : '$') + fmtCompact(Math.abs(n), d))
 
 export function fmtEth(n, max = 4) {
   if (!isFinite(n)) return '—'

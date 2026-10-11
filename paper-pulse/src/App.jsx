@@ -4,6 +4,7 @@ import { paper, account, checkOrders, recordEquity } from './lib/paper.js'
 import { fmtEth, fmtSignedEth, fmtUsdC } from './lib/format.js'
 import { TopBar, StatusBar, BottomNav, Onboarding, Ticker, useTheme } from './components/Header.jsx'
 import './lib/wallet.js'
+import { watchPools } from './lib/chain.js'
 import { Toasts, toast } from './components/ui.jsx'
 import Pulse from './pages/Pulse.jsx'
 const TokenPage = lazy(() => import('./pages/TokenPage.jsx'))
@@ -39,8 +40,10 @@ export default function App() {
       const ordered = acct.orders.map((o) => o.pool)
       const cur = parseRoute()
       const ids = [...new Set([...(cur.name === 'token' ? [cur.id] : []), ...held, ...ordered])]
-      if (ids.length) refreshPrices(ids)
+      watchPools(ids)
+      if (ids.length && ++n % 2 === 1) refreshPrices(ids)
     }
+    let n = 0
     tick()
     const id = setInterval(tick, 2000)
     return () => clearInterval(id)

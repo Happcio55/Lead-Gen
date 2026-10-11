@@ -130,6 +130,8 @@ function fromGecko(d, inc) {
   const a = d.attributes
   const baseId = d.relationships?.base_token?.data?.id || ''
   const bt = inc[baseId]?.attributes
+  const quoteId = d.relationships?.quote_token?.data?.id || ''
+  const qt = inc[quoteId]?.attributes
   const [bSym = '', qPart = ''] = (a.name || '').split(' / ')
   const qSym = qPart.split(' ')[0]
   const fee = (qPart.match(/([\d.]+%)/) || [])[1] || null
@@ -141,6 +143,9 @@ function fromGecko(d, inc) {
     symbol: bt?.symbol || bSym,
     name: bt?.name || bSym,
     image: cleanImg(bt?.image_url),
+    decimals: bt?.decimals ?? null,
+    quoteAddress: quoteId ? quoteId.split('_').slice(1).join('_').toLowerCase() : null,
+    quoteDecimals: qt?.decimals ?? null,
     quote: qSym,
     fee,
     dex: d.relationships?.dex?.data?.id || null,
@@ -175,6 +180,7 @@ function fromDex(p) {
     socials: p.info?.socials || null,
     websites: p.info?.websites || null,
     quote: p.quoteToken.symbol,
+    quoteAddress: p.quoteToken.address?.toLowerCase(),
     dexscreener: p.url,
     createdAt: p.pairCreatedAt || null,
     priceUsd: num(p.priceUsd),
@@ -199,7 +205,10 @@ function upsert(records) {
       // DexScreener sometimes lists a pool with base/quote swapped; never let that overwrite the token
       if (old && old.tokenAddress && r.tokenAddress && old.tokenAddress !== r.tokenAddress) continue
       const merged = { ...(old || {}) }
+      // a fresh on-chain price beats the indexers, which lag behind
+      const live = old?.liveAt && Date.now() - old.liveAt < 20000
       for (const [k, v] of Object.entries(r)) {
+        if (live && (k === 'priceUsd' || k === 'mc' || k === 'fdv')) continue
         if (v === null || v === undefined || v === '') continue
         if (typeof v === 'number' && v === 0 && old && old[k]) continue
         merged[k] = v
@@ -362,5 +371,15 @@ export async function loadTrades(pool) {
       wallet: a.tx_from_address,
       tx: a.tx_hash,
     }
+  })
+}
+
+// Real-time price from the chain (see chain.js). Market cap and FDV move with the price.
+export function applyLivePrice(poolId, priceUsd) {
+  market.set((s) => {
+    const p = s.pools[poolId]
+    if (!p || !(priceUsd > 0) || p.priceUsd === priceUsd) return s
+    const f = p.priceUsd ? priceUsd / p.priceUsd : 1
+    return { ...s, pools: { ...s.pools, [poolId]: { ...p, prevPriceUsd: p.priceUsd, priceUsd, mc: (p.mc || 0) * f, fdv: (p.fdv || 0) * f, liveAt: Date.now() } } }
   })
 }

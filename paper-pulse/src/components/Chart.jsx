@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { createChart, CandlestickSeries, HistogramSeries, createSeriesMarkers, CrosshairMode } from 'lightweight-charts'
 import { loadCandles, cachedCandles, loadTrades } from '../lib/api.js'
-import { fmtTiny, fmtCompact } from '../lib/format.js'
+import { fmtTiny, fmtCompact, fmtEth } from '../lib/format.js'
 
-const TF_SEC = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 }
+const TF_SEC = { '1s': 1, '15s': 15, '30s': 30, '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 }
+const isSec = (tf) => TF_SEC[tf] < 60
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim()
 
 function candlesFromTrades(trades, step) {
@@ -23,7 +24,7 @@ function candlesFromTrades(trades, step) {
   return [...m.values()]
 }
 
-export default function Chart({ pool, tf, mode, myTrades }) {
+export default function Chart({ pool, tf, mode, myTrades, entryMc }) {
   const box = useRef(null)
   const api = useRef({})
   const raw = useRef([])
@@ -34,13 +35,16 @@ export default function Chart({ pool, tf, mode, myTrades }) {
   const k = mode === 'mc' ? supply : 1
   const scale = (c) => ({ time: c.time, open: c.open * k, high: c.high * k, low: c.low * k, close: c.close * k })
   const fmt = (v) => (mode === 'mc' ? '$' + fmtCompact(v, 2) : '$' + fmtTiny(v))
+  // async loaders call the latest paint (current trades, mode and timeframe), never a stale copy
+  const paintRef = useRef(null)
+  paintRef.current = () => paint()
 
   useEffect(() => {
     const chart = createChart(box.current, {
       autoSize: true,
       layout: { background: { color: 'transparent' }, textColor: css('--fg-3'), fontFamily: 'Geist, system-ui, sans-serif', fontSize: 11, attributionLogo: false },
-      grid: { vertLines: { color: css('--line') }, horzLines: { color: css('--line') } },
-      crosshair: { mode: CrosshairMode.Normal, vertLine: { color: css('--fg-4'), labelBackgroundColor: css('--panel-3') }, horzLine: { color: css('--fg-4'), labelBackgroundColor: css('--panel-3') } },
+      grid: { vertLines: { visible: false }, horzLines: { color: css('--line') } },
+      crosshair: { mode: CrosshairMode.Normal, vertLine: { color: css('--fg-4'), width: 1, style: 3, labelBackgroundColor: css('--fg') }, horzLine: { color: css('--fg-4'), width: 1, style: 3, labelBackgroundColor: css('--fg') } },
       rightPriceScale: { borderColor: css('--line'), scaleMargins: { top: 0.14, bottom: 0.2 } },
       timeScale: { borderColor: css('--line'), timeVisible: true, secondsVisible: false, rightOffset: 8 },
       localization: { locale: 'en-US' },
@@ -55,7 +59,7 @@ export default function Chart({ pool, tf, mode, myTrades }) {
       priceLineStyle: 2,
     })
     const vol = chart.addSeries(HistogramSeries, { priceScaleId: 'vol', priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false })
-    chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.84, bottom: 0 } })
+    chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.86, bottom: 0 } })
     const markers = createSeriesMarkers(candles, [])
     chart.subscribeCrosshairMove((p) => setLegend(p?.seriesData?.get(candles) || null))
     api.current = { chart, candles, vol, markers }
@@ -63,15 +67,13 @@ export default function Chart({ pool, tf, mode, myTrades }) {
   }, [])
 
   // follow light/dark switches
-  const paintRef = useRef(null)
-  paintRef.current = () => paint()
   useEffect(() => {
     const mo = new MutationObserver(() => {
       const { chart, candles } = api.current
       if (!chart) return
       chart.applyOptions({
         layout: { textColor: css('--fg-3') },
-        grid: { vertLines: { color: css('--line') }, horzLines: { color: css('--line') } },
+        grid: { vertLines: { visible: false }, horzLines: { color: css('--line') } },
         rightPriceScale: { borderColor: css('--line') },
         timeScale: { borderColor: css('--line') },
       })
@@ -100,49 +102,85 @@ export default function Chart({ pool, tf, mode, myTrades }) {
     const { markers } = api.current
     if (!markers || !raw.current.length) return
     const step = TF_SEC[tf]
-    const first = raw.current[0].time
+    const times = raw.current.map((c) => c.time)
+    // snap each trade to the candle it happened in (or the nearest one), so every paper trade shows
+    const snap = (t) => {
+      const b = Math.floor(t / 1000 / step) * step
+      let lo = 0, hi = times.length - 1
+      if (b <= times[0]) return times[0]
+      while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1
+        if (times[mid] <= b) lo = mid
+        else hi = mid - 1
+      }
+      return times[lo]
+    }
+    const first = times[0] - step
     const list = (myTrades || [])
-      .map((t) => ({ time: Math.floor(t.t / 1000 / step) * step, side: t.side }))
-      .filter((m) => m.time >= first)
+      .filter((t) => t.t / 1000 >= first)
+      .map((t) => ({ time: snap(t.t), side: t.side, eth: t.eth }))
       .sort((a, b) => a.time - b.time)
       .map((m) => ({
         time: m.time,
         position: m.side === 'buy' ? 'belowBar' : 'aboveBar',
         color: m.side === 'buy' ? css('--up') : css('--down'),
         shape: m.side === 'buy' ? 'arrowUp' : 'arrowDown',
-        text: m.side === 'buy' ? 'B' : 'S',
+        text: (m.side === 'buy' ? 'B ' : 'S ') + fmtEth(m.eth, 3),
+        size: 1.3,
       }))
     markers.setMarkers(list)
   }
 
+  // dashed line at the average entry of the open position
+  const entryLine = useRef(null)
+  useEffect(() => {
+    const { candles } = api.current
+    if (!candles) return
+    if (entryLine.current) {
+      candles.removePriceLine(entryLine.current)
+      entryLine.current = null
+    }
+    if (entryMc > 0) {
+      const price = mode === 'mc' ? entryMc : entryMc / supply
+      entryLine.current = candles.createPriceLine({ price, color: css('--up'), lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'Avg entry' })
+    }
+  }, [entryMc, mode, supply])
+
   useEffect(() => {
     if (!pool?.pool) return
     let alive = true
-    const cached = cachedCandles(pool.pool, tf)
+    api.current.chart?.applyOptions({ timeScale: { secondsVisible: isSec(tf) } })
+    const cached = isSec(tf) ? null : cachedCandles(pool.pool, tf)
     raw.current = cached ? cached.map((c) => ({ ...c })) : []
     setStatus(raw.current.length ? 'ok' : 'loading')
     if (raw.current.length) {
-      paint()
+      paintRef.current()
       api.current.chart.timeScale().fitContent()
     }
     const load = async (first) => {
       try {
-        let data = (await loadCandles(pool.pool, tf)).map((c) => ({ ...c }))
-        // brand-new pairs have no candles yet: build them from the live trades
-        if (!data.length) data = candlesFromTrades(await loadTrades(pool.pool).catch(() => []), TF_SEC[tf])
+        let data
+        if (isSec(tf)) data = candlesFromTrades(await loadTrades(pool.pool), TF_SEC[tf])
+        else {
+          data = (await loadCandles(pool.pool, tf)).map((c) => ({ ...c }))
+          // brand-new pairs have no candles yet: build them from the live trades
+          if (!data.length) data = candlesFromTrades(await loadTrades(pool.pool).catch(() => []), TF_SEC[tf])
+        }
         if (!alive) return
         const hadData = raw.current.length > 0
-        raw.current = data
+        // keep live-tick candles newer than the fetched data
+        const lastT = data.length ? data[data.length - 1].time : 0
+        raw.current = [...data, ...raw.current.filter((c) => c.time > lastT)]
         if (!data.length) return setStatus('empty')
         setStatus('ok')
-        paint()
+        paintRef.current()
         if (first && !hadData) api.current.chart.timeScale().fitContent()
       } catch {
         if (alive && !raw.current.length) setStatus('error')
       }
     }
     load(true)
-    const id = setInterval(() => load(false), tf === '1m' ? 45000 : 90000)
+    const id = setInterval(() => load(false), isSec(tf) ? 6000 : tf === '1m' ? 45000 : 90000)
     return () => {
       alive = false
       clearInterval(id)
@@ -169,7 +207,10 @@ export default function Chart({ pool, tf, mode, myTrades }) {
     api.current.candles?.update(scale(c))
   }, [pool?.priceUsd])
 
-  useEffect(paintMarkers, [myTrades?.length, tf])
+  // a paper trade also ticks the chart, so its marker lands on a live candle
+  useEffect(() => {
+    paintMarkers()
+  }, [myTrades?.length, tf])
 
   const lg = legend && legend.open !== undefined ? legend : null
   const chg = lg ? ((lg.close - lg.open) / lg.open) * 100 : null
@@ -177,7 +218,7 @@ export default function Chart({ pool, tf, mode, myTrades }) {
     <div className="chart-box">
       <div ref={box} style={{ position: 'absolute', inset: 0 }} />
       <div style={{ position: 'absolute', left: 12, top: 8, zIndex: 2, fontSize: 11, fontWeight: 600, color: 'var(--fg-3)', display: 'flex', gap: 10, pointerEvents: 'none' }}>
-        <span style={{ color: 'var(--fg-2)' }}>{pool?.symbol}/{pool?.quote} · {tf} · {mode === 'mc' ? 'Market cap' : 'Price'} (USD)</span>
+        <span style={{ color: 'var(--fg-2)' }}>{pool?.symbol}/{pool?.quote} · {tf} · {mode === 'mc' ? 'Market cap' : 'Price'} (USD){isSec(tf) ? ' · built from on-chain trades' : ''}</span>
         {lg && (
           <span>
             O <b className={chg >= 0 ? 'up' : 'down'}>{fmt(lg.open)}</b> H <b className={chg >= 0 ? 'up' : 'down'}>{fmt(lg.high)}</b> L <b className={chg >= 0 ? 'up' : 'down'}>{fmt(lg.low)}</b> C <b className={chg >= 0 ? 'up' : 'down'}>{fmt(lg.close)}</b>
@@ -187,7 +228,7 @@ export default function Chart({ pool, tf, mode, myTrades }) {
       {status !== 'ok' && (
         <div className="chart-msg">
           {status === 'loading' && 'Loading candles…'}
-          {status === 'empty' && 'This pair is too new for candles. The chart fills in as trades come in.'}
+          {status === 'empty' && 'No trades in this window yet. The chart fills in as trades come in.'}
           {status === 'error' && 'Could not load candles right now. Retrying automatically.'}
         </div>
       )}
