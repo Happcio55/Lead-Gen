@@ -1,76 +1,69 @@
 import { memo, useEffect, useState } from 'react'
 import { useStore } from '../lib/store.js'
 import { market, pollNewPairs, pollTrending, pollTop, loadNewPairsPage2 } from '../lib/api.js'
-import { paper, account, buy, updateSettings, equityEth } from '../lib/paper.js'
-import { dexLabel } from '../lib/chains.js'
-import { fmtAge, fmtUsdC, fmtPct, fmtEth, parseAmount } from '../lib/format.js'
-import { Icon, TokenLogo, Socials, useNow, toast } from '../components/ui.jsx'
+import { paper, account, buy, updateSettings } from '../lib/paper.js'
+import { fmtAge, fmtUsdC, fmtPct, fmtEth, parseAmount, fmtCompact } from '../lib/format.js'
+import { Icon, EthIcon, TokenLogo, Socials, CopyAddr, useNow, toast, mcTier } from '../components/ui.jsx'
 
 const BOOT = Date.now()
 // Stablecoins and wrapped majors are not memecoins; keep them off the board.
 const NOT_MEME = /^(W?ETH|W?BTC|USD.*|SUSD|DAI|EURC|PYUSD|FDUSD|TUSD)$/i
 
 export function quickBuy(pool, eth) {
-  const r = buy(pool, eth)
-  if (r.ok) toast('ok', `Købt ${pool.symbol} for ${fmtEth(eth)} ETH`, `Fyldt ved MC ${fmtUsdC(r.trade.mc)} · prisudsving ${(r.trade.impact * 100).toFixed(2)}%`)
-  else toast('bad', 'Købet gik ikke igennem', r.msg)
+  const r = buy(pool, eth, 'quick')
+  if (r.ok) toast('ok', `Bought ${pool.symbol} · ${fmtEth(eth)} ETH`, `Filled at ${fmtUsdC(r.trade.mc)} MC · ${(r.trade.impact * 100).toFixed(2)}% impact`)
+  else toast('bad', 'Buy failed', r.msg)
   return r
 }
+
+const pctCls = (v) => (v > 0 ? 'up' : v < 0 ? 'down' : 'muted')
 
 const Card = memo(function Card({ pool, now, fresh, qb, held }) {
   const tx = pool.txns?.h24 || { b: 0, s: 0 }
   const total = tx.b + tx.s
   const buyPct = total ? (tx.b / total) * 100 : 50
-  const age = fmtAge(pool.createdAt, now)
-  const chg = pool.chg?.h1 ?? 0
+  const ageMs = now - (pool.createdAt || now)
+  const liqRatio = pool.mc ? (pool.liq / pool.mc) * 100 : 0
+  const go = () => (location.hash = '#/t/' + pool.pool)
   return (
-    <div
-      className={'card' + (fresh ? ' fresh' : '')}
-      role="link"
-      tabIndex={0}
-      onClick={() => (location.hash = '#/t/' + pool.pool)}
-      onKeyDown={(e) => e.key === 'Enter' && (location.hash = '#/t/' + pool.pool)}
-    >
-      <TokenLogo pool={pool} age={age} isNew={now - pool.createdAt < 120000} />
+    <div className={'card' + (fresh ? ' fresh' : '')} role="link" tabIndex={0} onClick={go} onKeyDown={(e) => e.key === 'Enter' && go()}>
+      <TokenLogo pool={pool} />
       <div className="c-main">
-        <div className="c-title">
+        <div className="c-t">
           <b>{pool.symbol}</b>
           <span>{pool.name}</span>
+          <CopyAddr value={pool.tokenAddress} label="" />
         </div>
-        <div className="c-meta">
-          <span className="dex-tag">{dexLabel(pool.dex)}</span>
-          <span>{pool.quote}{pool.fee ? ' ' + pool.fee : ''}</span>
+        <div className="c-row">
+          <span className={'age' + (ageMs > 3600000 ? ' old' : '')}>{fmtAge(pool.createdAt, now)}</span>
           <Socials pool={pool} size={12} />
-          {held && <span className="held">EJER</span>}
+          <span className="stat-i" title="Unique buyers 24h"><Icon name="users" size={12} />{pool.buyers || tx.b}</span>
+          {held && <span className="held">HOLDING</span>}
         </div>
-        <div className="c-stats">
-          <span>MC<b>{fmtUsdC(pool.mc)}</b></span>
-          <span>V<b>{fmtUsdC(pool.vol?.h24)}</b></span>
-          <span>L<b>{fmtUsdC(pool.liq)}</b></span>
+        <div className="mets">
+          <span className={'met ' + pctCls(pool.chg?.m5)}><i>5m</i>{fmtPct(pool.chg?.m5 || 0, 0)}</span>
+          <span className={'met ' + pctCls(pool.chg?.h1)}><i>1h</i>{fmtPct(pool.chg?.h1 || 0, 0)}</span>
+          <span className={'met ' + (buyPct >= 50 ? 'up' : 'down')} title="Share of buys, 24h"><i>B</i>{Math.round(buyPct)}%</span>
+          <span className={'met ' + (liqRatio >= 10 ? '' : 'down')} title="Liquidity as share of market cap"><i>L/MC</i>{liqRatio ? (liqRatio > 100 ? '>100%' : Math.round(liqRatio) + '%') : '—'}</span>
         </div>
       </div>
-      <div className="c-side">
-        <span className={'c-chg ' + (chg >= 0 ? 'up' : 'down')} title="Ændring seneste time">{fmtPct(chg)}</span>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-          <div className="c-tx" title="Køb / salg seneste 24 t">
-            <span className="up">{tx.b}</span>
-            <span className="down">{tx.s}</span>
-          </div>
-          <div className="txbar">
-            <i style={{ width: buyPct + '%' }} />
-            <i style={{ width: 100 - buyPct + '%' }} />
-          </div>
-        </div>
+      <div className="c-r">
+        <span className="mcv">MC<b className={mcTier(pool.mc)}>{fmtUsdC(pool.mc)}</b></span>
+        <span className="vv">V<b>{fmtUsdC(pool.vol?.h24)}</b></span>
+        <span className="txr">
+          TX<b>{total < 1000 ? total : fmtCompact(total, 1)}</b>
+          <span className="bar"><i style={{ width: buyPct + '%' }} /><i style={{ width: 100 - buyPct + '%' }} /></span>
+        </span>
         <button
           className="qbuy"
-          title={`Køb for ${qb} ETH med det samme`}
+          title={`Buy ${qb} ETH instantly`}
           onClick={(e) => {
             e.stopPropagation()
             quickBuy(pool, qb)
           }}
         >
-          <Icon name="bolt" size={12} fill stroke={0} />
-          {qb}
+          <Icon name="bolt" size={11} fill stroke={0} />
+          {qb} ETH
         </button>
       </div>
     </div>
@@ -78,33 +71,53 @@ const Card = memo(function Card({ pool, now, fresh, qb, held }) {
 })
 
 const COLS = [
-  { key: 'new', title: 'Nye par', hint: 'live, hvert 10. sek', dot: 'var(--neon)' },
-  { key: 'trending', title: 'Trending', hint: 'seneste time', dot: 'var(--bronze)' },
-  { key: 'top', title: 'Top volumen', hint: '24 timer', dot: 'var(--patina)' },
+  { key: 'new', title: 'New Pairs' },
+  { key: 'trending', title: 'Trending' },
+  { key: 'top', title: 'Top Volume' },
 ]
 const LIQ = [
-  { v: 0, l: 'Alle' },
-  { v: 1000, l: '>$1K' },
+  { v: 0, l: 'All' },
+  { v: 1000, l: 'Liq >$1K' },
   { v: 10000, l: '>$10K' },
   { v: 50000, l: '>$50K' },
 ]
+
+function QuickBuyInput({ col, value }) {
+  const [text, setText] = useState(String(value))
+  return (
+    <label className="qb" title="Quick buy amount for this column">
+      <Icon name="bolt" size={12} fill stroke={0} />
+      <input
+        id={'qb-' + col}
+        value={text}
+        inputMode="decimal"
+        aria-label="Quick buy amount in ETH"
+        onChange={(e) => {
+          setText(e.target.value)
+          const v = parseAmount(e.target.value)
+          if (v > 0) updateSettings({ quickBuy: { ...paper.get().settings.quickBuy, [col]: v } })
+        }}
+      />
+      <EthIcon size={12} />
+    </label>
+  )
+}
 
 export default function Pulse() {
   const lists = useStore(market, (s) => s.lists)
   const loaded = useStore(market, (s) => s.loaded)
   const pools = useStore(market, (s) => s.pools)
   const firstSeen = useStore(market, (s) => s.firstSeen)
-  const ethUsd = useStore(market, (s) => s.ethUsd)
   const p = useStore(paper)
   const acct = account(p)
   const now = useNow(1000)
   const [minLiq, setMinLiq] = useState(0)
   const [mobileCol, setMobileCol] = useState('new')
-  const [qbText, setQbText] = useState(String(p.settings.quickBuy))
 
   useEffect(() => {
     let alive = true
-    const safe = (fn) => () => alive && !document.hidden && fn().catch(() => {})
+    // a failed first load retries soon instead of waiting for the next interval
+    const safe = (fn) => () => alive && !document.hidden && fn().catch(() => alive && setTimeout(() => alive && fn().catch(() => {}), 8000))
     safe(pollNewPairs)()
     setTimeout(safe(loadNewPairsPage2), 2500)
     safe(pollTrending)()
@@ -120,94 +133,46 @@ export default function Pulse() {
     }
   }, [])
 
-  const qb = p.settings.quickBuy
-  const eq = equityEth(acct, pools, ethUsd)
-  const pnl = eq - acct.start
-  const newCount = lists.new.filter((id) => now - (pools[id]?.createdAt || 0) < 3600000).length
+  const qbs = p.settings.quickBuy || {}
 
   return (
-    <main className="page">
-      <section className="hero">
-        <h1>
-          Øv dig på hver ny memecoin på Robinhood Chain med <span className="hl">papirpenge</span>
-          <em>.</em>
-        </h1>
-        <div className="hero-stats">
-          <div className="hs">
-            <b>{newCount}</b>
-            <span>nye par seneste time</span>
-          </div>
-          <div className="hs">
-            <b>{fmtEth(eq, 3)}</b>
-            <span>din værdi i ETH</span>
-          </div>
-          <div className="hs">
-            <b className={pnl >= 0 ? 'up' : 'down'}>{fmtPct((pnl / acct.start) * 100)}</b>
-            <span>afkast siden start</span>
-          </div>
-        </div>
-      </section>
-
-      <div className="toolbar">
-        <div className="tool">
-          <span className="label">Hurtigkøb</span>
-          <label className="qb" title="Beløb for ⚡-knappen på hvert token">
-            <Icon name="bolt" size={14} fill stroke={0} />
-            <input
-              id="quickbuy"
-              value={qbText}
-              inputMode="decimal"
-              onChange={(e) => {
-                setQbText(e.target.value)
-                const v = parseAmount(e.target.value)
-                if (v > 0) updateSettings({ quickBuy: v })
-              }}
-              aria-label="Hurtigkøb beløb i ETH"
-            />
-            <span>ETH</span>
-          </label>
-        </div>
-        <div className="tool">
-          <span className="label">Likviditet</span>
-          <div className="chips">
-            {LIQ.map((o) => (
-              <button key={o.v} className={'chip' + (minLiq === o.v ? ' on' : '')} onClick={() => setMinLiq(o.v)}>
-                {o.l}
-              </button>
-            ))}
-          </div>
-        </div>
+    <main className="pulse">
+      <div className="pulse-bar">
+        <h1>Pulse <span className="chain-ic">RH</span></h1>
         <div className="seg mobile-tabs" role="tablist">
           {COLS.map((c) => (
-            <button key={c.key} className={mobileCol === c.key ? 'on' : ''} onClick={() => setMobileCol(c.key)}>
-              {c.title}
-            </button>
+            <button key={c.key} className={mobileCol === c.key ? 'on' : ''} onClick={() => setMobileCol(c.key)}>{c.title}</button>
           ))}
+        </div>
+        <div className="right">
+          <div className="chips">
+            {LIQ.map((o) => (
+              <button key={o.v} className={'chip' + (minLiq === o.v ? ' on' : '')} onClick={() => setMinLiq(o.v)}>{o.l}</button>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="board">
         {COLS.map((c) => {
           const items = lists[c.key].map((id) => pools[id]).filter((x) => x && !NOT_MEME.test(x.symbol || '') && (!minLiq || (x.liq || 0) >= minLiq))
+          const qb = qbs[c.key] || 0.05
           return (
             <section key={c.key} className={'col' + (mobileCol === c.key ? ' show' : '')} aria-label={c.title}>
               <div className="col-head">
-                <span className="col-dot" style={{ background: c.dot, boxShadow: `0 0 10px ${c.dot}` }} />
                 <h3>{c.title}</h3>
-                <span className="count">{items.length}</span>
-                <span className="hint">{c.hint}</span>
+                <span className="n">{items.length}</span>
+                <QuickBuyInput col={c.key} value={qb} />
               </div>
               <div className="col-list">
-                {!loaded[c.key] && (
-                  <div className="col-empty">
-                    <b>Henter live par fra Robinhood Chain…</b>
-                    <span>Første opdatering tager et par sekunder.</span>
-                  </div>
-                )}
+                {!loaded[c.key] &&
+                  Array.from({ length: 6 }, (_, i) => (
+                    <div key={i} className="skel"><i /><span><b /><b /><b /></span></div>
+                  ))}
                 {loaded[c.key] && !items.length && (
                   <div className="col-empty">
-                    <b>Ingen tokens matcher filteret</b>
-                    <span>Sænk kravet til likviditet for at se flere.</span>
+                    <b>No pairs match this filter</b>
+                    <span>Lower the liquidity filter to see more.</span>
                   </div>
                 )}
                 {items.map((pool) => (
@@ -228,4 +193,3 @@ export default function Pulse() {
     </main>
   )
 }
-

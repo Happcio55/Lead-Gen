@@ -6,7 +6,7 @@ import { fmtTiny, fmtCompact } from '../lib/format.js'
 const TF_SEC = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 }
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim()
 
-export default function Chart({ pool, tf, mode, myTrades, theme }) {
+export default function Chart({ pool, tf, mode, myTrades }) {
   const box = useRef(null)
   const api = useRef({})
   const raw = useRef([])
@@ -16,17 +16,17 @@ export default function Chart({ pool, tf, mode, myTrades, theme }) {
   const supply = pool?.fdv && pool?.priceUsd ? pool.fdv / pool.priceUsd : 1
   const k = mode === 'mc' ? supply : 1
   const scale = (c) => ({ time: c.time, open: c.open * k, high: c.high * k, low: c.low * k, close: c.close * k })
+  const fmt = (v) => (mode === 'mc' ? '$' + fmtCompact(v, 2) : '$' + fmtTiny(v))
 
-  // create chart once
   useEffect(() => {
     const chart = createChart(box.current, {
       autoSize: true,
-      layout: { background: { color: 'transparent' }, textColor: css('--fg-3'), fontFamily: 'Geist Mono, ui-monospace, monospace', fontSize: 11, attributionLogo: false },
+      layout: { background: { color: 'transparent' }, textColor: css('--fg-3'), fontFamily: 'Geist, system-ui, sans-serif', fontSize: 11, attributionLogo: false },
       grid: { vertLines: { color: css('--line') }, horzLines: { color: css('--line') } },
-      crosshair: { mode: CrosshairMode.Normal },
-      rightPriceScale: { borderColor: css('--line-strong'), scaleMargins: { top: 0.12, bottom: 0.22 } },
-      timeScale: { borderColor: css('--line-strong'), timeVisible: true, secondsVisible: false, rightOffset: 6 },
-      localization: { locale: 'da-DK' },
+      crosshair: { mode: CrosshairMode.Normal, vertLine: { color: css('--fg-4'), labelBackgroundColor: css('--panel-3') }, horzLine: { color: css('--fg-4'), labelBackgroundColor: css('--panel-3') } },
+      rightPriceScale: { borderColor: css('--line'), scaleMargins: { top: 0.14, bottom: 0.2 } },
+      timeScale: { borderColor: css('--line'), timeVisible: true, secondsVisible: false, rightOffset: 8 },
+      localization: { locale: 'en-US' },
     })
     const candles = chart.addSeries(CandlestickSeries, {
       upColor: css('--up'),
@@ -34,38 +34,19 @@ export default function Chart({ pool, tf, mode, myTrades, theme }) {
       wickUpColor: css('--up'),
       wickDownColor: css('--down'),
       borderVisible: false,
-      priceLineColor: css('--neon'),
+      priceLineColor: css('--fg-3'),
+      priceLineStyle: 2,
     })
     const vol = chart.addSeries(HistogramSeries, { priceScaleId: 'vol', priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false })
-    chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } })
+    chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.84, bottom: 0 } })
     const markers = createSeriesMarkers(candles, [])
-    chart.subscribeCrosshairMove((p) => {
-      const d = p?.seriesData?.get(candles)
-      setLegend(d ? d : null)
-    })
+    chart.subscribeCrosshairMove((p) => setLegend(p?.seriesData?.get(candles) || null))
     api.current = { chart, candles, vol, markers }
     return () => chart.remove()
   }, [])
 
-  // theme colours
   useEffect(() => {
-    const { chart, candles } = api.current
-    if (!chart) return
-    chart.applyOptions({
-      layout: { textColor: css('--fg-3') },
-      grid: { vertLines: { color: css('--line') }, horzLines: { color: css('--line') } },
-      rightPriceScale: { borderColor: css('--line-strong') },
-      timeScale: { borderColor: css('--line-strong') },
-    })
-    candles.applyOptions({ upColor: css('--up'), downColor: css('--down'), wickUpColor: css('--up'), wickDownColor: css('--down') })
-    paint()
-  }, [theme])
-
-  // price formatter follows the mode
-  useEffect(() => {
-    api.current.candles?.applyOptions({
-      priceFormat: { type: 'custom', minMove: 1e-14, formatter: (v) => (mode === 'mc' ? '$' + fmtCompact(v, 2) : '$' + fmtTiny(v)) },
-    })
+    api.current.candles?.applyOptions({ priceFormat: { type: 'custom', minMove: 1e-14, formatter: fmt } })
     paint()
   }, [mode, k])
 
@@ -74,7 +55,7 @@ export default function Chart({ pool, tf, mode, myTrades, theme }) {
     if (!candles || !raw.current.length) return
     candles.setData(raw.current.map(scale))
     const up = css('--up'), down = css('--down')
-    vol.setData(raw.current.map((c) => ({ time: c.time, value: c.value, color: (c.close >= c.open ? up : down) + '55' })))
+    vol.setData(raw.current.map((c) => ({ time: c.time, value: c.value, color: (c.close >= c.open ? up : down) + '40' })))
     paintMarkers()
   }
 
@@ -90,14 +71,13 @@ export default function Chart({ pool, tf, mode, myTrades, theme }) {
       .map((m) => ({
         time: m.time,
         position: m.side === 'buy' ? 'belowBar' : 'aboveBar',
-        color: m.side === 'buy' ? css('--neon') : css('--down'),
+        color: m.side === 'buy' ? css('--up') : css('--down'),
         shape: m.side === 'buy' ? 'arrowUp' : 'arrowDown',
-        text: m.side === 'buy' ? 'K' : 'S',
+        text: m.side === 'buy' ? 'B' : 'S',
       }))
     markers.setMarkers(list)
   }
 
-  // load + poll candles
   useEffect(() => {
     if (!pool?.pool) return
     let alive = true
@@ -146,26 +126,26 @@ export default function Chart({ pool, tf, mode, myTrades, theme }) {
 
   useEffect(paintMarkers, [myTrades?.length, tf])
 
-  const fmt = (v) => (mode === 'mc' ? '$' + fmtCompact(v, 2) : '$' + fmtTiny(v))
+  const lg = legend && legend.open !== undefined ? legend : null
+  const chg = lg ? ((lg.close - lg.open) / lg.open) * 100 : null
   return (
-    <>
-      <div className="chart-box">
-        <div ref={box} style={{ position: 'absolute', inset: 0 }} />
-        {status !== 'ok' && (
-          <div className="chart-msg">
-            {status === 'loading' && 'Henter candles…'}
-            {status === 'empty' && 'Parret er for nyt til candles. Grafen fyldes op, efterhånden som der handles.'}
-            {status === 'error' && 'Kunne ikke hente candles lige nu. Der prøves igen automatisk.'}
-          </div>
+    <div className="chart-box">
+      <div ref={box} style={{ position: 'absolute', inset: 0 }} />
+      <div style={{ position: 'absolute', left: 12, top: 8, zIndex: 2, fontSize: 11, fontWeight: 600, color: 'var(--fg-3)', display: 'flex', gap: 10, pointerEvents: 'none' }}>
+        <span style={{ color: 'var(--fg-2)' }}>{pool?.symbol}/{pool?.quote} · {tf} · {mode === 'mc' ? 'Market cap' : 'Price'} (USD)</span>
+        {lg && (
+          <span>
+            O <b className={chg >= 0 ? 'up' : 'down'}>{fmt(lg.open)}</b> H <b className={chg >= 0 ? 'up' : 'down'}>{fmt(lg.high)}</b> L <b className={chg >= 0 ? 'up' : 'down'}>{fmt(lg.low)}</b> C <b className={chg >= 0 ? 'up' : 'down'}>{fmt(lg.close)}</b>
+          </span>
         )}
       </div>
-      <div className="legend" style={{ padding: '0 12px 10px', marginLeft: 0 }}>
-        {legend && legend.open !== undefined ? (
-          <>Å {fmt(legend.open)} · H {fmt(legend.high)} · L {fmt(legend.low)} · Luk {fmt(legend.close)}</>
-        ) : (
-          <>Kilde: GeckoTerminal candles + live pris fra DexScreener</>
-        )}
-      </div>
-    </>
+      {status !== 'ok' && (
+        <div className="chart-msg">
+          {status === 'loading' && 'Loading candles…'}
+          {status === 'empty' && 'This pair is too new for candles. The chart fills in as trades come in.'}
+          {status === 'error' && 'Could not load candles right now. Retrying automatically.'}
+        </div>
+      )}
+    </div>
   )
 }

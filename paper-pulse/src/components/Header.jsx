@@ -4,7 +4,7 @@ import { market, net, searchPools } from '../lib/api.js'
 import { CHAINS, ACTIVE_CHAIN } from '../lib/chains.js'
 import { paper, account, equityEth, resetAccount, START_OPTIONS, openPositions } from '../lib/paper.js'
 import { fmtEth, fmtSignedEth, fmtPct, fmtCompact } from '../lib/format.js'
-import { Icon, toast } from './ui.jsx'
+import { Icon, EthIcon, Mark, toast } from './ui.jsx'
 
 function useClickAway(open, setOpen) {
   const ref = useRef(null)
@@ -22,29 +22,13 @@ function useClickAway(open, setOpen) {
   return ref
 }
 
-export function Strip() {
+function useEquity() {
+  const p = useStore(paper)
+  const pools = useStore(market, (s) => s.pools)
   const ethUsd = useStore(market, (s) => s.ethUsd)
-  const seen = useStore(market, (s) => Object.keys(s.firstSeen).length)
-  const n = useStore(net)
-  const throttled = n.throttledUntil > Date.now()
-  return (
-    <div className="strip">
-      <span>
-        <i className={'live-dot' + (throttled ? ' warn' : '')} />
-        <b>{throttled ? 'Datakilden drosler, venter et øjeblik' : 'Live på Robinhood Chain'}</b>
-      </span>
-      <span className="sep">|</span>
-      <span>
-        ETH <span className="mono">{ethUsd ? '$' + ethUsd.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '…'}</span>
-      </span>
-      <span className="sep">|</span>
-      <span>
-        <span className="mono">{seen}</span> tokens fulgt i denne session
-      </span>
-      <span className="sep">|</span>
-      <span>Papirpenge. Ingen rigtig risiko.</span>
-    </div>
-  )
+  const acct = account(p)
+  const eq = equityEth(acct, pools, ethUsd)
+  return { acct, eq, pnl: eq - acct.start, ethUsd }
 }
 
 function ChainPicker() {
@@ -52,19 +36,19 @@ function ChainPicker() {
   const ref = useClickAway(open, setOpen)
   return (
     <div className="rel" ref={ref}>
-      <button className="chain-btn" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <span className="chain-mark">{ACTIVE_CHAIN.short}</span>
-        <span className="cname">{ACTIVE_CHAIN.name}</span>
-        <Icon name="chev" size={14} />
+      <button className="pill" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span className="chain-ic">{ACTIVE_CHAIN.short}</span>
+        <span className="hide-s">{ACTIVE_CHAIN.name}</span>
+        <Icon name="chev" size={12} />
       </button>
       {open && (
         <div className="pop" role="menu">
-          <h4>Kæde</h4>
+          <h4>Network</h4>
           {CHAINS.map((c) => (
             <button key={c.id} className="pop-item" disabled={!c.live} onClick={() => setOpen(false)}>
-              <span className={'chain-mark' + (c.live ? '' : ' off')}>{c.short}</span>
+              <span className={'chain-ic' + (c.live ? '' : ' off')}>{c.short.slice(0, 3)}</span>
               {c.name}
-              {c.live ? <span className="live">Live</span> : <span className="soon">Snart</span>}
+              <span className="tag" style={{ color: c.live ? 'var(--lime)' : 'var(--bronze)' }}>{c.live ? 'Live' : 'Soon'}</span>
             </button>
           ))}
         </div>
@@ -86,56 +70,59 @@ export function StartPicker({ value, onPick }) {
   )
 }
 
+export function ResetPanel({ onDone }) {
+  const [pick, setPick] = useState(null)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <span className="lbl u">Reset balance</span>
+      <StartPicker value={pick} onPick={setPick} />
+      <button
+        className="btn red block"
+        disabled={!pick}
+        onClick={() => {
+          resetAccount(pick)
+          setPick(null)
+          toast('ok', 'Balance reset', `Fresh start with ${pick} ETH.`)
+          onDone?.()
+        }}
+      >
+        <Icon name="reset" size={13} />
+        {pick ? `Reset to ${pick} ETH` : 'Pick a starting balance'}
+      </button>
+    </div>
+  )
+}
+
 function Wallet() {
   const [open, setOpen] = useState(false)
-  const [pick, setPick] = useState(null)
   const ref = useClickAway(open, setOpen)
-  const p = useStore(paper)
-  const pools = useStore(market, (s) => s.pools)
-  const ethUsd = useStore(market, (s) => s.ethUsd)
-  const acct = account(p)
-  const eq = equityEth(acct, pools, ethUsd)
-  const pnl = eq - acct.start
+  const { acct, eq, pnl, ethUsd } = useEquity()
   return (
     <div className="rel" ref={ref}>
-      <button className="bal-btn" onClick={() => setOpen(!open)} aria-expanded={open} title="Din papir-wallet">
-        <Icon name="wallet" size={15} />
-        <span className="eth">{fmtEth(acct.eth, 3)} ETH</span>
+      <button className="pill" onClick={() => setOpen(!open)} aria-expanded={open} title="Paper wallet">
+        <EthIcon />
+        <b>{fmtEth(acct.eth, 3)}</b>
+        <span className="sep" />
+        <span className={pnl >= 0 ? 'up' : 'down'}>{fmtPct((pnl / acct.start) * 100)}</span>
+        <Icon name="chev" size={12} />
       </button>
       {open && (
         <div className="pop wallet">
           <div>
-            <div className="label">Samlet værdi</div>
-            <div className="big">{fmtEth(eq)} ETH</div>
-            <div className={'mono ' + (pnl >= 0 ? 'up' : 'down')} style={{ fontSize: 13 }}>
-              {fmtSignedEth(pnl)} ETH ({fmtPct((pnl / acct.start) * 100)}) siden start
+            <span className="lbl u">Total value</span>
+            <div className="big" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><EthIcon size={18} />{fmtEth(eq)}</div>
+            <div className={pnl >= 0 ? 'up' : 'down'} style={{ fontWeight: 600 }}>
+              {fmtSignedEth(pnl)} ETH ({fmtPct((pnl / acct.start) * 100)}) all time
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div className="kv"><span>Fri ETH</span><span>{fmtEth(acct.eth)}</span></div>
-            <div className="kv"><span>I positioner</span><span>{fmtEth(eq - acct.eth)}</span></div>
-            <div className="kv"><span>Åbne positioner</span><span>{openPositions(acct).length}</span></div>
-            <div className="kv"><span>Startbeløb</span><span>{acct.start} ETH</span></div>
-            <div className="kv"><span>Værdi i USD</span><span>${fmtCompact(eq * ethUsd, 2)}</span></div>
+            <div className="kv"><span>Available</span><span>{fmtEth(acct.eth)} ETH</span></div>
+            <div className="kv"><span>In positions</span><span>{fmtEth(eq - acct.eth)} ETH</span></div>
+            <div className="kv"><span>Open positions</span><span>{openPositions(acct).length}</span></div>
+            <div className="kv"><span>Starting balance</span><span>{acct.start} ETH</span></div>
+            <div className="kv"><span>USD value</span><span>${fmtCompact(eq * ethUsd, 2)}</span></div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div className="label">Nulstil med nyt beløb</div>
-            <StartPicker value={pick} onPick={setPick} />
-            <button
-              className="btn danger block"
-              disabled={!pick}
-              style={{ opacity: pick ? 1 : 0.45 }}
-              onClick={() => {
-                resetAccount(pick)
-                setOpen(false)
-                setPick(null)
-                toast('ok', 'Wallet nulstillet', `Du starter forfra med ${pick} ETH.`)
-              }}
-            >
-              <Icon name="reset" size={15} />
-              {pick ? `Nulstil til ${pick} ETH` : 'Vælg et beløb'}
-            </button>
-          </div>
+          <ResetPanel onDone={() => setOpen(false)} />
         </div>
       )}
     </div>
@@ -160,9 +147,8 @@ function Search() {
     e.preventDefault()
     const s = q.trim()
     if (!s) return
-    const pools = market.get().pools
     const lower = s.toLowerCase()
-    const local = Object.values(pools).find((p) => p.pool === lower || p.tokenAddress === lower || p.symbol?.toLowerCase() === lower)
+    const local = Object.values(market.get().pools).find((p) => p.pool === lower || p.tokenAddress === lower || p.symbol?.toLowerCase() === lower.replace(/^\$/, ''))
     if (local) {
       location.hash = '#/t/' + local.pool
       setQ('')
@@ -170,55 +156,71 @@ function Search() {
     }
     setBusy(true)
     try {
-      const ids = await searchPools(s)
+      const ids = await searchPools(s.replace(/^\$/, ''))
       if (ids.length) {
         location.hash = '#/t/' + ids[0]
         setQ('')
-      } else toast('bad', 'Ingen resultater', `Fandt ingen token på Robinhood Chain for "${s}".`)
+      } else toast('bad', 'No results', `Nothing on Robinhood Chain matches "${s}".`)
     } catch {
-      toast('bad', 'Søgningen fejlede', 'Datakilden svarede ikke. Prøv igen om lidt.')
+      toast('bad', 'Search failed', 'The data source did not respond. Try again shortly.')
     }
     setBusy(false)
   }
   return (
     <form className="search" onSubmit={go}>
-      <Icon name="search" size={15} />
-      <input ref={input} id="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={busy ? 'Søger…' : 'Søg ticker, navn eller kontrakt'} autoComplete="off" />
+      <Icon name="search" size={14} />
+      <input ref={input} id="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={busy ? 'Searching…' : 'Search by token, ticker or CA…'} autoComplete="off" />
       <kbd>/</kbd>
     </form>
   )
 }
 
-export function Header({ route, theme, setTheme }) {
+export function TopBar({ route }) {
   return (
-    <header className="header">
+    <header className="top">
       <a href="#/" className="logo" aria-label="Paper Pulse">
-        <span className="orb" />
-        <span className="word">
-          Paper<em>pulse</em>
-        </span>
+        <Mark />
+        <span className="word">Paper Pulse</span>
       </a>
       <nav className="nav">
         <a href="#/" className={route.name === 'pulse' ? 'on' : ''}>Pulse</a>
-        <a href="#/portfolio" className={route.name === 'portfolio' ? 'on' : ''}>Portefølje</a>
+        <a href="#/portfolio" className={route.name === 'portfolio' ? 'on' : ''}>Portfolio</a>
       </nav>
       <Search />
-      <div className="hdr-right">
+      <div className="top-r">
         <ChainPicker />
-        <button className="icon-btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title={theme === 'dark' ? 'Lyst tema' : 'Mørkt tema'}>
-          <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={16} />
-        </button>
         <Wallet />
       </div>
     </header>
   )
 }
 
+export function StatusBar() {
+  const n = useStore(net)
+  const ethUsd = useStore(market, (s) => s.ethUsd)
+  const tracked = useStore(market, (s) => Object.keys(s.firstSeen).length)
+  const { pnl, acct } = useEquity()
+  const throttled = n.throttledUntil > Date.now()
+  return (
+    <footer className="status">
+      <span className="paper">PAPER</span>
+      <span><i className={'dot' + (throttled ? ' warn' : '')} />{throttled ? 'Rate limited, retrying' : 'Connection is stable'}</span>
+      <span className="hide-m"><b>Robinhood Chain</b></span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><EthIcon size={12} /><b>${ethUsd ? ethUsd.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '…'}</b></span>
+      <span className="hide-m">{tracked} pairs tracked</span>
+      <span className="r">
+        <span className="hide-m">Data: GeckoTerminal · DexScreener</span>
+        <span>PnL <b className={pnl >= 0 ? 'up' : 'down'}>{fmtSignedEth(pnl, 3)} ETH</b> <span className={pnl >= 0 ? 'up' : 'down'}>({fmtPct((pnl / acct.start) * 100)})</span></span>
+      </span>
+    </footer>
+  )
+}
+
 export function BottomNav({ route }) {
   return (
     <nav className="bottom-nav">
-      <a href="#/" className={route.name === 'pulse' ? 'on' : ''}><Icon name="pulse" size={20} />Pulse</a>
-      <a href="#/portfolio" className={route.name === 'portfolio' ? 'on' : ''}><Icon name="wallet" size={20} />Portefølje</a>
+      <a href="#/" className={route.name === 'pulse' ? 'on' : ''}><Icon name="pulse" size={19} />Pulse</a>
+      <a href="#/portfolio" className={route.name === 'portfolio' ? 'on' : ''}><Icon name="wallet" size={19} />Portfolio</a>
     </nav>
   )
 }
@@ -230,14 +232,12 @@ export function Onboarding() {
   return (
     <div className="scrim" role="dialog" aria-modal="true" aria-labelledby="ob-h">
       <div className="modal">
-        <span className="orb" style={{ width: 40, height: 40 }} />
-        <h2 id="ob-h">
-          Hvor mange <em>papir</em>-ETH vil du starte med?
-        </h2>
-        <p>Du trader rigtige memecoins fra Robinhood Chain med live priser, men med falske penge. Du kan nulstille og starte forfra når som helst fra din wallet.</p>
+        <Mark size={34} />
+        <h2 id="ob-h">Pick your paper balance</h2>
+        <p>Trade real Robinhood Chain memecoins at live prices with paper ETH. Fills include real price impact from each pool's liquidity. Reset any time from your wallet.</p>
         <StartPicker value={pick} onPick={setPick} />
-        <button className="btn neon lg block" onClick={() => resetAccount(pick)}>
-          Start med {pick} ETH
+        <button className="btn lime lg block" onClick={() => resetAccount(pick)}>
+          Start trading with {pick} ETH
         </button>
       </div>
     </div>

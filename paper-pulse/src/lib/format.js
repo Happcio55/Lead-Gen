@@ -56,10 +56,10 @@ export function fmtAge(ts, now = Date.now()) {
   const m = Math.floor(s / 60)
   if (m < 60) return m + 'm'
   const h = Math.floor(m / 60)
-  if (h < 24) return h + 't'
+  if (h < 24) return h + 'h'
   const d = Math.floor(h / 24)
   if (d < 30) return d + 'd'
-  return Math.floor(d / 30) + 'md'
+  return Math.floor(d / 30) + 'mo'
 }
 
 export function fmtTokens(n) {

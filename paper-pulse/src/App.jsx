@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { refreshPrices, market } from './lib/api.js'
-import { paper, account } from './lib/paper.js'
-import { storage } from './lib/store.js'
-import { Header, Strip, BottomNav, Onboarding } from './components/Header.jsx'
-import { Toasts } from './components/ui.jsx'
+import { paper, account, checkOrders, recordEquity } from './lib/paper.js'
+import { fmtEth, fmtSignedEth, fmtUsdC } from './lib/format.js'
+import { TopBar, StatusBar, BottomNav, Onboarding } from './components/Header.jsx'
+import { Toasts, toast } from './components/ui.jsx'
 import Pulse from './pages/Pulse.jsx'
 import TokenPage from './pages/TokenPage.jsx'
 import Portfolio from './pages/Portfolio.jsx'
@@ -18,7 +18,6 @@ function parseRoute() {
 
 export default function App() {
   const [route, setRoute] = useState(parseRoute)
-  const [theme, setTheme] = useState(() => storage.get('paperpulse:theme', 'dark'))
 
   useEffect(() => {
     const on = () => setRoute(parseRoute())
@@ -26,22 +25,40 @@ export default function App() {
     return () => window.removeEventListener('hashchange', on)
   }, [])
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    storage.set('paperpulse:theme', theme)
-  }, [theme])
-
-  // Keep held positions and the open token priced every few seconds.
+  // Keep held positions, open orders and the open token priced every few seconds.
   useEffect(() => {
     const tick = () => {
       if (document.hidden) return
-      const held = Object.values(account(paper.get()).positions).filter((p) => p.tokens > 0).map((p) => p.pool)
+      const acct = account(paper.get())
+      const held = Object.values(acct.positions).filter((p) => p.tokens > 0).map((p) => p.pool)
+      const ordered = acct.orders.map((o) => o.pool)
       const cur = parseRoute()
-      const ids = cur.name === 'token' ? [cur.id, ...held] : held
+      const ids = [...new Set([...(cur.name === 'token' ? [cur.id] : []), ...held, ...ordered])]
       if (ids.length) refreshPrices(ids)
     }
     tick()
     const id = setInterval(tick, 4000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Fill limit orders as prices move.
+  useEffect(() => {
+    let last = null
+    return market.subscribe(() => {
+      const pools = market.get().pools
+      if (pools === last) return
+      last = pools
+      for (const ev of checkOrders(pools)) {
+        const o = ev.order
+        if (ev.ok) toast('ok', `Limit ${o.side} filled · ${o.symbol}`, o.side === 'buy' ? `${fmtEth(ev.trade.eth)} ETH at ${fmtUsdC(ev.trade.mc)} MC` : `Realized ${fmtSignedEth(ev.trade.pnl)} ETH`)
+        else toast('bad', `Limit ${o.side} on ${o.symbol} cancelled`, ev.msg)
+      }
+    })
+  }, [])
+
+  // Equity curve sample every 30s.
+  useEffect(() => {
+    const id = setInterval(() => !document.hidden && recordEquity(), 30000)
     return () => clearInterval(id)
   }, [])
 
@@ -60,16 +77,12 @@ export default function App() {
 
   return (
     <div className="shell">
-      <div className="backdrop" aria-hidden="true" />
-      <Strip />
-      <Header route={route} theme={theme} setTheme={setTheme} />
+      <TopBar route={route} />
       {route.name === 'pulse' && <Pulse />}
-      {route.name === 'token' && <TokenPage key={route.id} id={route.id} theme={theme} />}
+      {route.name === 'token' && <TokenPage key={route.id} id={route.id} />}
       {route.name === 'portfolio' && <Portfolio />}
-      <footer className="footer">
-        Paper Pulse er en øvebane. Alle handler er simulerede med papirpenge mod live priser fra GeckoTerminal og DexScreener. Ingen rigtige penge, ingen wallet, ingen finansiel rådgivning.
-      </footer>
       <BottomNav route={route} />
+      <StatusBar />
       <Onboarding />
       <Toasts />
     </div>
