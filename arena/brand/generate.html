@@ -11,10 +11,12 @@
 <canvas id="banner" width="1500" height="500"></canvas>
 <canvas id="bannerScene" width="1500" height="500"></canvas>
 <canvas id="avatar" width="400" height="400"></canvas>
+<canvas id="articleCover" width="1500" height="600"></canvas>
+<canvas id="articleCast" width="1500" height="600"></canvas>
 <script src="../quantum.js"></script>
 <script src="../sprites.js"></script>
 <script>
-Promise.all(['500 18px "Martian Mono"', '500 10px "Martian Mono"', '700 30px "Schibsted Grotesk"'].map((f) => document.fonts.load(f))).then(function () {
+Promise.all(['500 18px "Martian Mono"', '500 10px "Martian Mono"', '500 15px "Martian Mono"', '700 30px "Schibsted Grotesk"'].map((f) => document.fonts.load(f))).then(function () {
   const { AGENTS } = Q;
   const BONE = '#f3e6c8', AMBER = '#ffb000', AMBER2 = '#c98400', SHADOW = '#4a2e08', INK = '#120c07', TEAL = '#34d1bf';
   const F = {
@@ -110,6 +112,45 @@ Promise.all(['500 18px "Martian Mono"', '500 10px "Martian Mono"', '700 30px "Sc
   sg.fillStyle = pool; sg.fillRect(0, 0, 1500, 500);
   const sc = 16, ww = 8 * 6 * sc - sc;
   word(sg, 'CITIZENS', Math.round((1500 - ww) / 2), Math.round((470 - 7 * sc) / 2), sc, false, true);
+  /* ---------- X article cover 1500×600 (5:2): the scene and the word ---------- */
+  (function () {
+    const c = document.getElementById('articleCover'), g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    const lw = 1500 / 4, lh = 600 / 4, lc = document.createElement('canvas'); lc.width = lw; lc.height = lh;
+    const LL = Sprites.makeLand(lw, lh, Math.round(lh * 0.86));
+    LL.trees = LL.trees.filter((t) => !(t.front && t.x > lw * 0.3 && t.x < lw * 0.7));
+    Sprites.paintLand(lc.getContext('2d'), LL, 3100, { moonX: 0.86 });
+    g.drawImage(lc, 0, 0, 1500, 600);
+    const pool = g.createRadialGradient(750, 290, 40, 750, 290, 560);
+    pool.addColorStop(0, 'rgba(18,12,7,.85)'); pool.addColorStop(0.55, 'rgba(18,12,7,.45)'); pool.addColorStop(1, 'rgba(18,12,7,0)');
+    g.fillStyle = pool; g.fillRect(0, 0, 1500, 600);
+    const sc = 16, ww = 8 * 6 * sc - sc;
+    word(g, 'CITIZENS', Math.round((1500 - ww) / 2), Math.round((560 - 7 * sc) / 2), sc, false, true);
+  })();
+
+  /* ---------- the cast 1500×600: seven citizens on the ground, names only ---------- */
+  (function () {
+    const c = document.getElementById('articleCast'), g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    const lw = 1500 / 4, lh = 600 / 4, lc = document.createElement('canvas'); lc.width = lw; lc.height = lh;
+    const LL = Sprites.makeLand(lw, lh, Math.round(lh * 0.8));
+    LL.trees = LL.trees.filter((t) => !(t.front && t.x > lw * 0.06 && t.x < lw * 0.94));
+    Sprites.paintLand(lc.getContext('2d'), LL, 5200, { moonX: 0.9 });
+    g.drawImage(lc, 0, 0, 1500, 600);
+    g.fillStyle = 'rgba(18,12,7,.35)'; g.fillRect(0, 0, 1500, 600);
+    const ground = LL.ground * 4;
+    const s = 10, step = 12 * s + 74, total = AGENTS.length * step - 74, x0 = Math.round((1500 - total) / 2);
+    AGENTS.forEach((a, i) => {
+      const x = x0 + i * step, y = ground - 14 * s + 6;
+      g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(x + 10, ground + 4, 12 * s - 20, 8);
+      Sprites.drawSprite(g, a.id, x, y, s, 0, a.glow);
+      g.font = '500 15px "Martian Mono"';
+      const w = g.measureText(a.name).width + 16;
+      g.fillStyle = BONE; g.fillRect(x + (12 * s - w) / 2, ground + 22, w, 26);
+      g.fillStyle = INK; g.fillText(a.name, x + (12 * s - w) / 2 + 8, ground + 40);
+      g.fillStyle = a.color; g.fillRect(x + (12 * s - w) / 2, ground + 48, w, 4);
+    });
+  })();
   window.BRAND_READY = true;
 });
 </script>
