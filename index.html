@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ironclad Forge</title>
+<meta name="description" content="Scan any memecoin on Robinhood Chain for rug vectors, and forge new ones with nothing to rug.">
+<meta name="theme-color" content="#06070a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Cpath d=%27M16 2 28 7l-1.6 12.4L16 30 5.6 19.4 4 7z%27 fill=%27%2306070a%27 stroke=%27%23f2b84b%27 stroke-width=%272%27/%3E%3Cpath d=%27M14 9h4v13h-4z%27 fill=%27%238ff0ff%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<canvas id="reactor" aria-hidden="true"></canvas>
+<div class="scanlines" aria-hidden="true"></div>
+<div class="frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<div class="reticle" id="reticle" aria-hidden="true"><span id="reticle-xy">000 · 000</span></div>
+
+<header class="topbar">
+  <a class="mark" href="#top" aria-label="Ironclad home">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 28 7l-1.6 12.4L16 30 5.6 19.4 4 7z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 9h4v13h-4z" fill="currentColor"/></svg>
+    <span>IRONCLAD</span>
+  </a>
+  <nav aria-label="Sections">
+    <a href="#armor">Armor</a>
+    <a href="#scanner">Scanner</a>
+    <a href="#forge">Forge</a>
+    <a href="#chain">Chain</a>
+  </nav>
+  <div class="topbar-right">
+    <button class="chip-btn" id="sound-toggle" type="button" aria-pressed="false">Sound off</button>
+    <span class="live-pill" id="live-pill"><b class="dot"></b><span id="live-pill-text">Linking chain</span></span>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero" data-shot="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Memecoin forge · Robinhood Chain · chain 4663</p>
+      <h1>Memecoins<br><span class="metal">with armor.</span></h1>
+      <p class="lede">Most memecoins die the same six ways: a hidden mint, a sell tax, a blacklist, a kill switch, swappable code or pulled liquidity. Ironclad scans any token on Robinhood Chain for all six, and forges new coins that ship with none of them.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#scanner">Scan a token</a>
+        <a class="btn btn-ghost" href="#forge">Forge a coin</a>
+      </div>
+    </div>
+
+    <aside class="hud-panel boot" aria-label="System status">
+      <div class="hud-head"><span>FORGE OS 1.0</span><span id="clock">--:--:-- UTC</span></div>
+      <ol class="boot-log" id="boot-log">
+        <li>Arc core <b class="ok">online</b></li>
+        <li>Robinhood Chain uplink <b id="boot-chain">linking</b></li>
+        <li>Bytecode scanner <b class="ok">6 vectors armed</b></li>
+        <li>Forge <b class="ok">IroncladToken loaded</b></li>
+      </ol>
+      <dl class="telemetry">
+        <div><dt>Block</dt><dd id="t-block">—</dd></div>
+        <div><dt>Gas</dt><dd id="t-gas">—</dd></div>
+        <div><dt>RPC</dt><dd id="t-rpc">—</dd></div>
+        <div><dt>Forge cost</dt><dd id="t-cost">—</dd></div>
+      </dl>
+    </aside>
+  </section>
+
+  <div class="ticker" aria-label="Rug vectors Ironclad seals">
+    <div class="ticker-track">
+      <span>Hidden mint</span><span>Sell tax 99%</span><span>Blacklist</span><span>Kill switch</span><span>Proxy swap</span><span>Liquidity pull</span><span>Trading gate</span><span>Wallet caps</span>
+      <span aria-hidden="true">Hidden mint</span><span aria-hidden="true">Sell tax 99%</span><span aria-hidden="true">Blacklist</span><span aria-hidden="true">Kill switch</span><span aria-hidden="true">Proxy swap</span><span aria-hidden="true">Liquidity pull</span><span aria-hidden="true">Trading gate</span><span aria-hidden="true">Wallet caps</span>
+    </div>
+  </div>
+
+  <!-- ARMOR -->
+  <section class="section armor" id="armor" data-shot="armor">
+    <div class="section-head">
+      <p class="eyebrow">Armor</p>
+      <h2>Six plates. Six ways a memecoin dies.</h2>
+      <p class="sub">Every rug needs a function to pull. These are the functions, the selectors the scanner hunts for in bytecode, and how an Ironclad coin is built without them.</p>
+    </div>
+    <div class="plates">
+      <article class="plate">
+        <header><span class="vec">Vector · mint</span><code>0x40c10f19</code></header>
+        <h3>Hidden mint</h3>
+        <p class="kill">The deployer prints a billion fresh tokens and sells them into your bid.</p>
+        <p class="seal"><b>Sealed.</b> Supply is set once in the constructor. No mint function exists.</p>
+      </article>
+      <article class="plate">
+        <header><span class="vec">Vector · tax</span><code>0x8b4cee08</code></header>
+        <h3>Sell tax trap</h3>
+        <p class="kill">Tax goes from 0% to 99% after launch. You can buy. You can't sell.</p>
+        <p class="seal"><b>Sealed.</b> Zero tax. A transfer moves exactly what you send.</p>
+      </article>
+      <article class="plate">
+        <header><span class="vec">Vector · blacklist</span><code>0x153b0d1e</code></header>
+        <h3>Blacklist</h3>
+        <p class="kill">Your wallet lands on a list. Your tokens stop moving.</p>
+        <p class="seal"><b>Sealed.</b> The contract keeps no address lists of any kind.</p>
+      </article>
+      <article class="plate">
+        <header><span class="vec">Vector · pause</span><code>0x8456cb59</code></header>
+        <h3>Kill switch</h3>
+        <p class="kill">One call freezes every transfer while insiders exit elsewhere.</p>
+        <p class="seal"><b>Sealed.</b> No owner, no pause, no admin role. Nobody holds a switch.</p>
+      </article>
+      <article class="plate">
+        <header><span class="vec">Vector · proxy</span><code>EIP-1967 slot</code></header>
+        <h3>Proxy swap</h3>
+        <p class="kill">The code you audited gets replaced overnight with code that drains you.</p>
+        <p class="seal"><b>Sealed.</b> Not a proxy, no delegatecall. The bytecode is final.</p>
+      </article>
+      <article class="plate plate-open">
+        <header><span class="vec">Vector · liquidity</span><code>LP tokens</code></header>
+        <h3>Liquidity pull</h3>
+        <p class="kill">The deployer withdraws the pool and the chart goes vertical, downward.</p>
+        <p class="seal"><b>Your move.</b> A token contract can't lock a pool it doesn't own. Burn or time-lock your LP tokens and post the transaction. The forge walks you through it.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- SCANNER -->
+  <section class="section scanner" id="scanner" data-shot="scanner">
+    <div class="section-head">
+      <p class="eyebrow">Threat analysis</p>
+      <h2>Scan before you ape.</h2>
+      <p class="sub">Paste any token address on Robinhood Chain. The scanner reads its bytecode straight from the chain, follows proxies, checks the owner and grades its armor. No server, no API key.</p>
+    </div>
+
+    <div class="scan-grid">
+      <form class="console" id="scan-form" novalidate>
+        <label for="scan-address">Token contract</label>
+        <input id="scan-address" name="address" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="0x…" value="0xffe3a1eac13123eaccb183c36a124565a7e6e66b">
+        <fieldset class="seg" id="scan-net">
+          <legend>Network</legend>
+          <label><input type="radio" name="net" value="mainnet" id="net-mainnet"><span>Mainnet · 4663</span></label>
+          <label><input type="radio" name="net" value="testnet" id="net-testnet" checked><span>Testnet · 46630</span></label>
+        </fieldset>
+        <button class="btn btn-primary btn-wide" type="submit" id="scan-btn">Run threat scan</button>
+        <div class="samples">
+          <span>Try</span>
+          <button type="button" class="chip-btn" data-addr="0xffe3a1eac13123eaccb183c36a124565a7e6e66b" data-net="testnet">VBX · testnet</button>
+          <button type="button" class="chip-btn" data-addr="0x0bd7d308f8e1639fab988df18a8011f41eacad73" data-net="mainnet">WETH · mainnet</button>
+          <button type="button" class="chip-btn" data-addr="0x5fc5360d0400a0fd4f2af552add042d716f1d168" data-net="mainnet">USDG · mainnet</button>
+        </div>
+        <ol class="scan-log" id="scan-log" aria-live="polite">
+          <li>Showing an example report captured from testnet. Run a scan to read live data.</li>
+        </ol>
+      </form>
+
+      <div class="report" id="report" data-verdict="ironclad">
+        <div class="report-top">
+          <div class="gauge" aria-hidden="true">
+            <svg viewBox="0 0 120 120">
+              <circle class="g-track" cx="60" cy="60" r="52"/>
+              <circle class="g-ticks" cx="60" cy="60" r="44"/>
+              <circle class="g-fill" id="g-fill" cx="60" cy="60" r="52" pathLength="100" stroke-dasharray="100 100"/>
+            </svg>
+            <div class="g-num"><b id="r-score">100</b><span>/100</span></div>
+          </div>
+          <div class="report-id">
+            <p class="tag" id="r-tag">Example report</p>
+            <p class="verdict" id="r-verdict">Ironclad</p>
+            <p class="token" id="r-token">VIBEX <span>VBX</span></p>
+            <p class="addr" id="r-addr">0xffe3…e66b · testnet</p>
+          </div>
+        </div>
+        <dl class="facts">
+          <div><dt>Supply</dt><dd id="r-supply">1B</dd></div>
+          <div><dt>Decimals</dt><dd id="r-decimals">18</dd></div>
+          <div><dt>Bytecode</dt><dd id="r-bytes">15,408 B</dd></div>
+          <div><dt>Plates sealed</dt><dd id="r-sealed">9 / 9</dd></div>
+        </dl>
+        <ul class="checks" id="r-checks">
+          <li data-s="ok"><b>Token standard</b><span>Answers name, symbol, decimals and totalSupply like an ERC-20.</span></li>
+          <li data-s="ok"><b>Owner</b><span>No owner() function. Nobody holds admin keys through the standard pattern.</span></li>
+          <li data-s="ok"><b>Upgradeable</b><span>Not a proxy. The code you see is the code that runs.</span></li>
+          <li data-s="ok"><b>Hidden mint</b><span>No hidden mint functions found.</span></li>
+          <li data-s="ok"><b>Adjustable tax</b><span>No adjustable tax functions found.</span></li>
+          <li data-s="ok"><b>Blacklist</b><span>No blacklist functions found.</span></li>
+          <li data-s="ok"><b>Kill switch</b><span>No kill switch functions found.</span></li>
+          <li data-s="ok"><b>Trading gate</b><span>No trading gate functions found.</span></li>
+          <li data-s="ok"><b>Wallet limits</b><span>No wallet limits functions found.</span></li>
+        </ul>
+        <p class="report-foot"><a id="r-explorer" href="https://explorer.testnet.chain.robinhood.com/address/0xffe3a1eac13123eaccb183c36a124565a7e6e66b" target="_blank" rel="noopener">Open in explorer</a><span>Heuristic scan. It reads standard function selectors and can miss custom rug logic. Issuer-run tokens like stablecoins score low by design.</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORGE -->
+  <section class="section forge" id="forge" data-shot="forge">
+    <div class="section-head">
+      <p class="eyebrow">Forge</p>
+      <h2>Forge a coin with nothing to rug.</h2>
+      <p class="sub">Name it, size it, deploy it from your own wallet. The whole supply lands in your wallet, and the contract has no owner, no mint and no tax from its first block.</p>
+    </div>
+
+    <div class="forge-grid">
+      <form class="console" id="forge-form" novalidate>
+        <label for="f-name">Name</label>
+        <input id="f-name" type="text" maxlength="32" value="Diamond Plate" autocomplete="off">
+        <label for="f-symbol">Ticker</label>
+        <input id="f-symbol" type="text" maxlength="11" value="PLATE" autocomplete="off" spellcheck="false">
+        <label for="f-supply">Supply, in whole tokens</label>
+        <input id="f-supply" type="text" inputmode="numeric" value="1000000000" autocomplete="off">
+        <div class="samples">
+          <span>Presets</span>
+          <button type="button" class="chip-btn" data-supply="1000000000">1B</button>
+          <button type="button" class="chip-btn" data-supply="69000000000">69B</button>
+          <button type="button" class="chip-btn" data-supply="420690000000000">420.69T</button>
+        </div>
+        <fieldset class="seg" id="forge-net">
+          <legend>Deploy to</legend>
+          <label><input type="radio" name="fnet" value="testnet" id="fnet-testnet" checked><span>Testnet first</span></label>
+          <label><input type="radio" name="fnet" value="mainnet" id="fnet-mainnet"><span>Mainnet</span></label>
+        </fieldset>
+        <button class="btn btn-primary btn-wide" type="submit" id="forge-btn">Connect wallet and forge</button>
+        <p class="form-msg" id="forge-msg" role="status">Needs a browser wallet such as MetaMask or Rabby. Testnet ETH comes from the Robinhood Chain faucet.</p>
+      </form>
+
+      <div class="spec">
+        <div class="coin-stage" aria-hidden="true">
+          <div class="coin" id="coin">
+            <div class="coin-face front"><span id="coin-ticker">PLATE</span></div>
+            <div class="coin-face back"><span>IRONCLAD</span></div>
+          </div>
+        </div>
+        <dl class="spec-list">
+          <div><dt>Token</dt><dd id="s-token">Diamond Plate (PLATE)</dd></div>
+          <div><dt>Supply</dt><dd id="s-supply">1,000,000,000</dd></div>
+          <div><dt>Owner functions</dt><dd>0</dd></div>
+          <div><dt>Tax</dt><dd>0% buy · 0% sell</dd></div>
+          <div><dt>Contract</dt><dd id="s-bytes">IroncladToken</dd></div>
+        </dl>
+        <ol class="steps">
+          <li><b>Forge.</b> Deploy from this page. You hold 100% of supply.</li>
+          <li><b>Pair.</b> Add liquidity on a Robinhood Chain DEX.</li>
+          <li><b>Lock.</b> Burn the LP tokens or put them in a public time-lock.</li>
+          <li><b>Prove it.</b> Scan your token here and post the report with the lock transaction.</li>
+        </ol>
+        <details class="source">
+          <summary>Read the contract</summary>
+          <pre id="sol-source">Loading source…</pre>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHAIN -->
+  <section class="section chain" id="chain" data-shot="chain">
+    <div class="section-head">
+      <p class="eyebrow">Network</p>
+      <h2>Built on Robinhood Chain.</h2>
+      <p class="sub">Robinhood Chain is an Arbitrum-based layer 2 with gas paid in ETH. Fees are a fraction of a cent, which is what makes scanning everything and forging small coins practical.</p>
+    </div>
+    <div class="net-wrap">
+      <table class="net-table">
+        <thead><tr><th scope="col"></th><th scope="col">Mainnet</th><th scope="col">Testnet</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Chain ID</th><td>4663</td><td>46630</td></tr>
+          <tr><th scope="row">Gas token</th><td>ETH</td><td>ETH</td></tr>
+          <tr><th scope="row">Public RPC</th><td><code>rpc.mainnet.chain.robinhood.com</code></td><td><code>rpc.testnet.chain.robinhood.com</code></td></tr>
+          <tr><th scope="row">Explorer</th><td><a href="https://robinhoodchain.blockscout.com" target="_blank" rel="noopener">robinhoodchain.blockscout.com</a></td><td><a href="https://explorer.testnet.chain.robinhood.com" target="_blank" rel="noopener">explorer.testnet.chain.robinhood.com</a></td></tr>
+          <tr><th scope="row">Latest block</th><td id="n-main-block">—</td><td id="n-test-block">—</td></tr>
+          <tr><th scope="row">Wallet</th><td><button class="chip-btn" type="button" data-addnet="mainnet">Add to wallet</button></td><td><button class="chip-btn" type="button" data-addnet="testnet">Add to wallet</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <p><b>IRONCLAD</b> is an independent project. It is not affiliated with or endorsed by Robinhood. The scanner is a heuristic and can miss rug logic it doesn't recognize. The contract is unaudited and short enough to read yourself. Nothing here is financial advice.</p>
+  <p class="foot-status" id="foot-status">FORGE OS 1.0 · all systems nominal</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/environments/RoomEnvironment.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/MaskPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="assets/forge-artifact.js"></script>
+<script src="assets/scanner.js"></script>
+<script src="assets/scene.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

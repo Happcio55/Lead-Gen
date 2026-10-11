@@ -1,0 +1,12 @@
+{
+  "name": "ironclad",
+  "private": true,
+  "description": "Anti-rug memecoin scanner and forge for Robinhood Chain",
+  "scripts": {
+    "build:contract": "node scripts/build-contract.js",
+    "serve": "npx --yes http-server@14.1.1 -p 8080 -c-1 ."
+  },
+  "devDependencies": {
+    "solc": "0.8.24"
+  }
+}
