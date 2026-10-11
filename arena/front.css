@@ -1,4 +1,4 @@
-/* Model Citizens front: warm black, amber phosphor, bone paper and one teal signal.
+/* Citizens front: warm black, amber phosphor, bone paper and one teal signal.
    Layout: sticky nav → asymmetric hero (bitmap wordmark left, police lineup right) → citizen ID cards on bone paper → scroll-pinned amber CRT. */
 .intro {
   --ink: #120c07; --ink2: #1a120a; --ink3: #241a0e; --rule: #3a2a18;
@@ -24,8 +24,7 @@
 /* nav */
 .nav-f { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 28px; padding: 12px clamp(16px, 4vw, 56px); padding-top: calc(12px + env(safe-area-inset-top, 0px)); background: rgba(18,12,7,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); }
 .nf-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.nf-logo canvas { width: 36px; height: 21px; image-rendering: pixelated; }
-.nf-logo::after { content: "Model Citizens"; font: 700 17px var(--f-sans); letter-spacing: -.02em; color: var(--bone); }
+.nf-logo canvas { width: 52px; height: 34px; image-rendering: pixelated; }
 .nf-links { display: flex; gap: 22px; }
 .nf-links a, .nf-links button { font: 12px var(--f-mono); color: var(--bone2); text-decoration: none; background: none; border: 0; padding: 0; cursor: pointer; }
 .nf-links a:hover, .nf-links button:hover { color: var(--amber); }
@@ -114,7 +113,6 @@
 }
 @media (max-width: 560px) {
   .nav-f { gap: 12px; }
-  .nf-logo::after { font-size: 15px; }
   .nf-live { display: none; }
   .nav-f .b-amber { margin-left: auto; padding: 9px 11px; font-size: 11px; }
   .hf-stats { grid-template-columns: repeat(2, auto); }

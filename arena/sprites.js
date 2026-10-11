@@ -47,6 +47,54 @@
     return c;
   }
 
+
+  /* ---------- the mark: a shaded pixel bowler hat whose band carries the seven citizen colours ---------- */
+  function drawHat(g, ox, oy, s) {
+    const W = 26, H = 17, cx = 12.5;
+    const SH = ['#fffaf0', '#f3e6c8', '#d8c69c', '#a8875a', '#6b4e28'];
+    const shade = (lit, x, y) => { const L = Math.max(0, Math.min(4, (0.75 - lit) / 0.32)); const base = Math.floor(L); return SH[Math.min(4, base + (L - base > bayer(x, y) ? 1 : 0))]; };
+    const grid = Array.from({ length: H }, () => new Array(W).fill(null));
+    // crown: a tall rounded dome on a short drum
+    const rx = 7, top = 1, domeH = 8, drumBottom = 12;
+    for (let y = top; y < drumBottom; y++) for (let x = 0; x < W; x++) {
+      const dx = (x + 0.5 - cx) / rx;
+      const dy = y < top + domeH ? (y + 0.5 - (top + domeH)) / domeH : 0;
+      if (dx * dx + dy * dy > 1) continue;
+      const lit = -dx * 0.6 - dy * 0.5 + 0.1;
+      grid[y][x] = shade(lit, x, y);
+    }
+    // hatband: one stripe per citizen
+    const cols = [];
+    for (let x = 0; x < W; x++) if (grid[10][x]) cols.push(x);
+    for (let y = 9; y < 12; y++) cols.forEach((x, i) => {
+      if (!grid[y][x]) return;
+      const a = AGENTS[Math.min(AGENTS.length - 1, Math.floor((i / cols.length) * AGENTS.length))];
+      grid[y][x] = y === 9 ? a.glow : a.color;
+    });
+    // brim: narrow, curled up at both ends
+    const bcy = 13, brx = 11.6, bry = 2.1;
+    for (let y = 11; y < H; y++) for (let x = 0; x < W; x++) {
+      const dx = (x + 0.5 - cx) / brx;
+      const curl = Math.abs(dx) > 0.78 ? 1 : 0;
+      const dy = (y + 0.5 + curl - bcy) / bry;
+      if (dx * dx + dy * dy > 1) continue;
+      if (grid[y][x] && y < 12) continue;
+      grid[y][x] = y + curl > bcy + 0.5 ? (y + curl > bcy + 1.2 ? SH[4] : SH[3]) : shade(-dx * 0.7 + 0.15, x, y);
+    }
+    // outline everything in ink
+    const ink = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!grid[y][x] && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => grid[y + b] && grid[y + b][x + a])) ink.push([x, y]);
+    for (const [x, y] of ink) grid[y][x] = '#120c07';
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (grid[y][x]) { g.fillStyle = grid[y][x]; g.fillRect(ox + x * s, oy + y * s, s, s); }
+    return { w: W * s, h: H * s };
+  }
+  function hatCanvas(s = 1) {
+    const c = document.createElement('canvas');
+    c.width = 26 * s; c.height = 17 * s;
+    drawHat(c.getContext('2d'), 0, 0, s);
+    return c;
+  }
+
   /* ---------- the night landscape (shared by the desk wallpaper and the TV scene) ---------- */
   function makeLand(w, h, ground) {
     const stars = Array.from({ length: Math.floor(w * h / 95) }, () => ({ x: Math.random() * w | 0, y: Math.random() * ground * 0.8 | 0, p: Math.random() * 6.3, s: 0.4 + Math.random() * 1.2 }));
@@ -235,5 +283,5 @@
     requestAnimationFrame(draw);
   }
 
-  global.Sprites = { portrait, floor, wallpaper, drawSprite, makeLand, paintLand, ivy, bayer };
+  global.Sprites = { portrait, floor, wallpaper, drawSprite, makeLand, paintLand, ivy, bayer, drawHat, hatCanvas };
 })(window);

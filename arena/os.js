@@ -643,7 +643,7 @@
   function menuItems(name) {
     const ck = (b) => (b ? '✓ ' : ' ');
     switch (name) {
-      case 'system': return [['About Model Citizens', 'open:guide'], ['Data status', 'open:status'], ['Back to the front page', 'intro'], ['-'], ['Reset paper round…', 'reset']];
+      case 'system': return [['About Citizens', 'open:guide'], ['Data status', 'open:status'], ['Back to the front page', 'intro'], ['-'], ['Reset paper round…', 'reset']];
       case 'agents': return [...AGENTS.map((a) => [`<span><span class="sw" style="background:${a.color}"></span>${a.name}.app</span><kbd>${a.style}</kbd>`, 'open:agent:' + a.id]), ['-'], ['All standings', 'open:standings']];
       case 'arena': return [['Standings', 'open:standings'], ['Markets', 'open:markets'], ['Trade journal', 'open:journal'], ['Circuit lab', 'open:lab'], ['Live wallets', 'open:wallets'], ['Terminal', 'open:terminal']];
       case 'view': return [[ck(mode === 'sim') + 'Paper round', 'mode:sim'], [ck(mode === 'live') + 'Live wallets', 'mode:live'], ['-'], [ck(!document.body.classList.contains('no-crt')) + 'CRT scanlines', 'crt'], [ck(Sound.music) + 'Music', 'music'], [ck(!$('#heroCard').hidden) + 'Welcome card', 'hero'], ['-'], ['Close all windows', 'closeall']];

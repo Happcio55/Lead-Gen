@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Model Citizens brand kit</title>
+<title>Citizens brand kit</title>
 <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;500&family=Schibsted+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <style>body{margin:0;background:#120c07;color:#f3e6c8;font:14px "Martian Mono",monospace;padding:20px;display:grid;gap:20px}canvas{display:block;max-width:100%;image-rendering:pixelated}</style>
 </head>
 <body>
-<p>Model Citizens brand kit. Banner 1500×500 (X header) and avatar 400×400. Regenerate by opening this page.</p>
+<p>Citizens brand kit. Banner 1500×500 (X header) and avatar 400×400. Regenerate by opening this page.</p>
 <canvas id="banner" width="1500" height="500"></canvas>
 <canvas id="avatar" width="400" height="400"></canvas>
 <script src="../quantum.js"></script>
@@ -61,8 +61,8 @@ Promise.all(['500 18px "Martian Mono"', '500 10px "Martian Mono"', '700 30px "Sc
   // kicker
   bg.fillStyle = TEAL; bg.fillRect(250, 82, 10, 10);
   bg.font = '500 18px "Martian Mono"'; bg.fillStyle = AMBER; bg.fillText('ROBINHOOD CHAIN · MAINNET · LIVE', 274, 93);
-  word(bg, 'MODEL', 250, 118, 11, true);
-  word(bg, 'CITIZENS', 250, 218, 11, false);
+  Sprites.drawHat(bg, 250, 120, 5);
+  word(bg, 'CITIZENS', 420, 128, 12, false);
   bg.font = '700 30px "Schibsted Grotesk"'; bg.fillStyle = BONE;
   bg.fillText('Seven language models walk into', 250, 352);
   bg.fillText('a meme coin market.', 250, 388);
@@ -80,20 +80,21 @@ Promise.all(['500 18px "Martian Mono"', '500 10px "Martian Mono"', '700 30px "Sc
     bg.fillStyle = INK; bg.fillText(label, x + (12 * s - w) / 2 + 5, ground + 27);
   });
 
-  /* ---------- avatar 400×400 ---------- */
+  /* ---------- avatar 400×400: the hat, no text ---------- */
   const av = document.getElementById('avatar'), ag = av.getContext('2d');
-  ag.fillStyle = AMBER; ag.fillRect(0, 0, 400, 400);
-  // dithered sunburst rings inside the circle-safe area
+  const G = 4; // virtual pixel
+  ag.fillStyle = INK; ag.fillRect(0, 0, 400, 400);
   for (let y = 0; y < 100; y++) for (let x = 0; x < 100; x++) {
-    const d = Math.hypot(x - 50, y - 50);
-    if (d < 46 && (Math.sin(d * 0.9) * 0.5 + 0.5) * 0.35 > Sprites.bayer(x, y)) { ag.fillStyle = '#e09a00'; ag.fillRect(x * 4, y * 4, 4, 4); }
+    const d = Math.hypot(x - 50, y - 47) / 46;
+    const v = 1 - d;
+    if (v > 0 && v * 1.25 > Sprites.bayer(x, y)) { ag.fillStyle = v > 0.55 ? '#ffb000' : v > 0.3 ? '#c98400' : '#6b4400'; ag.fillRect(x * G, y * G, G, G); }
   }
-  hat(ag, 200 - 12 * 11, 118, 22);
-  // redraw MC in ink for contrast on amber
-  (function () {
-    let cx = 200 - 55;
-    for (const ch of 'MC') { const gl = F[ch]; for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++) if (gl[r][c] === '1') { ag.fillStyle = INK; ag.fillRect(cx + c * 10, 290 + r * 10, 10, 10); } cx += 60; }
-  })();
+  // stars outside the glow
+  for (let i = 0; i < 40; i++) { const x = (i * 37) % 100, y = (i * 61) % 100; if (Math.hypot(x - 50, y - 47) > 44) { ag.fillStyle = i % 3 ? '#d8c69c' : '#fffaf0'; ag.fillRect(x * G, y * G, G, G); } }
+  // shadow on the ground, then the hat
+  for (let x = 0; x < 40; x++) for (let y = 0; y < 4; y++) { const dx = (x - 20) / 20, dy = (y - 1.5) / 2; if (dx * dx + dy * dy < 1) { ag.fillStyle = 'rgba(18,12,7,.55)'; ag.fillRect(120 + x * 4, 282 + y * 4, 4, 4); } }
+  const hs = 10;
+  Sprites.drawHat(ag, Math.round(200 - (26 * hs) / 2), Math.round(192 - (17 * hs) / 2), hs);
   window.BRAND_READY = true;
 });
 </script>

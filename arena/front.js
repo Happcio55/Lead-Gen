@@ -1,4 +1,4 @@
-/* Model Citizens front page: pixel wordmark, the lineup, citizen ID cards with live stats, and the
+/* Citizens front page: pixel wordmark, the lineup, citizen ID cards with live stats, and the
    scroll-pinned monitor that boots, connects to mainnet and dives into the desk. */
 (function () {
   'use strict';
@@ -37,7 +37,7 @@
         }
         for (let r = 0; r < 7; r++) for (let c = 0; c < gl[r].length; c++) if (gl[r][c] === '1') {
           // clean bands: a lit top edge, the face, and a darker base row
-          g.fillStyle = li === 0 ? (r === 0 ? '#ffd36b' : r >= 5 ? AMBER2 : AMBER) : (r === 0 ? '#fffaf0' : r >= 5 ? '#d8c69c' : BONE);
+          g.fillStyle = r === 0 ? '#fffaf0' : r >= 5 ? '#d8c69c' : BONE;
           g.fillRect(x + c, y0 + r, 1, 1);
         }
         x += gl[0].length + 1;
@@ -46,12 +46,13 @@
     return { W, H };
   }
   function logoMark(cv) {
-    // a pixel bowler hat: the model citizen
-    const rows = ['....oooo....', '...obbbbo...', '..obbbbbbo..', '..obbbbbbo..', '..ollllllo..', '.obbbbbbbbo.', 'oooooooooooo'];
-    cv.width = 12; cv.height = 7;
-    const g = cv.getContext('2d');
-    const pal = { o: INK, b: BONE, l: AMBER };
-    rows.forEach((r, y) => [...r].forEach((k, x) => { if (k !== '.') { g.fillStyle = pal[k]; g.fillRect(x, y, 1, 1); } }));
+    const hc = Sprites.hatCanvas(1);
+    cv.width = hc.width; cv.height = hc.height;
+    cv.getContext('2d').drawImage(hc, 0, 0);
+    // the same hat is the favicon
+    const fav = document.createElement('canvas'); fav.width = fav.height = 32;
+    const fg = fav.getContext('2d'); fg.fillStyle = INK; fg.fillRect(0, 0, 32, 32); fg.drawImage(hc, 3, 7);
+    const link = document.getElementById('favicon'); if (link) link.href = fav.toDataURL('image/png');
   }
 
   /* ---------- lineup ---------- */
@@ -210,14 +211,9 @@
     const bw = Math.min(62, Math.round(monW * 0.42)), bx = M.cx - Math.round(bw / 2), by = chinY + Math.round(chinH / 2) - 2;
     rect(c, bx - 1, by - 1, bw + 2, 6, C4); rect(c, bx, by, bw, 4, '#1d150c');
     const MINI = { M: ['101', '111', '101', '101'], O: ['111', '101', '101', '111'], D: ['110', '101', '101', '110'], E: ['111', '110', '100', '111'], L: ['100', '100', '100', '111'], C: ['111', '100', '100', '111'], I: ['111', '010', '010', '111'], T: ['111', '010', '010', '010'], Z: ['111', '001', '100', '111'], N: ['101', '111', '111', '101'], S: ['011', '110', '011', '110'] };
-    let lx = bx + 2;
-    const label = bw >= 58 ? 'MODEL CITIZENS' : 'CITIZENS';
-    for (const ch of label) {
-      if (ch === ' ') { lx += 2; continue; }
-      if (lx + 3 > bx + bw - 1) break;
-      MINI[ch].forEach((r, yy) => [...r].forEach((b, xx) => { if (b === '1') rect(c, lx + xx, by + yy, 1, 1, AMBER); }));
-      lx += 4;
-    }
+    // badge: the hatband, one stripe per citizen
+    const seg = Math.max(1, Math.floor((bw - 4) / AGENTS.length));
+    AGENTS.forEach((a, i) => rect(c, bx + 2 + i * seg, by + 1, seg, 2, a.color));
     M.led = { x: monX + monW - Math.round(monW * 0.1), y: chinY + Math.round(chinH / 2) - 1 };
     for (let i = 0; i < 3; i++) rect(c, monX + Math.round(monW * 0.08) + i * 6, chinY + Math.round(chinH / 2) - 1, 4, 2, C3);
     // base unit with floppy drive
@@ -260,7 +256,7 @@
       return `${t.sym.toUpperCase().slice(0, 9).padEnd(9)} ${ev[t.addr].score >= 0 ? '+' : ''}${ev[t.addr].score.toFixed(2)}`;
     };
     return [
-      'CITIZEN/OS 1.0 · MODEL CITIZENS',
+      'CITIZEN/OS 1.0 · CITIZENS',
       'MEMORY 7 CITIZENS ............... OK',
       'NET    ROBINHOOD CHAIN 4663 ..... ' + (h ? 'OK' : '..'),
       '       BLOCK ' + (h ? '#' + fmtN(h.number) + '  GAS ' + h.gasGwei.toFixed(4) : 'syncing' + dots),
@@ -346,7 +342,7 @@
   });
 
   function init() {
-    const wm = $('#wordmark'); const dims = wordmark(wm, ['MODEL', 'CITIZENS']);
+    const wm = $('#wordmark'); const dims = wordmark(wm, ['CITIZENS']);
     wm.style.aspectRatio = `${dims.W} / ${dims.H}`;
     logoMark($('#logoMark'));
     buildLineup(); buildIds(); layoutMon();

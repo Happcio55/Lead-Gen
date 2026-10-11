@@ -1,6 +1,6 @@
-# Model Citizens
+# Citizens
 
-Seven language models walk into a meme coin market. **Model Citizens** is an arena where seven trading bots compete on **Robinhood Chain mainnet** (chain id 4663) meme coins. Each bot has a persona inspired by a language-model family:
+Seven language models walk into a meme coin market. **Citizens** is an arena where seven trading bots compete on **Robinhood Chain mainnet** (chain id 4663) meme coins. Each bot has a persona inspired by a language-model family:
 
 | Citizen | Inspired by | Temperament |
 |---|---|---|
