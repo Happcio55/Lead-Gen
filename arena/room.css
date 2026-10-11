@@ -1,0 +1,77 @@
+/* Front: a pixel living room at night. The TV shows teletext in the eight broadcast colours; a remote control flips pages. */
+.intro { position: relative; background: #110d1b; color: #f4f4f4; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* top strip */
+.qbar { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); left: 16px; right: 16px; z-index: 30; display: flex; align-items: center; gap: 16px; pointer-events: none; }
+.qbar > * { pointer-events: auto; }
+.qlogo { font: 34px/1 "Jersey 10", "Silkscreen", monospace; letter-spacing: .02em; color: #f4f4f4; display: flex; align-items: baseline; gap: 6px; text-shadow: 3px 3px 0 #000; }
+.qlogo b { font-weight: 400; color: #050407; background: #ffe23b; padding: 0 6px; text-shadow: none; }
+.qlogo small { font: 12px "Silkscreen", monospace; color: #3beeff; margin-left: 6px; text-shadow: none; }
+.qlive { margin-left: auto; font: 18px "VT323", monospace; color: #f4f4f4; background: rgba(5,4,7,.7); padding: 4px 10px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.qlive i { width: 8px; height: 8px; background: #ff3b3b; animation: blink 1.2s steps(2) infinite; }
+.qbtn { font: 20px/1 "Jersey 10", "Silkscreen", monospace; letter-spacing: .04em; color: #050407; background: #3beeff; border: 0; padding: 8px 14px 6px; cursor: pointer; box-shadow: 4px 4px 0 #050407; }
+.qbtn:hover { background: #ffe23b; }
+.qbtn:active { transform: translate(4px, 4px); box-shadow: none; }
+
+/* room + tv */
+.room-track { position: relative; height: 760vh; }
+.room-sticky { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: #110d1b; }
+.tv-stage { position: absolute; inset: 0; will-change: transform; }
+.room-cv { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.tv-screen { position: absolute; overflow: hidden; background: #050407; border-radius: 10% / 13%; --pw: 0; }
+.tv-screen.on { box-shadow: 0 0 60px rgba(120,160,255,.18); }
+.tt-wrap { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.tt-wrap::before { content: ""; position: absolute; inset: 0; transform: scale(var(--pw), calc(var(--pw) * var(--pw))); }
+.tv-screen:not(.on) .tt-wrap { visibility: hidden; }
+.tv-screen .tt-wrap { opacity: var(--pw); filter: brightness(calc(1 + (1 - var(--pw)) * 3)); }
+.tt { position: absolute; inset: 0; font: 20px/20px "VT323", monospace; white-space: pre; color: #f4f4f4; text-shadow: 0 0 4px rgba(255,255,255,.35); }
+.tt-row { height: 20px; display: flex; }
+.tt-row > * { display: block; flex: none; height: 20px; }
+.tt-row.dh > * { transform: scaleY(2); transform-origin: top; }
+.tt-go, .tt a { font: inherit; border: 0; padding: 0; margin: 0; background: transparent; cursor: pointer; text-decoration: none; text-shadow: inherit; white-space: pre; }
+.tt-go:hover, .tt a:hover { filter: brightness(1.4); text-decoration: underline; }
+.tt.reveal .tt-row { animation: ttin 0s steps(1) both; animation-delay: calc(var(--i) * 22ms); }
+@keyframes ttin { from { visibility: hidden; } }
+.tt-mosaic { position: absolute; left: 0; top: 0; image-rendering: pixelated; pointer-events: none; filter: drop-shadow(0 0 3px rgba(255,255,255,.25)); }
+.tv-noise { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; opacity: 0; mix-blend-mode: screen; pointer-events: none; }
+.tv-glass { position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(160deg, rgba(255,255,255,.09) 0%, transparent 28%), repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,.7)); }
+.vcr { position: absolute; display: grid; place-items: center; font-family: "VT323", monospace; line-height: 1; color: #3bff6e; text-shadow: 0 0 6px rgba(59,255,110,.8); letter-spacing: .06em; pointer-events: none; }
+.tv-flash { position: absolute; inset: 0; background: #f4f4f4; opacity: 0; pointer-events: none; z-index: 5; }
+.room-cue { position: absolute; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); margin: 0; font: 18px "VT323", monospace; color: #050407; background: #ffe23b; padding: 3px 10px; white-space: nowrap; transition: opacity .3s; z-index: 6; box-shadow: 3px 3px 0 #050407; }
+
+/* remote control */
+.remote { position: fixed; z-index: 35; right: clamp(12px, 3vw, 40px); top: 50%; transform: translateY(-46%) rotate(4deg); width: 108px; padding: 14px 12px 16px; display: grid; gap: 12px; justify-items: center;
+  background: linear-gradient(90deg, #26222c 0 6px, #1b1820 6px calc(100% - 6px), #121016 calc(100% - 6px)); box-shadow: 0 0 0 2px #050407, 6px 8px 0 rgba(0,0,0,.45); border-radius: 18px 18px 26px 26px; }
+.rm-top { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+.rm-ir { width: 22px; height: 6px; background: #3a0d14; border-radius: 3px; box-shadow: inset 0 0 0 1px #5a1620; }
+.rm-num { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.rk { width: 26px; height: 22px; border: 0; padding: 0; cursor: pointer; font: 15px/1 "VT323", monospace; color: #f4f4f4; background: #3a3542; border-radius: 6px; box-shadow: 0 3px 0 #0b0a0e, inset 0 1px 0 #5a5466; }
+.rk:hover { background: #4a4454; }
+.rk:active, .rk.on { transform: translateY(2px); box-shadow: 0 1px 0 #0b0a0e; background: #ffe23b; color: #050407; }
+.rk.pwr { background: #c22a2a; width: 24px; border-radius: 12px; box-shadow: 0 3px 0 #5a0d0d, inset 0 1px 0 #ff6a6a; }
+.rk.txt { font-size: 12px; }
+.rm-fast { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; width: 100%; }
+.fk { height: 12px; border: 0; padding: 0; cursor: pointer; border-radius: 3px; box-shadow: 0 2px 0 #0b0a0e; }
+.fk.r { background: #ff3b3b; } .fk.g { background: #3bff6e; } .fk.y { background: #ffe23b; } .fk.c { background: #3beeff; }
+.fk:active, .fk.on { transform: translateY(2px); box-shadow: none; outline: 2px solid #f4f4f4; }
+.rm-pad { display: grid; grid-template-columns: 1fr; gap: 6px; justify-items: center; }
+.rk.ch { width: 52px; font-size: 14px; }
+.rk.ok { width: 44px; height: 44px; border-radius: 50%; background: #3beeff; color: #050407; font-size: 18px; box-shadow: 0 3px 0 #0b5a66, inset 0 2px 0 #b8faff; }
+.rm-brand { font: 16px "Jersey 10", monospace; color: #8a8494; letter-spacing: .1em; }
+
+@media (max-width: 760px) {
+  .qlogo { font-size: 28px; }
+  .qlogo small, .qlive { display: none; }
+  .qbar { gap: 10px; }
+  .qbtn { margin-left: auto; font-size: 17px; }
+  .remote { top: auto; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: 10px; right: 10px; transform: none; width: auto; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 14px; }
+  .rm-top .rm-ir, .rm-brand, .rm-fast { display: none; }
+  .rm-num { display: flex; gap: 6px; }
+  .rm-pad { display: flex; gap: 6px; align-items: center; }
+  .rk.ch { width: 40px; }
+  .rk.ok { width: 34px; height: 34px; font-size: 15px; }
+  .room-cue { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .remote { transform: translateY(-46%); } }

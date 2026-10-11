@@ -7,141 +7,55 @@
 <meta name="description" content="Four quantum-assisted trading agents compete on Robinhood Chain mainnet meme coins. Follow wallets, trades and funding-adjusted results.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Pixelify+Sans:wght@400;500;600;700&family=Silkscreen&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jersey+10&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Pixelify+Sans:wght@400;500;600;700&family=Silkscreen&family=VT323&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="os.css">
-<link rel="stylesheet" href="landing.css">
+<link rel="stylesheet" href="room.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%230a0612'/%3E%3Crect x='2' y='1' width='4' height='1' fill='%23ff3d7f'/%3E%3Crect x='1' y='2' width='6' height='4' fill='%23ff3d7f'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23fff'/%3E%3Crect x='5' y='3' width='1' height='1' fill='%23fff'/%3E%3Crect x='2' y='6' width='1' height='1' fill='%23ff3d7f'/%3E%3Crect x='5' y='6' width='1' height='1' fill='%23ff3d7f'/%3E%3C/svg%3E">
 <script src="config.js"></script>
 </head>
 <body>
 <div id="intro" class="intro">
-  <canvas id="introSky" class="intro-sky" aria-hidden="true"></canvas>
-  <header class="ibar frame">
-    <nav class="ibar-links" aria-label="Site">
-      <a href="#sec-standings">Agents</a><a href="#sec-standings">Standings</a><a href="#sec-markets">Markets</a><a href="#sec-journal">Trades</a>
-    </nav>
-    <a class="ibar-mark" href="#top" aria-label="Qubit Royale home"><span class="logo-px"></span></a>
-    <div class="ibar-right">
-      <span class="ibar-live" id="heroLive"><i></i>CONNECTING…</span>
-      <button type="button" class="btn-cr" data-intro="skip">Open desk</button>
-    </div>
+  <h1 class="sr">Qubit Royale: four quantum trading agents competing over Robinhood Chain meme coins, broadcast live on channel 4663</h1>
+  <header class="qbar">
+    <span class="qlogo">QUBIT<b>TV</b><small>CH 4663</small></span>
+    <span class="qlive" id="heroLive"><i></i>TUNING IN…</span>
+    <button type="button" class="qbtn" data-intro="skip">Open the desk ▸</button>
   </header>
-
-  <section class="ihero" id="top">
-    <p class="ih-eyebrow">QUBIT ROYALE · ROBINHOOD CHAIN MAINNET</p>
-    <h1 class="ih-title" data-px><span>Quantum traders.</span><span>One meme coin colosseum.</span></h1>
-    <p class="ih-sub">FLUX, VEX, ECHO and ANCHOR mix classical market analysis with a 2-qubit circuit and compete over Robinhood Chain meme coins. Follow the wallets, the confirmed trades and the funding-adjusted results.</p>
-    <div class="ih-cta">
-      <button type="button" class="btn-paper" data-intro="power">▶ Power on</button>
-      <a class="btn-paper" href="#sec-journal">Trades</a>
-      <a class="btn-dark" href="#how">How it works</a>
-      <button type="button" class="btn-cr" data-intro="skip">+ Open the desk</button>
-    </div>
-    <p class="ih-scroll">SCROLL TO TURN ON THE TV ▼</p>
-  </section>
-
-  <section class="tv-track" id="tvTrack" aria-label="The TV powers on and connects to mainnet">
-    <div class="tv-sticky">
+  <section class="room-track" id="tvTrack" aria-label="QUBIT-TV teletext. Scroll to flip pages.">
+    <div class="room-sticky">
       <div class="tv-stage" id="tvStage">
-        <canvas id="tvScene" class="tv-scene" aria-hidden="true"></canvas>
+        <canvas id="roomCv" class="room-cv" aria-hidden="true"></canvas>
         <div class="tv-screen" id="tvScreen">
-          <div class="tv-inner" id="tvInner">
-            <canvas id="tvNoise" class="tv-noise" aria-hidden="true"></canvas>
-            <pre class="tv-text" id="tvText" aria-live="off"></pre>
-            <div class="tv-agents" id="tvAgents"></div>
-            <div class="tv-bar" id="tvBar"><i></i><span>CONNECTING TO MAINNET</span></div>
-          </div>
+          <div class="tt-wrap" id="ttWrap"><div class="tt" id="tt"></div><canvas class="tt-mosaic" id="ttMosaic" aria-hidden="true"></canvas></div>
+          <canvas class="tv-noise" id="tvNoise" aria-hidden="true"></canvas>
+          <div class="tv-glass" aria-hidden="true"></div>
         </div>
+        <div class="vcr" id="vcr" title="Latest Robinhood Chain block (last five digits)">--:--</div>
       </div>
       <div class="tv-flash" id="tvFlash" aria-hidden="true"></div>
-      <p class="tv-cue" id="tvCue"></p>
+      <p class="room-cue" id="tvCue"></p>
     </div>
   </section>
-
-  <main class="land">
-    <section class="lead" id="how">
-      <div>
-        <p class="eyebrow">FROM ON-CHAIN DATA TO CONFIRMED RESULTS</p>
-        <h2 data-px><span>Pull up a chair</span><span>on the trading floor.</span></h2>
-        <p class="lede">Four agents, four temperaments. FLUX rides momentum, VEX ranks relative strength, ECHO hunts pullbacks and ANCHOR only trusts deep liquidity. Every window below is live. These are the numbers the agents are acting on right now, not a mock-up.</p>
-      </div>
-      <ol class="steps">
-        <li><a href="#sec-markets"><b>01</b> Markets</a></li>
-        <li><a href="#sec-decide"><b>02</b> Decide</a></li>
-        <li><a href="#sec-standings"><b>03</b> Compare</a></li>
-        <li><a href="#sec-journal"><b>04</b> Monitor</a></li>
-      </ol>
-    </section>
-
-    <section class="feat" id="sec-markets">
-      <div class="feat-copy">
-        <p class="eyebrow"><span>01 /</span> Live meme board</p>
-        <h3 data-px><span>Every meme pool,</span><span>read as it moves.</span></h3>
-        <p>Every ETH-paired meme pool on Robinhood Chain, refreshed every 30 seconds. Price, liquidity and the buy/sell flow of the last hour. Tokenized stocks and spoofed liquidity never make the board.</p>
-        <button type="button" class="btn-cr" data-desk="markets">Open markets</button>
-      </div>
-      <div class="win-prev frame"><div class="wp-head"><span>MARKETS / LIVE BOARD</span><span class="wp-live" data-live></span></div><div class="wp-agents"></div><div class="paper" id="wMarkets"></div><div class="wp-foot"><span>01 / LIVE DATA · DEXSCREENER</span><span>SCAN → SCORE → TRADE</span></div></div>
-    </section>
-
-    <section class="feat" id="sec-decide">
-      <div class="feat-copy">
-        <p class="eyebrow"><span>02 /</span> The decision</p>
-        <h3 data-px><span>Watch a circuit</span><span>make up its mind.</span></h3>
-        <p>Two market features become rotation angles, a CNOT entangles them and the hour's buy share sets a phase. The measured amplitudes are blended with each agent's classical read. The circuit is a local simulation, not quantum hardware, and it is an experimental input rather than a forecast.</p>
-        <button type="button" class="btn-cr" data-desk="lab">Open the circuit lab</button>
-      </div>
-      <div class="win-prev frame"><div class="wp-head"><span>CIRCUIT / EVERY DECISION IN VIEW</span><span class="wp-live" data-live></span></div><div class="wp-agents"></div><div class="paper" id="wDecide"></div><div class="wp-foot"><span>02 / LIVE DATA · 2-QUBIT STATEVECTOR</span><span>SIGNAL → CIRCUIT → SCORE</span></div></div>
-    </section>
-
-    <section class="feat" id="sec-standings">
-      <div class="feat-copy">
-        <p class="eyebrow"><span>03 /</span> Performance</p>
-        <h3 data-px><span>Four wallets.</span><span>One scoreboard.</span></h3>
-        <p>Equity, return and trade count, side by side. With live wallets linked, returns are funding-adjusted: deposits and withdrawals never count as trading gains.</p>
-        <button type="button" class="btn-cr" data-desk="standings">Compare performance</button>
-      </div>
-      <div class="win-prev frame"><div class="wp-head"><span>PERFORMANCE / FOUR INDEPENDENT MINDS</span><span class="wp-live" data-live></span></div><div class="wp-agents"></div><div class="paper" id="wStandings"></div><div class="wp-foot"><span>03 / LIVE DATA · <span id="wMode">PAPER ROUND</span></span><span>RESEARCH → DECISION → RESULT</span></div></div>
-    </section>
-
-    <section class="feat" id="sec-journal">
-      <div class="feat-copy">
-        <p class="eyebrow"><span>04 /</span> Trade journal</p>
-        <h3 data-px><span>Every fill,</span><span>with its proof.</span></h3>
-        <p>Every buy and sell lands in the journal with its reason, its quantum probability and the mainnet block it was decided on. Live wallet swaps link straight to their receipts on the Robinhood Chain explorer.</p>
-        <button type="button" class="btn-cr" data-desk="journal">Open trade journal</button>
-      </div>
-      <div class="win-prev frame"><div class="wp-head"><span>JOURNAL / FROM SIGNAL TO FILL</span><span class="wp-live" data-live></span></div><div class="wp-agents"></div><div class="paper" id="wJournal"></div><div class="wp-foot"><span>04 / LIVE DATA · BLOCK-STAMPED</span><span>SIGNAL → FILL → PROOF</span></div></div>
-    </section>
-
-    <section class="pick">
-      <canvas class="ivy ivy-l" aria-hidden="true"></canvas><canvas class="ivy ivy-r" aria-hidden="true"></canvas>
-      <form class="pick-box frame" id="pickForm">
-        <label for="pickSel">PICK A COMPETITOR TO FOLLOW</label>
-        <select id="pickSel"></select>
-        <button type="submit" class="btn-cr">Open workspace</button>
-        <p>Open an agent's desk with its wallet, holdings and live watchlist. No account or email required. <a href="#how">How it works</a></p>
-      </form>
-    </section>
-
-    <section class="closing">
-      <h2 data-px><span>Four quantum traders. One arena.</span></h2>
-      <p>Follow the wallets. Inspect the trades. Compare the results.</p>
-      <div class="closing-box">
-        <canvas class="ivy ivy-frame" aria-hidden="true"></canvas>
-        <div class="closing-btns frame"><button type="button" class="btn-paper wide" data-intro="skip">Explore the desk</button><button type="button" class="btn-cr wide" data-intro="power">Replay the intro</button></div>
-      </div>
-    </section>
-
-    <footer class="lfoot">
-      <div class="lf-cols">
-        <div><b>ARENA</b><a href="#sec-standings">Standings</a><a href="#sec-markets">Markets</a><a href="#sec-journal">Trade journal</a><a href="#sec-decide">Circuit lab</a></div>
-        <div><b>AGENTS</b><button type="button" data-desk="agent:flux">FLUX</button><button type="button" data-desk="agent:vex">VEX</button><button type="button" data-desk="agent:echo">ECHO</button><button type="button" data-desk="agent:anchor">ANCHOR</button></div>
-        <div><b>DATA</b><button type="button" data-desk="status">Data status</button><button type="button" data-desk="wallets">Live wallets</button><a href="https://robinhoodchain.blockscout.com" target="_blank" rel="noopener">Explorer ↗</a><a href="https://dexscreener.com/robinhood" target="_blank" rel="noopener">DexScreener ↗</a></div>
-      </div>
-      <p class="lf-legal">©Qubit Royale 2026 · Paper round on live prices unless live wallets are linked. Meme coins can go to zero. Nothing here is financial advice.</p>
-    </footer>
-  </main>
-  <button type="button" class="music-float" data-intro="music" aria-pressed="false">▶ MUSIC ON</button>
+  <aside class="remote" aria-label="Remote control">
+    <div class="rm-top"><button type="button" class="rk pwr" data-remote="power" aria-label="Power">⏻</button><span class="rm-ir"></span></div>
+    <div class="rm-num">
+      <button type="button" class="rk" data-go="101" aria-label="Page 101 markets">1</button>
+      <button type="button" class="rk" data-go="102" aria-label="Page 102 decision">2</button>
+      <button type="button" class="rk" data-go="103" aria-label="Page 103 standings">3</button>
+      <button type="button" class="rk" data-go="104" aria-label="Page 104 journal">4</button>
+      <button type="button" class="rk txt" data-go="100" aria-label="Index page 100">TXT</button>
+      <button type="button" class="rk" data-remote="music" aria-label="Music on or off">♪</button>
+    </div>
+    <div class="rm-fast">
+      <button type="button" class="fk r" data-go="101" aria-label="Markets"></button><button type="button" class="fk g" data-go="103" aria-label="Standings"></button><button type="button" class="fk y" data-go="104" aria-label="Trades"></button><button type="button" class="fk c" data-go="199" aria-label="Tune in to the desk"></button>
+    </div>
+    <div class="rm-pad">
+      <button type="button" class="rk ch" data-remote="down" aria-label="Previous page">CH−</button>
+      <button type="button" class="rk ok" data-remote="ok" aria-label="Open the desk">OK</button>
+      <button type="button" class="rk ch" data-remote="up" aria-label="Next page">CH+</button>
+    </div>
+    <span class="rm-brand">QUBIT</span>
+  </aside>
 </div>
 
 <header class="menubar" id="menubar">
@@ -192,8 +106,7 @@
 <script src="audio.js"></script>
 <script src="sprites.js"></script>
 <script src="os.js"></script>
-<script src="pixeltext.js"></script>
-<script src="intro.js"></script>
-<script src="landing.js"></script>
+<script src="teletext.js"></script>
+<script src="room.js"></script>
 </body>
 </html>
