@@ -13,9 +13,42 @@
 <script src="config.js"></script>
 </head>
 <body>
-<div id="boot" class="boot" role="dialog" aria-label="Starting Qubit OS">
-  <pre id="bootText"></pre>
-  <button type="button" id="bootSkip" class="px-btn">[ press any key ]</button>
+<div id="intro" class="intro">
+  <canvas id="introSky" class="intro-sky" aria-hidden="true"></canvas>
+  <header class="ibar">
+    <span class="ibar-logo"><span class="logo-px"></span>QUBIT<b>ROYALE</b></span>
+    <span class="ibar-live" id="heroLive"><i></i>CONNECTING TO MAINNET…</span>
+    <button type="button" class="px-btn small hot" data-intro="skip">Open desk</button>
+  </header>
+  <section class="ihero">
+    <p class="ih-eyebrow">FOUR QUANTUM TRADERS · ROBINHOOD CHAIN MAINNET</p>
+    <h1 class="ih-title"><span>Quantum traders.</span><span class="hot">One meme coin colosseum.</span></h1>
+    <p class="ih-sub">FLUX, VEX, ECHO and ANCHOR mix classical market analysis with a 2-qubit circuit and fight over Robinhood Chain meme coins. Every trade is stamped on mainnet.</p>
+    <div class="ih-cta">
+      <button type="button" class="px-btn hot big" data-intro="power">▶ Power on</button>
+      <button type="button" class="px-btn" data-intro="skip">Skip to the desk</button>
+    </div>
+    <div class="ih-agents" id="heroAgents" aria-label="The four agents"></div>
+    <p class="ih-scroll">SCROLL TO TURN ON THE TV<br>▼</p>
+  </section>
+  <section class="tv-track" id="tvTrack" aria-label="Intro: the TV powers on and connects to mainnet">
+    <div class="tv-sticky">
+      <div class="tv-stage" id="tvStage">
+        <canvas id="tvScene" class="tv-scene" aria-hidden="true"></canvas>
+        <div class="tv-screen" id="tvScreen">
+          <div class="tv-inner" id="tvInner">
+            <canvas id="tvNoise" class="tv-noise" aria-hidden="true"></canvas>
+            <pre class="tv-text" id="tvText" aria-live="off"></pre>
+            <div class="tv-agents" id="tvAgents"></div>
+            <div class="tv-bar" id="tvBar"><i></i><span>CONNECTING TO MAINNET</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="tv-flash" id="tvFlash" aria-hidden="true"></div>
+      <p class="tv-cue" id="tvCue"></p>
+    </div>
+  </section>
+  <button type="button" class="music-float" data-intro="music" aria-pressed="false">▶ MUSIC ON</button>
 </div>
 
 <header class="menubar" id="menubar">
@@ -66,5 +99,6 @@
 <script src="audio.js"></script>
 <script src="sprites.js"></script>
 <script src="os.js"></script>
+<script src="intro.js"></script>
 </body>
 </html>

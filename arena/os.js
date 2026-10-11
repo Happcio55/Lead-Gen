@@ -642,7 +642,7 @@
   function menuItems(name) {
     const ck = (b) => (b ? '✓ ' : ' ');
     switch (name) {
-      case 'system': return [['About Qubit Royale', 'open:guide'], ['Data status', 'open:status'], ['-'], ['Reset paper round…', 'reset']];
+      case 'system': return [['About Qubit Royale', 'open:guide'], ['Data status', 'open:status'], ['Watch the intro again', 'intro'], ['-'], ['Reset paper round…', 'reset']];
       case 'agents': return [...AGENTS.map((a) => [`<span><span class="sw" style="background:${a.color}"></span>${a.name}.app</span><kbd>${a.style}</kbd>`, 'open:agent:' + a.id]), ['-'], ['All standings', 'open:standings']];
       case 'arena': return [['Standings', 'open:standings'], ['Markets', 'open:markets'], ['Trade journal', 'open:journal'], ['Circuit lab', 'open:lab'], ['Live wallets', 'open:wallets'], ['Terminal', 'open:terminal']];
       case 'view': return [[ck(mode === 'sim') + 'Paper round', 'mode:sim'], [ck(mode === 'live') + 'Live wallets', 'mode:live'], ['-'], [ck(!document.body.classList.contains('no-crt')) + 'CRT scanlines', 'crt'], [ck(Sound.music) + 'Music', 'music'], [ck(!$('#heroCard').hidden) + 'Welcome card', 'hero'], ['-'], ['Close all windows', 'closeall']];
@@ -669,6 +669,7 @@
     else if (act === 'music') toggleMusic();
     else if (act === 'hero') { $('#heroCard').hidden = !$('#heroCard').hidden; store.set('qr-hero', !$('#heroCard').hidden); }
     else if (act === 'closeall') [...wins.keys()].forEach(closeWin);
+    else if (act === 'intro') leaveOS();
     else if (act === 'reset') { openWin('status'); toast('Press "Reset paper round" in Data status twice to confirm.'); }
   }
   function resetRound(btn) {
@@ -688,6 +689,7 @@
   function toggleMusic() {
     const on = Sound.setMusic(!Sound.music);
     const b = $('#musicBtn'); b.textContent = on ? '♪ on' : '♪ off'; b.setAttribute('aria-pressed', on);
+    $$('.music-float').forEach((m) => { m.textContent = on ? '■ MUSIC OFF' : '▶ MUSIC ON'; m.setAttribute('aria-pressed', on); });
   }
 
   let toastT;
@@ -721,60 +723,45 @@
   let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderAllWindows, 150); });
   document.addEventListener('pointerdown', () => Sound.unlock(), { once: true });
 
-  /* ---------- boot ---------- */
-  function boot(done) {
-    const el = $('#boot');
-    let skip = false;
-    try { skip = sessionStorage.getItem('qr-booted') === '1'; } catch (e) { /* ignore */ }
-    if (skip || matchMedia('(prefers-reduced-motion: reduce)').matches) { el.remove(); done(); return; }
-    const lines = [
-      'QUBIT/OS v2.0  (c) 2026 Qubit Royale arena',
-      '------------------------------------------------',
-      'CPU: 2-QUBIT STATEVECTOR CORE ........... OK',
-      'MEM: 4 AGENT SLOTS ...................... OK',
-      'NET: ROBINHOOD CHAIN MAINNET · ID 4663 ... OK',
-      'FEED: DEXSCREENER / ROBINHOOD ........... OK',
-      'EXPLORER: BLOCKSCOUT RECEIPTS ........... OK',
-      '',
-      'LOADING AGENTS:  FLUX  VEX  ECHO  ANCHOR',
-      '[ OK ] momentum engine',
-      '[ OK ] relative strength ranker',
-      '[ OK ] pullback detector',
-      '[ OK ] liquidity guard',
-      '',
-      'THIS SITE HAS SOUND. MUSIC STARTS ONLY WHEN YOU TURN IT ON.',
-      'ENTERING ARENA_'
-    ];
-    const pre = $('#bootText');
-    let i = 0, finished = false;
-    const end = () => {
-      if (finished) return; finished = true;
-      try { sessionStorage.setItem('qr-booted', '1'); } catch (e) { /* ignore */ }
-      el.classList.add('done'); setTimeout(() => el.remove(), 460); done();
-    };
-    const tk = setInterval(() => { pre.textContent += lines[i++] + '\n'; if (i >= lines.length) { clearInterval(tk); setTimeout(end, 500); } }, 110);
-    el.addEventListener('click', end);
-    addEventListener('keydown', end, { once: true });
-  }
-
   /* ---------- start ---------- */
   let floorApi = null;
+  let entered = false;
   function start() {
     if (store.get('qr-crt', true) === false) document.body.classList.add('no-crt');
-    if (store.get('qr-hero', true) === false) $('#heroCard').hidden = true;
-    Sprites.wallpaper($('#wall'));
-    floorApi = Sprites.floor($('#floor'), (id) => openWin('agent:' + id));
+    if (store.get('qr-hero', false) === false) $('#heroCard').hidden = true; // the intro already introduces the arena
     renderIcons();
     snap = mode === 'live' ? Live.snapshot() : Sim.snapshot(byAddr);
     snap.journal.forEach((j) => seen.add(key(j)));
     renderChrome();
     term('sys', 'QUBIT/OS ready · ' + (mode === 'live' ? 'live wallets' : 'paper round on live prices'));
-    if (!isPhone()) { if ($('#desktop').clientHeight >= 860) openWin('terminal'); openWin('standings'); }
     const tickClock = () => { $('#clock').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); };
     tickClock(); setInterval(tickClock, 10000);
     headLoop(); setInterval(headLoop, 6000);
     scan(); setInterval(scan, 30000);
     setInterval(() => { if (mode === 'live') refreshLive().then(rebuild); }, 60000);
   }
-  boot(start);
+  // called by the intro once the camera has zoomed into the TV
+  function enterOS() {
+    document.body.classList.add('in-os');
+    scrollTo(0, 0);
+    dispatchEvent(new Event('resize'));
+    if (!entered) {
+      entered = true;
+      Sprites.wallpaper($('#wall'));
+      floorApi = Sprites.floor($('#floor'), (id) => openWin('agent:' + id));
+      if (!isPhone()) { if ($('#desktop').clientHeight >= 860) openWin('terminal'); openWin('standings'); }
+    }
+    renderAllWindows();
+  }
+  function leaveOS() {
+    document.body.classList.remove('in-os');
+    scrollTo(0, 0);
+    dispatchEvent(new Event('resize'));
+  }
+  window.QROS = {
+    enter: enterOS, leave: leaveOS,
+    data: () => ({ head, market, evals, mode, snap, rpcMs }),
+    music: toggleMusic
+  };
+  start();
 })();
