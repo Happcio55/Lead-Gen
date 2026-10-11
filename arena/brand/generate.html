@@ -96,11 +96,20 @@ Promise.all(['500 18px "Martian Mono"', '500 10px "Martian Mono"', '700 30px "Sc
   for (let x = 0; x < 40; x++) for (let y = 0; y < 4; y++) { const dx = (x - 20) / 20, dy = (y - 1.5) / 2; if (dx * dx + dy * dy < 1) { ag.fillStyle = 'rgba(18,12,7,.55)'; ag.fillRect(120 + x * 4, 282 + y * 4, 4, 4); } }
   const hs = 10;
   Sprites.drawHat(ag, Math.round(200 - (26 * hs) / 2), Math.round(192 - (17 * hs) / 2), hs);
-  /* ---------- banner 1500×500: just the word ---------- */
+  /* ---------- banner 1500×500: the scene and just the word ---------- */
   const sb = document.getElementById('banner'), sg = sb.getContext('2d');
-  sg.fillStyle = INK; sg.fillRect(0, 0, 1500, 500);
+  sg.imageSmoothingEnabled = false;
+  const land2 = document.createElement('canvas'); land2.width = vw; land2.height = vh;
+  const L2 = Sprites.makeLand(vw, vh, Math.round(vh * 0.86));
+  L2.trees = L2.trees.filter((t) => !(t.front && t.x > vw * 0.3 && t.x < vw * 0.7));
+  Sprites.paintLand(land2.getContext('2d'), L2, 2400, { moonX: 0.86 });
+  sg.drawImage(land2, 0, 0, 1500, 500);
+  // a soft dark pool behind the word so it reads over the clouds
+  const pool = sg.createRadialGradient(750, 245, 40, 750, 245, 520);
+  pool.addColorStop(0, 'rgba(18,12,7,.85)'); pool.addColorStop(0.55, 'rgba(18,12,7,.45)'); pool.addColorStop(1, 'rgba(18,12,7,0)');
+  sg.fillStyle = pool; sg.fillRect(0, 0, 1500, 500);
   const sc = 16, ww = 8 * 6 * sc - sc;
-  word(sg, 'CITIZENS', Math.round((1500 - ww) / 2), Math.round((500 - 7 * sc) / 2), sc, false, true);
+  word(sg, 'CITIZENS', Math.round((1500 - ww) / 2), Math.round((470 - 7 * sc) / 2), sc, false, true);
   window.BRAND_READY = true;
 });
 </script>
