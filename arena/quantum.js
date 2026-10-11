@@ -66,36 +66,39 @@
     return b + s > 0 ? b / (b + s) : 0.5;
   }
 
-  /* Each agent: classical score in [-1,1] + quantum features. Order is the validated colour order. */
+  /* Seven bots. Each persona is inspired by a language-model family; in the paper round every
+     decision comes from the strategy below plus the circuit, not from the model itself.
+     Order is the validated colour order (dark surface). */
   const AGENTS = [
     {
-      id: 'flux', name: 'FLUX', color: '#5fa515', glow: '#b8ff3c', style: 'Momentum rider',
-      bio: 'FLUX chases acceleration. It weighs the 5-minute, 1-hour and 6-hour moves and only acts when buyers are actually showing up in the order flow.',
-      rules: ['stop −12%', 'take +28%', 'max 4 positions', '22% sizing'],
-      w: 0.62, beta: 0.35, buyAt: 0.32, sellAt: -0.12, stop: -0.12, take: 0.28,
+      id: 'claudius', name: 'CLAUDIUS', inspired: 'Claude', color: '#c27f12', glow: '#ffb347', style: 'Careful analyst',
+      bio: 'CLAUDIUS reads the fine print. It only trades deep pools with healthy turnover and treats thin liquidity, fading volume or a bleeding chart as a hard no.',
+      rules: ['stop −10%', 'take +20%', 'min $15k pool', '22% sizing'],
+      w: 0.72, beta: 0.5, buyAt: 0.3, sellAt: -0.1, stop: -0.1, take: 0.2,
       classical(t) {
-        const mom = 0.6 * t.m5 + 1.0 * t.h1 + 0.4 * t.h6;
-        const flow = (flowRatio(t) - 0.5) * 2;
-        const active = t.buys1h + t.sells1h >= 5 ? 1 : 0.35; // momentum without live flow is stale
-        return clamp(tanh(mom / 18) * 0.8 * active + flow * 0.3, -1, 1);
+        if (t.liq < 15000) return -0.6;
+        const depth = (Math.log10(t.liq) - 4.5) * 0.7;
+        const turnover = clamp(t.vol / t.liq, 0, 4);
+        const health = t.h24 > 0 ? 0.25 : -0.35;
+        return clamp(tanh(depth + (turnover - 0.4) * 0.5 + health + t.h1 / 30), -1, 1);
       },
-      features(t) { return { a: (t.h1 + t.m5) / 8, b: t.h6 / 15 }; }
+      features(t) { return { a: Math.log10(Math.max(t.liq, 1)) - 4.6, b: Math.log10(Math.max(t.vol, 1) / Math.max(t.liq, 1)) * 2 }; }
     },
     {
-      id: 'vex', name: 'VEX', color: '#9466ff', glow: '#c9b2ff', style: 'Relative strength',
-      bio: 'VEX ranks the whole board against itself. It buys the tokens beating the median and dumps anything that falls back into the pack.',
-      rules: ['stop −15%', 'take +35%', 'z-score ranked', '22% sizing'],
+      id: 'gemtwins', name: 'GEMTWINS', inspired: 'Gemini', color: '#3a82c8', glow: '#7fb6ff', style: 'Two-signal consensus',
+      bio: 'GEMTWINS is two minds that must agree. It ranks every token against the board on 24 hours and on 6 hours, and buys only when both twins say it is beating the pack.',
+      rules: ['stop −15%', 'take +35%', 'both signals agree', '22% sizing'],
       w: 0.6, beta: 0.15, buyAt: 0.34, sellAt: -0.08, stop: -0.15, take: 0.35,
       classical(t, u) {
-        const z24 = (t.h24 - u.mean24) / (u.sd24 || 1);
-        const z6 = (t.h6 - u.mean6) / (u.sd6 || 1);
-        return clamp(tanh(0.6 * z24 + 0.5 * z6), -1, 1);
+        const z24 = (t.h24 - u.mean24) / (u.sd24 || 1), z6 = (t.h6 - u.mean6) / (u.sd6 || 1);
+        const agree = Math.sign(z24) === Math.sign(z6) ? 1 : 0.35;
+        return clamp(tanh(0.6 * z24 + 0.5 * z6) * agree, -1, 1);
       },
       features(t, u) { return { a: (t.h24 - u.mean24) / (u.sd24 || 1), b: (t.h6 - u.mean6) / (u.sd6 || 1) }; }
     },
     {
-      id: 'echo', name: 'ECHO', color: '#d0711a', glow: '#ffb45c', style: 'Pullback hunter',
-      bio: 'ECHO waits for strong 24-hour trends to dip on the hourly chart, then buys the echo once sellers run out of breath.',
+      id: 'grokstar', name: 'GROKSTAR', inspired: 'Grok', color: '#d75a52', glow: '#ff8a7a', style: 'Contrarian dip buyer',
+      bio: 'GROKSTAR likes it when everyone else panics. It waits for a strong 24-hour trend to dump on the hourly, then buys the dip once the sellers run out of breath.',
       rules: ['stop −14%', 'take +22%', 'buys dips only', '22% sizing'],
       w: 0.55, beta: -0.2, buyAt: 0.3, sellAt: -0.15, stop: -0.14, take: 0.22,
       classical(t) {
@@ -107,18 +110,55 @@
       features(t) { return { a: t.h24 / 25, b: -t.h1 / 6 }; }
     },
     {
-      id: 'anchor', name: 'ANCHOR', color: '#1b9ccb', glow: '#5fe0ff', style: 'Liquidity discipline',
-      bio: 'ANCHOR will only touch deep pools with healthy turnover. Thin liquidity, collapsing volume or bleeding charts are hard vetoes.',
-      rules: ['stop −10%', 'take +20%', 'min $15k pool', '22% sizing'],
-      w: 0.72, beta: 0.5, buyAt: 0.3, sellAt: -0.1, stop: -0.1, take: 0.2,
+      id: 'gptony', name: 'GPTONY', inspired: 'GPT', color: '#2aa898', glow: '#5fe6d2', style: 'Momentum generalist',
+      bio: 'GPTONY goes where the energy is. It weighs the 5-minute, 1-hour and 6-hour moves and acts only when buyers are actually showing up in the order flow.',
+      rules: ['stop −12%', 'take +28%', 'max 4 positions', '22% sizing'],
+      w: 0.62, beta: 0.35, buyAt: 0.32, sellAt: -0.12, stop: -0.12, take: 0.28,
       classical(t) {
-        if (t.liq < 15000) return -0.6;
-        const depth = (Math.log10(t.liq) - 4.5) * 0.7;
-        const turnover = clamp(t.vol / t.liq, 0, 4);
-        const health = t.h24 > 0 ? 0.25 : -0.35;
-        return clamp(tanh(depth + (turnover - 0.4) * 0.5 + health + t.h1 / 30), -1, 1);
+        const mom = 0.6 * t.m5 + 1.0 * t.h1 + 0.4 * t.h6;
+        const flow = (flowRatio(t) - 0.5) * 2;
+        const active = t.buys1h + t.sells1h >= 5 ? 1 : 0.35;
+        return clamp(tanh(mom / 18) * 0.8 * active + flow * 0.3, -1, 1);
       },
-      features(t) { return { a: Math.log10(Math.max(t.liq, 1)) - 4.6, b: Math.log10(Math.max(t.vol, 1) / Math.max(t.liq, 1)) * 2 }; }
+      features(t) { return { a: (t.h1 + t.m5) / 8, b: t.h6 / 15 }; }
+    },
+    {
+      id: 'mistro', name: 'MISTRO', inspired: 'Mistral', color: '#7f6fe0', glow: '#b3a6ff', style: 'Five-minute scalper',
+      bio: 'MISTRO blows in and out like the wind it is named after. It trades only fresh 5-minute bursts with live buyers, and takes small, quick profits.',
+      rules: ['stop −6%', 'take +10%', '5m bursts only', '22% sizing'],
+      w: 0.65, beta: 0.6, buyAt: 0.36, sellAt: -0.05, stop: -0.06, take: 0.1,
+      classical(t) {
+        if (t.buys1h + t.sells1h < 8) return -0.3;
+        const flow = (flowRatio(t) - 0.5) * 2;
+        return clamp(tanh(t.m5 / 4) * 0.75 + flow * 0.35, -1, 1);
+      },
+      features(t) { return { a: t.m5 / 2, b: (flowRatio(t) - 0.5) * 6 }; }
+    },
+    {
+      id: 'llambo', name: 'LLAMBO', inspired: 'Llama', color: '#5f9a2e', glow: '#a6d96a', style: 'Volume herd follower',
+      bio: 'LLAMBO runs with the herd. When a pool suddenly trades far more than its size and the hour is green, it joins the stampede.',
+      rules: ['stop −13%', 'take +25%', 'turnover > 1×', '22% sizing'],
+      w: 0.64, beta: 0.25, buyAt: 0.32, sellAt: -0.1, stop: -0.13, take: 0.25,
+      classical(t) {
+        if (t.liq < 8000) return -0.5;
+        const turnover = t.vol / t.liq;
+        const flow = (flowRatio(t) - 0.5) * 2;
+        return clamp(tanh((turnover - 1) * 0.8) * 0.6 + tanh(t.h1 / 10) * 0.4 + flow * 0.2, -1, 1);
+      },
+      features(t) { return { a: (t.vol / Math.max(t.liq, 1) - 1) * 1.5, b: t.h1 / 6 }; }
+    },
+    {
+      id: 'seeker', name: 'SEEKER', inspired: 'DeepSeek', color: '#b862bd', glow: '#f09ae6', style: 'Microcap value digger',
+      bio: 'SEEKER digs where nobody looks: small market caps with real liquidity behind them, steady 6-hour strength and enough turnover to get out again.',
+      rules: ['stop −15%', 'take +40%', 'mcap < $500k', '22% sizing'],
+      w: 0.6, beta: -0.1, buyAt: 0.3, sellAt: -0.12, stop: -0.15, take: 0.4,
+      classical(t) {
+        if (t.liq < 5000) return -0.5;
+        const small = t.mcap > 0 && t.mcap < 5e5 ? 0.4 : -0.3;
+        const backing = t.mcap > 0 ? tanh((t.liq / t.mcap) * 3) * 0.3 : 0;
+        return clamp(small + backing + tanh(t.h6 / 20) * 0.3 + tanh((t.vol / t.liq - 0.5)) * 0.15, -1, 1);
+      },
+      features(t) { return { a: t.mcap > 0 ? 5.7 - Math.log10(t.mcap) : -1, b: t.h6 / 12 }; }
     }
   ];
 

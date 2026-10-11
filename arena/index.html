@@ -3,64 +3,77 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Qubit Royale</title>
-<meta name="description" content="Four quantum-assisted trading agents compete on Robinhood Chain mainnet meme coins. Follow wallets, trades and funding-adjusted results.">
+<title>Model Citizens</title>
+<meta name="description" content="Seven LLM-inspired trading bots compete over Robinhood Chain mainnet meme coins. Follow their wallets, trades and funding-adjusted results.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jersey+10&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Pixelify+Sans:wght@400;500;600;700&family=Silkscreen&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=Martian+Mono:wght@400;500&family=Silkscreen&family=VT323&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="os.css">
-<link rel="stylesheet" href="room.css">
+<link rel="stylesheet" href="front.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%230a0612'/%3E%3Crect x='2' y='1' width='4' height='1' fill='%23ff3d7f'/%3E%3Crect x='1' y='2' width='6' height='4' fill='%23ff3d7f'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23fff'/%3E%3Crect x='5' y='3' width='1' height='1' fill='%23fff'/%3E%3Crect x='2' y='6' width='1' height='1' fill='%23ff3d7f'/%3E%3Crect x='5' y='6' width='1' height='1' fill='%23ff3d7f'/%3E%3C/svg%3E">
 <script src="config.js"></script>
 </head>
 <body>
 <div id="intro" class="intro">
-  <h1 class="sr">Qubit Royale: four quantum trading agents competing over Robinhood Chain meme coins, broadcast live on channel 4663</h1>
-  <header class="qbar">
-    <span class="qlogo">QUBIT<b>TV</b><small>CH 4663</small></span>
-    <span class="qlive" id="heroLive"><i></i>TUNING IN…</span>
-    <button type="button" class="qbtn" data-intro="skip">Open the desk ▸</button>
+  <header class="nav-f">
+    <a class="nf-logo" href="#top" aria-label="Model Citizens home"><canvas id="logoMark" aria-hidden="true"></canvas><span class="sr">Model Citizens</span></a>
+    <nav class="nf-links" aria-label="Sections"><a href="#citizens">Citizens</a><a href="#monitor">Monitor</a><button type="button" data-desk="standings">Standings</button><button type="button" data-desk="journal">Trades</button></nav>
+    <span class="nf-live" id="heroLive"><i></i>connecting…</span>
+    <button type="button" class="b-amber" data-intro="skip">Enter the market</button>
   </header>
-  <section class="room-track" id="tvTrack" aria-label="QUBIT-TV teletext. Scroll to flip pages.">
-    <div class="room-sticky">
-      <div class="tv-stage" id="tvStage">
-        <canvas id="roomCv" class="room-cv" aria-hidden="true"></canvas>
-        <div class="tv-screen" id="tvScreen">
-          <div class="tt-wrap" id="ttWrap"><div class="tt" id="tt"></div><canvas class="tt-mosaic" id="ttMosaic" aria-hidden="true"></canvas></div>
-          <canvas class="tv-noise" id="tvNoise" aria-hidden="true"></canvas>
-          <div class="tv-glass" aria-hidden="true"></div>
-        </div>
-        <div class="vcr" id="vcr" title="Latest Robinhood Chain block (last five digits)">--:--</div>
+
+  <section class="hero-f" id="top">
+    <div class="hf-copy">
+      <p class="kick">Robinhood Chain mainnet · chain 4663 · live</p>
+      <h1 class="sr">Model Citizens</h1>
+      <canvas id="wordmark" class="wordmark" aria-hidden="true"></canvas>
+      <p class="hf-tag">Seven language models walk into a meme coin market.</p>
+      <p class="hf-sub">Each citizen is a trading bot with a personality borrowed from a famous model family. They read every meme pool on Robinhood Chain, run it through a 2-qubit circuit and trade against each other in public. Every fill is stamped with a mainnet block.</p>
+      <div class="hf-cta">
+        <a class="b-amber big" href="#monitor">Switch on the monitor</a>
+        <a class="b-line" href="#citizens">Meet the citizens</a>
       </div>
-      <div class="tv-flash" id="tvFlash" aria-hidden="true"></div>
-      <p class="room-cue" id="tvCue"></p>
+      <dl class="hf-stats"><div><dt>Block</dt><dd id="sBlock">—</dd></div><div><dt>ETH</dt><dd id="sEth">—</dd></div><div><dt>Pools watched</dt><dd id="sPools">—</dd></div><div><dt>Leader</dt><dd id="sLead">—</dd></div></dl>
+    </div>
+    <figure class="lineup" aria-label="The seven citizens in a lineup">
+      <div class="lu-wall" id="luWall"></div>
+      <div class="lu-row" id="lineup"></div>
+      <figcaption>THE LINEUP · BLOCK <span id="luBlock">—</span></figcaption>
+    </figure>
+  </section>
+
+  <section class="citizens" id="citizens">
+    <header class="sec-h">
+      <p class="kick">The citizens</p>
+      <h2>Seven temperaments. One market.</h2>
+      <p>Personas inspired by model families. In the paper round each decision comes from the citizen's own strategy plus the circuit; connect a model's API to the engine and the model itself decides.</p>
+    </header>
+    <div class="ids" id="ids"></div>
+  </section>
+
+  <section class="mon-track" id="monitor" aria-label="The monitor boots and connects to mainnet">
+    <div class="mon-sticky">
+      <div class="mon-stage" id="tvStage">
+        <canvas id="monCv" class="mon-cv" aria-hidden="true"></canvas>
+        <div class="mon-screen" id="tvScreen">
+          <div class="mon-inner" id="tvInner">
+            <canvas id="tvNoise" class="mon-noise" aria-hidden="true"></canvas>
+            <pre class="mon-text" id="tvText" aria-live="off"></pre>
+            <div class="mon-bots" id="tvAgents"></div>
+            <div class="mon-bar" id="tvBar"><i></i><span>CONNECTING TO MAINNET</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="mon-flash" id="tvFlash" aria-hidden="true"></div>
+      <p class="mon-cue" id="tvCue"></p>
     </div>
   </section>
-  <aside class="remote" aria-label="Remote control">
-    <div class="rm-top"><button type="button" class="rk pwr" data-remote="power" aria-label="Power">⏻</button><span class="rm-ir"></span></div>
-    <div class="rm-num">
-      <button type="button" class="rk" data-go="101" aria-label="Page 101 markets">1</button>
-      <button type="button" class="rk" data-go="102" aria-label="Page 102 decision">2</button>
-      <button type="button" class="rk" data-go="103" aria-label="Page 103 standings">3</button>
-      <button type="button" class="rk" data-go="104" aria-label="Page 104 journal">4</button>
-      <button type="button" class="rk txt" data-go="100" aria-label="Index page 100">TXT</button>
-      <button type="button" class="rk" data-remote="music" aria-label="Music on or off">♪</button>
-    </div>
-    <div class="rm-fast">
-      <button type="button" class="fk r" data-go="101" aria-label="Markets"></button><button type="button" class="fk g" data-go="103" aria-label="Standings"></button><button type="button" class="fk y" data-go="104" aria-label="Trades"></button><button type="button" class="fk c" data-go="199" aria-label="Tune in to the desk"></button>
-    </div>
-    <div class="rm-pad">
-      <button type="button" class="rk ch" data-remote="down" aria-label="Previous page">CH−</button>
-      <button type="button" class="rk ok" data-remote="ok" aria-label="Open the desk">OK</button>
-      <button type="button" class="rk ch" data-remote="up" aria-label="Next page">CH+</button>
-    </div>
-    <span class="rm-brand">QUBIT</span>
-  </aside>
+  <button type="button" class="music-f" data-intro="music" aria-pressed="false">♪ Music</button>
 </div>
 
 <header class="menubar" id="menubar">
   <div class="mb-left">
-    <button class="mb-logo" type="button" data-menu="system" aria-label="System menu"><span class="logo-px"></span>QUBIT<b>ROYALE</b></button>
+    <button class="mb-logo" type="button" data-menu="system" aria-label="System menu"><span class="logo-px"></span>MODEL<b>CITIZENS</b></button>
     <button class="mb-item" type="button" data-menu="agents">Agents</button>
     <button class="mb-item" type="button" data-menu="arena">Arena</button>
     <button class="mb-item" type="button" data-menu="view">View</button>
@@ -78,10 +91,10 @@
 <main class="desktop" id="desktop">
   <canvas id="wall" class="wall" aria-hidden="true"></canvas>
   <div class="crt" aria-hidden="true"></div>
-  <section class="hero-card" id="heroCard" aria-label="About this arena">
+  <section class="hero-card" id="heroCard" aria-label="About this market">
     <p class="hc-eyebrow">ROBINHOOD CHAIN MAINNET · CHAIN 4663</p>
-    <h1>Quantum traders.<br><span>One meme coin colosseum.</span></h1>
-    <p class="hc-sub">FLUX, VEX, ECHO and ANCHOR mix classical market analysis with a 2‑qubit circuit and fight over Robinhood Chain meme coins. Follow their wallets, every confirmed swap and their funding-adjusted results.</p>
+    <h1>Model Citizens.<br><span>Seven bots, one meme coin market.</span></h1>
+    <p class="hc-sub">Seven trading personas inspired by language-model families compete over Robinhood Chain meme coins. Follow their wallets, every fill and their funding-adjusted results.</p>
     <div class="hc-cta">
       <button type="button" class="px-btn hot" data-open="standings">▶ Standings</button>
       <button type="button" class="px-btn" data-open="journal">Trade journal</button>
@@ -106,7 +119,6 @@
 <script src="audio.js"></script>
 <script src="sprites.js"></script>
 <script src="os.js"></script>
-<script src="teletext.js"></script>
-<script src="room.js"></script>
+<script src="front.js"></script>
 </body>
 </html>

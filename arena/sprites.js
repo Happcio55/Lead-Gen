@@ -2,7 +2,7 @@
 (function (global) {
   'use strict';
   const { AGENTS } = global.Q;
-  const CREAM = '#ece6da', CREAM2 = '#b8b0a2', INK = '#0e0c0d', HOT = '#e8274b';
+  const CREAM = '#f3e6c8', CREAM2 = '#b07a22', INK = '#120c07', HOT = '#34d1bf';
 
   /* ---------- dithering helpers ---------- */
   const BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]].map((r) => r.map((v) => (v + 0.5) / 16));
@@ -18,20 +18,23 @@
 
   // 12×14 sprites. Key: . empty, o outline, b body, l accent (agent colour), s visor, e eye, f feet
   const BODY = {
-    flux: ['....oooo....', '...obbbbo...', '..obllllbo..', '..osssssso..', '..oseesseo..', '..osssssso..', '...oooooo...', '..obbbbbbo..', '.obbllllbbo.', '.ob.bbbb.bo.', '..obbbbbbo..', '..ob.oo.bo..'],
-    vex: ['.o........o.', '..o.oooo.o..', '...obbbbo...', '..obsssbbo..', '..obeesebo..', '..obsssbbo..', '...oooooo...', '..obbllbbo..', '.obbbllbbbo.', '.ob.bbbb.bo.', '..obbbbbbo..', '..ob.oo.bo..'],
-    echo: ['...oooooo...', '..obbbbbbo..', '.obllbbllbo.', '.osssssssso.', '.osesssseso.', '.osssssssso.', '..oooooooo..', '...obbbbo...', '..obllllbo..', '.ob.bbbb.bo.', '..obbbbbbo..', '..ob.oo.bo..'],
-    anchor: ['.....oo.....', '....obbo....', '..oobbbboo..', '.obssssssbo.', '.obseesesbo.', '.obssssssbo.', '..oooooooo..', '.obbbbbbbbo.', 'obbllllllbbo', 'ob.bbbbbb.bo', '.obbbbbbbbo.', '..ob.oo.bo..']
+    claudius: ['....l..l....', '.....ll.....', '...oooooo...', '..obbbbbbo..', '.obssssssbo.', '.obseesesbo.', '.obssssssbo.', '..oooooooo..', '..obbllbbo..', '.obbbllbbbo.', '.ob.bbbb.bo.', '..obbbbbbo..'],
+    gemtwins: ['.oo......oo.', '.obo....obo.', '..oooooooo..', '.obbbbbbbbo.', '.obssbbssbo.', '.obesbbesbo.', '.obssbbssbo.', '..oooooooo..', '...obllbo...', '..obbllbbo..', '.ob.bbbb.bo.', '..obbbbbbo..'],
+    grokstar: ['..l..l..l...', '.olloolloo..', '.obbbbbbbbo.', '.osssssssso.', '.oseesseeso.', '.osssllssso.', '..oooooooo..', '...obbbbo...', '..obllllbo..', '.ob.bbbb.bo.', '..obbbbbbo..', '..ob.oo.bo..'],
+    gptony: ['....oooo....', '...obbbbo...', '..obllllbo..', '..osssssso..', '..oseesseo..', '..osssssso..', '...oooooo...', '..obbbbbbo..', '.obbllllbbo.', '.ob.bbbb.bo.', '..obbbbbbo..', '..ob.oo.bo..'],
+    mistro: ['...oooooo...', '..olllllllo.', '...oooooo...', '..obbbbbbo..', '..osssssso..', '..oseesseo..', '..osssssso..', '...oooooo...', '..obbbbbbo..', '.obbllllbbo.', '.ob.bbbb.bo.', '..obbbbbbo..'],
+    llambo: ['..o......o..', '.olo....olo.', '.olo....olo.', '..obbbbbbo..', '.obssssssbo.', '.obseesesbo.', '.obssssssbo.', '..oooooooo..', '.obbbbbbbbo.', 'obbllllllbbo', 'ob.bbbbbb.bo', '.obbbbbbbbo.'],
+    seeker: ['...oooooo...', '..obbbbbbo..', '.obbooooobbo', '.obosseesobo', '.obossssobo.', '.obboooobbo.', '..oooooooo..', '.obbllllbbo.', 'obbbllllbbbo', 'ob.bbbbbb.bo', '.obbbbbbbbo.', '..ob.oo.bo..']
   };
   const FEET = [['..of....fo..', '..oo....oo..'], ['...of..fo...', '...oo..oo...']];
 
   function drawSprite(g, id, x, y, scale, frame, accent) {
     const rows = BODY[id].concat(FEET[frame % 2]);
-    const pal = { o: '#050404', b: CREAM, l: accent, s: '#1a1617', e: accent, f: '#050404' };
+    const pal = { o: '#070503', b: CREAM, l: accent, s: '#1a1617', e: accent, f: '#070503' };
     for (let r = 0; r < rows.length; r++) for (let c = 0; c < 12; c++) {
       const k = rows[r][c];
       if (k === '.') continue;
-      g.fillStyle = k === 'b' && r < 3 && (c + r) % 3 === 0 ? CREAM2 : pal[k];
+      g.fillStyle = k === 'b' && r < 3 && (c + r) % 3 === 0 ? '#d8c69c' : pal[k];
       g.fillRect(x + c * scale, y + r * scale, scale, scale);
     }
   }
@@ -99,11 +102,11 @@
           for (let y = top; y < Math.min(ground, top + lit); y++) if ((1 - (y - top) / lit) * 0.9 > bayer(x, y)) { lg.fillStyle = CREAM2; lg.fillRect(x, y, 1, 1); }
         }
       };
-      ridgePaint(L.far, '#191516', 6);
-      ridgePaint(L.near, '#110e0f', 4);
+      ridgePaint(L.far, '#1f150b', 6);
+      ridgePaint(L.near, '#150e07', 4);
       for (const tr of L.trees) if (!tr.front) pine(lg, tr.x, ground, tr.h * 0.7, 0.55);
-      lg.fillStyle = '#0a0809'; lg.fillRect(0, ground, w, h - ground);
-      lg.fillStyle = '#3a3233';
+      lg.fillStyle = '#0d0905'; lg.fillRect(0, ground, w, h - ground);
+      lg.fillStyle = '#3a2a14';
       for (let y = ground; y < h; y++) for (let x = (y & 1); x < w; x += 2) if (bayer(x, y) < 0.12 * (1 - (y - ground) / (h - ground + 1))) lg.fillRect(x, y, 1, 1);
       if (opts.trees !== false) for (const tr of L.trees) if (tr.front) pine(lg, tr.x, ground + 1, tr.h, 1);
       L.layers[key] = c;
@@ -112,7 +115,7 @@
   }
   function pine(g, x, base, h, light) {
     const w = Math.max(5, Math.floor(h * 0.44));
-    g.fillStyle = '#050404'; g.fillRect(x - 1, base - Math.max(2, h * 0.1), 2, Math.max(2, h * 0.1));
+    g.fillStyle = '#070503'; g.fillRect(x - 1, base - Math.max(2, h * 0.1), 2, Math.max(2, h * 0.1));
     const tiers = 4;
     for (let k = 0; k < tiers; k++) {
       const top = base - h * 0.1 - (k + 1) * (h * 0.9 / tiers) - h * 0.08;
@@ -125,7 +128,7 @@
           const xx = x + dx;
           // moonlight from the upper left: dithered cream on the left flank
           const lit = (dx < 0 ? 0.55 : 0.15) * (1 - y / th) * light;
-          g.fillStyle = lit > bayer(xx, yy) ? CREAM2 : '#050404';
+          g.fillStyle = lit > bayer(xx, yy) ? CREAM2 : '#070503';
           g.fillRect(xx, yy, 1, 1);
         }
       }

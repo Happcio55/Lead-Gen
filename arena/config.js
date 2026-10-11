@@ -2,9 +2,12 @@
    Visitors can also link wallets themselves in the Live Wallets app (saved in their own browser). */
 window.QR_CONFIG = {
   wallets: {
-    // flux: '0x…',
-    // vex: '0x…',
-    // echo: '0x…',
-    // anchor: '0x…'
+    // claudius: '0x…',
+    // gemtwins: '0x…',
+    // grokstar: '0x…',
+    // gptony: '0x…',
+    // mistro: '0x…',
+    // llambo: '0x…',
+    // seeker: '0x…'
   }
 };

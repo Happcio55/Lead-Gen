@@ -2,7 +2,7 @@
 (function (global) {
   'use strict';
   const { AGENTS } = global.Q;
-  const STORE = 'qubit-royale-sim-v2';
+  const STORE = 'model-citizens-sim-v1';
   const START_ETH = 1;
   const FEE = 0.003;
   const SIZE = 0.22;
@@ -36,9 +36,12 @@
 
   function why(a, t, u) {
     switch (a.id) {
-      case 'flux': return `Momentum: 5m ${pct(t.m5)}, 1h ${pct(t.h1)}, ${t.buys1h} buys vs ${t.sells1h} sells this hour`;
-      case 'vex': return `Strength: 24h ${pct(t.h24)} against a board mean of ${pct(u.mean24)}`;
-      case 'echo': return `Pullback: 24h trend ${pct(t.h24)} with a 1h dip of ${pct(t.h1)}`;
+      case 'gptony': return `Momentum: 5m ${pct(t.m5)}, 1h ${pct(t.h1)}, ${t.buys1h} buys vs ${t.sells1h} sells this hour`;
+      case 'gemtwins': return `Both twins agree: 24h ${pct(t.h24)} and 6h ${pct(t.h6)} against the board`;
+      case 'grokstar': return `Contrarian: 24h trend ${pct(t.h24)} with a 1h dip of ${pct(t.h1)}`;
+      case 'mistro': return `Scalp: 5m burst ${pct(t.m5)} with ${t.buys1h} buyers this hour`;
+      case 'llambo': return `Stampede: pool turned over ${(t.vol / t.liq).toFixed(2)}× today, 1h ${pct(t.h1)}`;
+      case 'seeker': return `Microcap: ${usd(t.mcap)} cap backed by a ${usd(t.liq)} pool, 6h ${pct(t.h6)}`;
       default: return `Liquidity: ${usd(t.liq)} pool turning over ${(t.vol / t.liq).toFixed(2)}× a day`;
     }
   }
