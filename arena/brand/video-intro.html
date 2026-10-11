@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Citizens intro</title>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;500;800&family=Schibsted+Grotesk:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#120c07;padding:16px}canvas{width:960px;max-width:100%;height:auto;display:block}</style>
+</head>
+<body>
+<canvas id="cv" width="1920" height="1080"></canvas>
+<script src="../quantum.js"></script>
+<script src="../sprites.js"></script>
+<script>
+/* Energetic Citizens intro: 128 BPM, 64 beats. Beat grid matches soundtrack.py.
+   Footage in ./footage is captured from the live site (see the capture script). */
+(function () {
+  'use strict';
+  const { AGENTS } = Q;
+  const W = 1920, H = 1080, BEAT = 60 / 128, DUR = 64 * BEAT + 1.2;
+  const cv = document.getElementById('cv'), g = cv.getContext('2d');
+  const BONE = '#f3e6c8', BONE2 = '#d8c69c', AMBER = '#ffb000', INK = '#120c07', TEAL = '#34d1bf', RED = '#ff6a4a';
+  const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+  const out = (x) => 1 - Math.pow(1 - clamp(x), 3);
+  const back = (x) => { x = clamp(x); const c = 2.2; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+  const hash = (n) => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
+
+  /* ---------- footage ---------- */
+  const IMG = {};
+  const names = ['hero', 'ids', 'desk_standings', 'win_standings', 'win_markets', 'win_journal', 'win_lab', 'win_agent_grokstar'];
+  for (let i = 0; i < 60; i++) names.push('mon_' + String(i).padStart(2, '0'));
+  const loads = names.map((n) => new Promise((r) => { const im = new Image(); im.onload = () => { IMG[n] = im; r(); }; im.onerror = r; im.src = 'footage/' + n + '.jpg'; }));
+
+  /* ---------- helpers ---------- */
+  function text(s, x, y, o = {}) {
+    g.save();
+    g.globalAlpha = o.alpha ?? 1;
+    g.font = `${o.weight || 900} ${o.size || 80}px ${o.mono ? '"Martian Mono"' : '"Schibsted Grotesk"'}`;
+    g.fillStyle = o.color || BONE; g.textAlign = o.align || 'center'; g.textBaseline = 'middle';
+    if (o.ls) g.letterSpacing = o.ls + 'px';
+    g.fillText(s, x, y);
+    g.restore();
+  }
+  const rect = (x, y, w, h, c, a = 1) => { g.globalAlpha = a; g.fillStyle = c; g.fillRect(x, y, w, h); g.globalAlpha = 1; };
+  const F = { C: ['01111','10000','10000','10000','10000','10000','01111'], E: ['11111','10000','10000','11110','10000','10000','11111'], I: ['11111','00100','00100','00100','00100','00100','11111'], N: ['10001','11001','10101','10011','10001','10001','10001'], S: ['01111','10000','10000','01110','00001','00001','11110'], T: ['11111','00100','00100','00100','00100','00100','00100'], Z: ['11111','00001','00010','00100','01000','10000','11111'] };
+  function wordmark(cx, y, s, letters, color = BONE) {
+    const str = 'CITIZENS', w = 8 * 6 * s - s;
+    let x = Math.round(cx - w / 2);
+    for (let i = 0; i < 8; i++) {
+      const k = clamp(letters - i);
+      if (k > 0) {
+        const sc = 1 + (1 - out(k)) * 0.8, gl = F[str[i]];
+        const lx = x + 2.5 * s, ly = y + 3.5 * s;
+        for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++) if (gl[r][c] === '1') {
+          g.fillStyle = r === 0 ? '#fffaf0' : r >= 5 ? BONE2 : color;
+          g.fillRect(lx + (c * s - 2.5 * s) * sc, ly + (r * s - 3.5 * s) * sc, s * sc + 0.5, s * sc + 0.5);
+        }
+      }
+      x += 6 * s;
+    }
+  }
+  function hat(cx, cy, s, a = 1) { g.globalAlpha = a; Sprites.drawHat(g, Math.round(cx - 13 * s), Math.round(cy - 8.5 * s), s); g.globalAlpha = 1; }
+  function cover(im, zoom = 1, ox = 0, oy = 0) {
+    if (!im) return;
+    const sc = Math.max(W / im.width, H / im.height) * zoom;
+    const w = im.width * sc, h = im.height * sc;
+    g.drawImage(im, (W - w) / 2 + ox, (H - h) / 2 + oy, w, h);
+  }
+  // a browser window around footage
+  function browser(im, x, y, w, h, zoom = 1, oy = 0, url = 'citizens · robinhood chain · live') {
+    rect(x - 2, y - 2, w + 4, h + 4, '#000', 0.6);
+    rect(x, y, w, 48, '#1d150c');
+    [RED, AMBER, TEAL].forEach((c, i) => { g.fillStyle = c; g.beginPath(); g.arc(x + 26 + i * 24, y + 24, 7, 0, 7); g.fill(); });
+    rect(x + 120, y + 11, w - 240, 26, '#120c07');
+    text(url, x + w / 2, y + 25, { mono: 1, weight: 500, size: 15, color: BONE2 });
+    g.save(); g.beginPath(); g.rect(x, y + 48, w, h - 48); g.clip();
+    if (im) { const sc = (w / im.width) * zoom; g.drawImage(im, x + (w - im.width * sc) / 2, y + 48 + oy, im.width * sc, im.height * sc); }
+    g.restore();
+  }
+  function scanlines(a = 0.18) { g.globalAlpha = a; g.fillStyle = '#000'; for (let y = 0; y < H; y += 4) g.fillRect(0, y, W, 2); g.globalAlpha = 1; }
+  function vignette() { const v = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 1.05); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.6)'); g.fillStyle = v; g.fillRect(0, 0, W, H); }
+  // horizontal slice glitch on whatever is on the canvas
+  function glitch(amount, seed) {
+    if (amount <= 0.01) return;
+    const snap = g.getImageData(0, 0, W, H);
+    const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H; tmp.getContext('2d').putImageData(snap, 0, 0);
+    for (let i = 0; i < 14; i++) {
+      const y = Math.floor(hash(seed + i) * H), h = 8 + Math.floor(hash(seed + i * 3.1) * 70);
+      const dx = (hash(seed + i * 7.7) - 0.5) * 160 * amount;
+      g.drawImage(tmp, 0, y, W, h, dx, y, W, h);
+    }
+    g.globalAlpha = 0.35 * amount; g.globalCompositeOperation = 'lighter';
+    g.drawImage(tmp, 12 * amount, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  }
+  const L = (function () { const vw = W / 4, vh = H / 4; const c = document.createElement('canvas'); c.width = vw; c.height = vh; return { c, land: Sprites.makeLand(vw, vh, Math.round(vh * 0.84)) }; })();
+  function scene(t, dim) { Sprites.paintLand(L.c.getContext('2d'), L.land, 2000 + t * 1600, { moonX: 0.86 }); g.imageSmoothingEnabled = false; g.drawImage(L.c, 0, 0, W, H); rect(0, 0, W, H, INK, dim); }
+  function chip(s, x, y, c = AMBER) {
+    g.font = '800 30px "Martian Mono"';
+    const w = g.measureText(s).width + 44;
+    rect(x - w / 2 + 6, y - 28 + 6, w, 56, '#000', 0.6);
+    rect(x - w / 2, y - 28, w, 56, c);
+    text(s, x, y + 2, { mono: 1, weight: 800, size: 30, color: INK });
+  }
+
+  /* ---------- the edit ---------- */
+  function frame(t) {
+    const b = t / BEAT, bi = Math.floor(b), bf = b - bi; // beat index and phase
+    const punch = Math.exp(-bf * 7);            // 1 on every beat, decays fast
+    let shakeAmt = 0, glitchAmt = 0, flash = 0;
+    const hits = [0, 2, 4, 6, 8, 16, 24, 32, 44, 56, 62];
+    for (const h of hits) { const d = b - h; if (d >= 0 && d < 1.2) { shakeAmt = Math.max(shakeAmt, Math.exp(-d * 5)); } }
+    const cuts = [8, 16, 24, 28, 32, 44, 46, 48, 50, 52, 54, 56];
+    for (const c of cuts) { const d = b - c; if (d >= 0 && d < 0.35) glitchAmt = Math.max(glitchAmt, 1 - d / 0.35); if (d >= 0 && d < 0.25) flash = Math.max(flash, 0.7 * (1 - d / 0.25)); }
+    g.save();
+    const sx = (hash(Math.floor(t * 60)) - 0.5) * 34 * shakeAmt, sy = (hash(Math.floor(t * 60) + 9) - 0.5) * 34 * shakeAmt;
+    g.translate(sx, sy);
+    rect(-40, -40, W + 80, H + 80, INK);
+
+    if (b < 8) {
+      // word slams
+      const words = [['SEVEN', BONE], ['AGENTS.', AMBER], ['ONE', BONE], ['MARKET.', AMBER]];
+      const wi = Math.min(3, Math.floor(b / 2)), wb = b - wi * 2;
+      const [w, c] = words[wi];
+      const s = 1 + 0.6 * Math.exp(-wb * 6);
+      g.save(); g.translate(W / 2, H / 2); g.scale(s, s);
+      text(w, 0, 0, { size: 300, weight: 900, color: c, ls: -8 });
+      g.restore();
+      // ticking beat bars
+      for (let i = 0; i < 8; i++) rect(W / 2 - 280 + i * 72, H - 120, 56, 12, i <= bi ? AMBER : '#3a2a18');
+      if (b > 7) flash = Math.max(flash, (b - 7));
+    } else if (b < 16) {
+      // logo slam over the night scene
+      scene(t, 0.3);
+      const k = b - 8;
+      const z = 1 + 0.04 * punch;
+      g.save(); g.translate(W / 2, H / 2); g.scale(z, z); g.translate(-W / 2, -H / 2);
+      hat(W / 2, 330, 13 * back(k / 0.6), 1);
+      wordmark(W / 2, 520, 24, (k - 0.5) * 2);
+      if (k > 5) text('LIVE ON ROBINHOOD CHAIN', W / 2, 820, { mono: 1, weight: 800, size: 36, color: AMBER, ls: 6, alpha: clamp((k - 5) * 2) });
+      g.restore();
+    } else if (b < 24) {
+      // seven agents, one per beat, each on its own colour
+      const i = Math.min(6, bi - 16), a = AGENTS[i], k = bf;
+      rect(-40, -40, W + 80, H + 80, a.color);
+      g.globalAlpha = 0.18; for (let y = 0; y < H; y += 24) rect(0, y, W, 12, '#000'); g.globalAlpha = 1;
+      text(a.name, W / 2, H / 2 + 20, { size: 260, weight: 900, color: '#000', alpha: 0.22, ls: -6 });
+      const s = 26 * back(k / 0.35);
+      Sprites.drawSprite(g, a.id, Math.round(W / 2 - 6 * s), Math.round(H / 2 - 7 * s - 40), Math.max(1, s), Math.floor(t * 8), a.glow);
+      chip(a.name, W / 2, H - 170, BONE);
+      text(a.style.toUpperCase(), W / 2, H - 96, { mono: 1, weight: 800, size: 26, color: INK, ls: 4 });
+      if (bi === 23) { // all seven at once
+        rect(-40, -40, W + 80, H + 80, INK, clamp(bf * 3));
+        AGENTS.forEach((ag, j) => { const s2 = 11; const x = W / 2 - 3.5 * (12 * s2 + 40) + j * (12 * s2 + 40); g.globalAlpha = clamp(bf * 3 - j * 0.08); Sprites.drawSprite(g, ag.id, x, H / 2 - 7 * s2, s2, 0, ag.glow); g.globalAlpha = 1; });
+      }
+    } else if (b < 32) {
+      // the website
+      scene(t, 0.75);
+      const k = b - 24;
+      const im = k < 4 ? IMG.hero : IMG.ids;
+      const kk = k < 4 ? k : k - 4;
+      const z = 1.0 + 0.03 * punch;
+      const bw = 1560 * z, bh = 900 * z;
+      browser(im, (W - bw) / 2, (H - bh) / 2 + 20, bw, bh, 1, -kk * (k < 4 ? 14 : 40));
+      chip(k < 4 ? 'THE ARENA' : 'MEET THE CITIZENS', W / 2, 72);
+    } else if (b < 44) {
+      // the monitor booting, straight from the site
+      const k = (b - 32) / 12;
+      const fi = Math.min(59, Math.floor(k * 60));
+      const z = 1 + k * 0.12 + 0.02 * punch;
+      cover(IMG['mon_' + String(fi).padStart(2, '0')], z);
+      const label = k < 0.3 ? 'BOOTING' : k < 0.75 ? 'READING LIVE MAINNET DATA' : 'ALL CITIZENS ONLINE';
+      chip(label, W / 2, 80);
+      if (b > 43) flash = Math.max(flash, (b - 43));
+    } else if (b < 56) {
+      // desk montage, a cut every two beats
+      const shots = [['win_standings', 'LIVE STANDINGS'], ['win_markets', 'EVERY MEME POOL'], ['win_journal', 'EVERY TRADE LOGGED'], ['win_lab', 'THE CIRCUIT'], ['win_agent_grokstar', 'SEVEN DESKS'], ['win_standings', 'WHO\u2019S WINNING?']];
+      const si = Math.min(5, Math.floor((b - 44) / 2)), k = ((b - 44) % 2) / 2;
+      const [n, cap] = shots[si];
+      // the desk behind, dimmed, then the window big and centred
+      cover(IMG.desk_standings, 1.1 + k * 0.05);
+      rect(0, 0, W, H, INK, 0.72);
+      const im = IMG[n];
+      if (im) {
+        const fit = Math.min((W * 0.86) / im.width, (H * 0.74) / im.height);
+        const z = fit * (1 + k * 0.08 + 0.05 * punch) * (si === 5 ? 1.25 : 1);
+        const w = im.width * z, h = im.height * z, y = (H - 210 - h) / 2 + 10;
+        const enter = out(k / 0.18);
+        rect(W / 2 - w / 2 + 14, y + 14, w, h, '#000', 0.5);
+        g.drawImage(im, W / 2 - w / 2 + (1 - enter) * (si % 2 ? -220 : 220), y, w, h);
+      }
+      rect(0, H - 210, W, 210, INK, 0.75);
+      text(cap, W / 2, H - 112, { size: 110, weight: 900, color: si % 2 ? AMBER : BONE, ls: -3 });
+    } else {
+      // end card
+      scene(t, 0.35);
+      const k = b - 56;
+      const z = 1 + 0.035 * punch;
+      g.save(); g.translate(W / 2, H / 2); g.scale(z, z); g.translate(-W / 2, -H / 2);
+      hat(W / 2, 300, 11 * back(k / 0.5));
+      wordmark(W / 2, 450, 20, 8);
+      text('Seven agents. One market. Every trade public.', W / 2, 740, { size: 52, weight: 800, alpha: clamp((k - 0.5) * 2) });
+      if (k > 2) chip('LIVE ON ROBINHOOD CHAIN', W / 2, 850, TEAL);
+      g.restore();
+      if (b > 62 && b < 62.3) flash = Math.max(flash, 0.8 * (1 - (b - 62) / 0.3));
+    }
+    g.restore();
+    scanlines(0.12);
+    vignette();
+    glitch(glitchAmt, Math.floor(t * 30));
+    if (flash > 0) rect(0, 0, W, H, '#fff3d0', clamp(flash));
+    // fade out the tail
+    if (t > DUR - 0.6) rect(0, 0, W, H, '#000', clamp((t - (DUR - 0.6)) / 0.6));
+  }
+
+  window.COMPS = { intro2: DUR };
+  window.renderFrame = (n, t) => frame(t);
+  Promise.all([...loads, ...['900 80px "Schibsted Grotesk"', '800 30px "Martian Mono"', '500 15px "Martian Mono"'].map((f) => document.fonts.load(f))]).then(() => { frame(4.5); window.VIDEO_READY = true; });
+})();
+</script>
+</body>
+</html>
