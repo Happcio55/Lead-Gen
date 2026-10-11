@@ -9,6 +9,8 @@ const MAX_RANGE = 10_000n; // provider cap on blocks per getLogs call
 const MIN_RANGE = 50n;
 const HISTORY_MS = 6 * 3600_000; // price points kept per pool
 const MAX_POOLS = 2_500;
+const FEED_MIN_ETH = 0.02; // buys at least this large show up in the feed
+const FEED_LEN = 30;
 const STALE_MS = 3 * 3600_000; // drop pools with no swaps for this long (unless pinned)
 
 export class Indexer {
@@ -28,6 +30,8 @@ export class Indexer {
     this.status = { synced: false, lastPollAt: 0, lag: 0, errors: 0 };
     this.listeners = new Set();
     this.pinned = new Set();
+    this.feed = []; // recent sizeable buys across all pools, newest first
+    this.feedPending = [];
   }
 
   on(fn) {
@@ -144,6 +148,7 @@ export class Indexer {
         if (p) changed.push(p);
       }
     }
+    await this.resolveFeed();
     if (this.status.synced && changed.length) this.emit({ type: 'pools', ids: [...new Set(changed.map((p) => p.id))] });
   }
 
@@ -232,8 +237,21 @@ export class Indexer {
     pool.swaps.push(swap);
     if (pool.swaps.length > 80) pool.swaps.shift();
     pool.window.push(swap);
+    if (side === 'buy' && eth >= FEED_MIN_ETH) {
+      this.feedPending.push({ t: at, eth, tx: l.transactionHash, pool: pool.id, token: pool.token.address, symbol: pool.token.symbol });
+      if (this.feedPending.length > FEED_LEN) this.feedPending.shift();
+    }
     while (pool.window.length && pool.window[0].t < at - 3600_000) pool.window.shift();
     return pool;
+  }
+
+  // The Swap event's sender is the router, so the buyer comes from the transaction itself.
+  async resolveFeed() {
+    if (!this.feedPending.length) return;
+    const batch = this.feedPending.splice(0).slice(-FEED_LEN);
+    const txs = await Promise.all(batch.map((b) => this.client.getTransaction({ hash: b.tx }).catch(() => null)));
+    const resolved = batch.map((b, i) => ({ ...b, buyer: txs[i]?.from || null })).reverse();
+    this.feed = [...resolved, ...this.feed].slice(0, FEED_LEN);
   }
 
   prune() {

@@ -33,7 +33,7 @@ async function boot() {
         appId={appId}
         config={{
           loginMethods: ['email', 'google', 'twitter', 'wallet'],
-          appearance: { theme: 'dark', accentColor: '#c8ff4d', logo: '/favicon.svg', walletChainType: 'ethereum-only' },
+          appearance: { theme: 'light', accentColor: '#9cc51a', logo: '/favicon.svg', walletChainType: 'ethereum-only' },
           embeddedWallets: { ethereum: { createOnLogin: 'users-without-wallets' }, showWalletUIs: false },
           defaultChain: robinhood,
           supportedChains: [robinhood],

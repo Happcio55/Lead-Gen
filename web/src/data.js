@@ -3,12 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { chainClient } from './lib.js';
 
 export function useBoard() {
-  const [state, setState] = useState({ rows: [], meta: null, status: 'connecting' });
+  const [state, setState] = useState({ rows: [], feed: [], meta: null, status: 'connecting' });
   useEffect(() => {
     const es = new EventSource('/api/stream');
     es.addEventListener('board', (e) => {
-      const { rows, meta } = JSON.parse(e.data);
-      setState({ rows, meta, status: 'live' });
+      const { rows, meta, feed } = JSON.parse(e.data);
+      setState({ rows, meta, feed: feed || [], status: 'live' });
     });
     es.addEventListener('syncing', (e) => setState((s) => ({ ...s, meta: JSON.parse(e.data), status: 'syncing' })));
     es.onerror = () => setState((s) => ({ ...s, status: 'reconnecting' }));

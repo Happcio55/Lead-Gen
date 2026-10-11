@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { addressUrl, txUrl } from '../../shared/chain.js';
 import { useEthBalance } from './data.js';
 import { age, copy, eth, num, pct, short, usd } from './lib.js';
-import { openDrawer, set, setSettings, toast, toggleWatch, useStore } from './store.js';
+import { openDrawer, set, setSettings, setView, toast, toggleWatch, useStore } from './store.js';
 import { useTrader, valuePosition } from './trading.js';
 import { Avatar, Delta, Modal, NumField, Spark, Toggle } from './ui.jsx';
 import { useWallet } from './wallet.jsx';
@@ -12,30 +12,43 @@ export function TopBar({ meta, status, onSearch, onSettings }) {
   const wallet = useWallet();
   const quickBuy = useStore((s) => s.settings.quickBuy);
   const presets = useStore((s) => s.settings.presets);
+  const view = useStore((s) => s.view);
   const lag = meta?.lag ?? 0;
   const health = status !== 'live' ? 'bad' : lag > 100 ? 'warn' : 'ok';
   return (
     <header className="topbar">
-      <div className="brand">
-        <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden>
+      <div className="brand" onClick={() => setView('home')}>
+        <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden>
           <defs>
-            <linearGradient id="bolt" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="var(--accent)" />
-              <stop offset="1" stopColor="var(--accent-2)" />
-            </linearGradient>
+            <radialGradient id="orb" cx="35%" cy="30%" r="75%">
+              <stop offset="0" stopColor="#ffffff" />
+              <stop offset="0.45" stopColor="#e9f9b8" />
+              <stop offset="1" stopColor="#9fc21c" />
+            </radialGradient>
           </defs>
-          <path d="M18.5 3 7 18h7.5l-2 11L25 13h-7.6z" fill="url(#bolt)" />
+          <circle cx="16" cy="16" r="14" fill="url(#orb)" stroke="rgba(20,20,20,.12)" />
+          <path d="M17.6 7 10 17.4h5.2l-1.4 7.6 8-10.6h-5.3z" fill="#141414" />
         </svg>
-        <span>SURGE</span>
-        <em>Robinhood Chain</em>
+        <span>Surge</span>
       </div>
+      <nav className="tabs">
+        {[
+          ['home', 'Home'],
+          ['terminal', 'Terminal'],
+          ['portfolio', 'Portfolio'],
+        ].map(([k, label]) => (
+          <button key={k} className={view === k ? 'on' : ''} onClick={() => setView(k)}>
+            {label}
+          </button>
+        ))}
+      </nav>
 
       <button className="search" onClick={onSearch}>
         <span>Search token, name or contract</span>
         <kbd>⌘K</kbd>
       </button>
 
-      <div className="quick">
+      <div className={`quick ${view === 'terminal' ? '' : 'hide'}`}>
         <span>⚡ Quick buy</span>
         {presets.map((p) => (
           <button key={p} className={quickBuy === p ? 'on' : ''} onClick={() => setSettings({ quickBuy: p })}>
@@ -320,10 +333,10 @@ export function Palette({ rows, onClose }) {
 }
 
 const ACCENTS = {
-  lime: ['#c8ff4d', '#2ee6a6'],
-  cyan: ['#4de1ff', '#7c6cff'],
-  violet: ['#b388ff', '#ff5fa2'],
-  amber: ['#ffc24d', '#ff6b3d'],
+  lime: ['#c6f432', '#a6d916'],
+  mint: ['#7ef0c1', '#2fd39a'],
+  sky: ['#8fd8ff', '#3fb3f0'],
+  peach: ['#ffc98f', '#ff9a5c'],
 };
 
 export function applyAccent(name) {

@@ -352,7 +352,7 @@ function CandleChart({ candles, scale }) {
     g.setLineDash([]);
     g.fillStyle = last.c >= last.o ? up : down;
     g.fillRect(w - padR + 2, ly - 8, padR - 4, 16);
-    g.fillStyle = '#07080b';
+    g.fillStyle = '#ffffff';
     g.fillText(usd(last.c * scale), w - padR + 6, ly + 3);
     if (hover != null && data[hover]) {
       const x = hover * slot + slot / 2;

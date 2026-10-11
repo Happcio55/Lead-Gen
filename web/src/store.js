@@ -24,13 +24,14 @@ const state = {
   rules: load('rules', {}),
   trades: load('trades', []), // recent trade log (all wallets)
   toasts: [],
+  view: load('view', 'home'), // home | terminal | portfolio
   drawer: null, // pool id
   palette: false,
 };
 state.settings.filters = { ...DEFAULT_SETTINGS.filters, ...state.settings.filters };
 
 const listeners = new Set();
-const PERSIST = ['settings', 'watchlist', 'positions', 'rules', 'trades'];
+const PERSIST = ['settings', 'watchlist', 'positions', 'rules', 'trades', 'view'];
 
 export function getState() {
   return state;
@@ -88,4 +89,5 @@ export function dismiss(id) {
 }
 
 export const openDrawer = (id) => set({ drawer: id });
+export const setView = (view) => set({ view, drawer: null });
 export const closeDrawer = () => set({ drawer: null });

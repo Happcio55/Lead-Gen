@@ -31,7 +31,7 @@ function boardPayload() {
   const rows = indexer.board();
   // Most relevant first: recent activity, then newest.
   rows.sort((a, b) => Math.max(b.lastSwapAt, b.createdAt) - Math.max(a.lastSwapAt, a.createdAt));
-  return { meta: indexer.meta(), rows: rows.slice(0, BOARD_LIMIT) };
+  return { meta: indexer.meta(), rows: rows.slice(0, BOARD_LIMIT), feed: indexer.feed };
 }
 
 setInterval(() => {
