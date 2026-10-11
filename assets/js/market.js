@@ -279,7 +279,7 @@
   const RANGES = {
     stock: {
       '1D': { q: 'interval=5minute&span=day&bounds=trading', bucket: 300 },
-      '1W': { q: 'interval=10minute&span=week&bounds=trading', bucket: 600 },
+      '1W': { q: 'interval=10minute&span=week&bounds=extended', bucket: 600 },
       '1M': { q: 'interval=hour&span=month&bounds=regular', bucket: 3600 },
       '3M': { q: 'interval=day&span=3month&bounds=regular', bucket: 86400 },
       '1Y': { q: 'interval=day&span=year&bounds=regular', bucket: 86400 },
