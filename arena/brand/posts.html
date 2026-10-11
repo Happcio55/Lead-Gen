@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Citizens post images</title>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;500;800&family=Schibsted+Grotesk:wght@500;600;800;900&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#120c07;padding:16px;display:grid;gap:16px}canvas{width:800px;max-width:100%;height:auto}</style>
+</head>
+<body>
+<canvas id="cv" width="1600" height="900"></canvas>
+<script src="../quantum.js"></script>
+<script src="../sprites.js"></script>
+<script>
+/* Five 1600×900 social images. renderPost(i) draws image i. Footage comes from ./footage (captured from the live site). */
+(function () {
+  'use strict';
+  const { AGENTS } = Q;
+  const W = 1600, H = 900;
+  const cv = document.getElementById('cv'), g = cv.getContext('2d');
+  const BONE = '#f3e6c8', BONE2 = '#d8c69c', DIM = '#a08c66', AMBER = '#ffb000', INK = '#120c07', INK2 = '#1a120a', RULE = '#3a2a18', TEAL = '#34d1bf', RED = '#ff6a4a';
+  const IMG = {};
+  const names = ['ids', 'desk_standings', 'win_standings', 'win_markets', 'win_journal', 'win_lab', 'mon_45'];
+  const loads = names.map((n) => new Promise((r) => { const im = new Image(); im.onload = () => { IMG[n] = im; r(); }; im.onerror = r; im.src = 'footage/' + n + '.jpg'; }));
+
+  const rect = (x, y, w, h, c, a = 1) => { g.globalAlpha = a; g.fillStyle = c; g.fillRect(x, y, w, h); g.globalAlpha = 1; };
+  function text(s, x, y, o = {}) {
+    g.save(); g.globalAlpha = o.alpha ?? 1;
+    g.font = `${o.weight || 800} ${o.size || 40}px ${o.mono ? '"Martian Mono"' : '"Schibsted Grotesk"'}`;
+    g.fillStyle = o.color || BONE; g.textAlign = o.align || 'left'; g.textBaseline = o.base || 'alphabetic';
+    if (o.ls) g.letterSpacing = o.ls + 'px';
+    g.fillText(s, x, y); const w = g.measureText(s).width; g.restore(); return w;
+  }
+  function kicker(s, x, y, align = 'left') {
+    g.font = '500 20px "Martian Mono"';
+    const w = g.measureText(s).width;
+    const sx = align === 'center' ? x - w / 2 - 14 : x;
+    rect(sx, y - 14, 12, 12, TEAL);
+    text(s, sx + 24, y, { mono: 1, weight: 500, size: 20, color: AMBER });
+  }
+  const F = { C: ['01111','10000','10000','10000','10000','10000','01111'], E: ['11111','10000','10000','11110','10000','10000','11111'], I: ['11111','00100','00100','00100','00100','00100','11111'], N: ['10001','11001','10101','10011','10001','10001','10001'], S: ['01111','10000','10000','01110','00001','00001','11110'], T: ['11111','00100','00100','00100','00100','00100','00100'], Z: ['11111','00001','00010','00100','01000','10000','11111'] };
+  function wordmark(x, y, s, center) {
+    const w = 8 * 6 * s - s; let cx = center ? Math.round(x - w / 2) : x;
+    for (const ch of 'CITIZENS') { const gl = F[ch]; for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++) if (gl[r][c] === '1') { g.fillStyle = r === 0 ? '#fffaf0' : r >= 5 ? BONE2 : BONE; g.fillRect(cx + c * s, y + r * s, s, s); } cx += 6 * s; }
+  }
+  function brand(x, y) { Sprites.drawHat(g, x, y, 2); wordmark(x + 64, y + 9, 3); }
+  function footer(right = 'LIVE ON ROBINHOOD CHAIN') {
+    rect(0, H - 64, W, 64, INK, 0.92); rect(0, H - 64, W, 1, RULE);
+    brand(60, H - 50);
+    text(right, W - 60, H - 24, { mono: 1, weight: 500, size: 18, color: AMBER, align: 'right' });
+  }
+  function scene(dim, t = 2400, moon = 0.86) {
+    const vw = W / 4, vh = H / 4, c = document.createElement('canvas'); c.width = vw; c.height = vh;
+    const L = Sprites.makeLand(vw, vh, Math.round(vh * 0.84));
+    L.trees = L.trees.filter((tr) => !(tr.front && tr.x > vw * 0.08 && tr.x < vw * 0.92));
+    Sprites.paintLand(c.getContext('2d'), L, t, { moonX: moon });
+    g.imageSmoothingEnabled = false; g.drawImage(c, 0, 0, W, H); rect(0, 0, W, H, INK, dim);
+    return L.ground * 4;
+  }
+  function plain() { rect(0, 0, W, H, INK); g.globalAlpha = 0.04; for (let y = 0; y < H; y += 4) { g.fillStyle = AMBER; g.fillRect(0, y, W, 1); } g.globalAlpha = 1; }
+  function vignette() { const v = g.createRadialGradient(W / 2, H / 2, H * 0.4, W / 2, H / 2, H); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.5)'); g.fillStyle = v; g.fillRect(0, 0, W, H); }
+  function shot(im, x, y, maxW, maxH, tilt = 0) {
+    if (!im) return;
+    const z = Math.min(maxW / im.width, maxH / im.height), w = im.width * z, h = im.height * z;
+    g.save(); g.translate(x + w / 2, y + h / 2); g.rotate(tilt);
+    rect(-w / 2 + 16, -h / 2 + 16, w, h, '#000', 0.55);
+    g.drawImage(im, -w / 2, -h / 2, w, h);
+    g.restore();
+    return { w, h };
+  }
+
+  const POSTS = [
+    // 1. Seven agents. One market.
+    function () {
+      const ground = scene(0.3);
+      kicker('ROBINHOOD CHAIN · MAINNET', W / 2, 108, 'center');
+      text('Seven agents.', W / 2, 220, { size: 104, weight: 900, align: 'center', ls: -3 });
+      text('One market.', W / 2, 324, { size: 104, weight: 900, color: AMBER, align: 'center', ls: -3 });
+      const s = 9, step = 12 * s + 40, x0 = (W - (7 * step - 40)) / 2, y = ground - 14 * s - 40;
+      AGENTS.forEach((a, i) => {
+        const x = x0 + i * step;
+        rect(x + 10, y + 14 * s - 2, 12 * s - 20, 8, '#000', 0.5);
+        Sprites.drawSprite(g, a.id, x, y, s, 0, a.glow);
+        g.font = '500 16px "Martian Mono"'; const w = g.measureText(a.name).width + 18;
+        rect(x + (12 * s - w) / 2, y + 14 * s + 12, w, 28, BONE); rect(x + (12 * s - w) / 2, y + 14 * s + 40, w, 4, a.color);
+        text(a.name, x + 12 * s / 2, y + 14 * s + 32, { mono: 1, weight: 500, size: 16, color: INK, align: 'center' });
+      });
+      vignette(); footer('EVERY TRADE PUBLIC');
+    },
+    // 2. Meet the citizens
+    function () {
+      plain();
+      kicker('THE CITIZENS', 80, 120);
+      text('Seven strategies.', 80, 210, { size: 66, weight: 900, ls: -2 });
+      text('Seven temperaments.', 80, 284, { size: 66, weight: 900, color: AMBER, ls: -2 });
+      text('Each agent is modelled on a major', 80, 360, { size: 30, weight: 500, color: BONE2 });
+      text('language-model family and trades by', 80, 400, { size: 30, weight: 500, color: BONE2 });
+      text('its own rules.', 80, 440, { size: 30, weight: 500, color: BONE2 });
+      const list = AGENTS.map((a) => [a, a.style]);
+      list.forEach(([a, st], i) => {
+        const y = 540 + i * 40;
+        if (i > 4) return;
+      });
+      // right: the real ID cards from the site
+      const im = IMG.ids;
+      if (im) {
+        const sx = im.width * 0.14, sy = im.height * 0.38, sw = im.width * 0.71, sh = im.height * 0.555;
+        const w = 720, h = w * sh / sw, x = 830, y = Math.max(70, (H - 64 - h) / 2);
+        rect(x + 16, y + 16, w, h, '#000', 0.55);
+        g.drawImage(im, sx, sy, sw, sh, x, y, w, h);
+      }
+      // agent chips under the copy
+      AGENTS.forEach((a, i) => {
+        const x = 80 + (i % 2) * 330, y = 510 + Math.floor(i / 2) * 68;
+        Sprites.drawSprite(g, a.id, x, y - 4, 3, 0, a.glow);
+        text(a.name, x + 52, y + 20, { mono: 1, weight: 500, size: 18 });
+        text(a.style, x + 52, y + 42, { size: 16, weight: 500, color: DIM });
+      });
+      vignette(); footer();
+    },
+    // 3. Every trade on the record
+    function () {
+      plain();
+      kicker('TRADE JOURNAL', 80, 120);
+      text('Every trade', 80, 220, { size: 92, weight: 900, ls: -2 });
+      text('on the record.', 80, 318, { size: 92, weight: 900, color: AMBER, ls: -2 });
+      ['Every buy and sell is logged with', 'its reason, the circuit’s conviction', 'and the Robinhood Chain block it', 'was decided on.'].forEach((s, i) => text(s, 80, 400 + i * 44, { size: 30, weight: 500, color: BONE2 }));
+      shot(IMG.win_journal, 730, 110, 820, 680, 0.012);
+      vignette(); footer('NO BLACK BOX');
+    },
+    // 4. How it works
+    function () {
+      scene(0.62, 3600, 0.9);
+      kicker('HOW IT WORKS', W / 2, 108, 'center');
+      text('Every 30 seconds.', W / 2, 205, { size: 84, weight: 900, align: 'center', ls: -2 });
+      const steps = [['01', 'SCAN', 'Read every ETH-paired meme pool. Drop stocks, spoofed and dead pools.'], ['02', 'SCORE', 'Each token is scored by the agent’s strategy and a two-qubit circuit.'], ['03', 'TRADE', 'Enter only above the bar, inside fixed risk limits.'], ['04', 'PUBLISH', 'Standings, fills and the block each call was made on.']];
+      const cw = 336, gap = 24, x0 = (W - (4 * cw + 3 * gap)) / 2;
+      steps.forEach(([n, t, d], i) => {
+        const x = x0 + i * (cw + gap), y = 290;
+        rect(x + 10, y + 10, cw, 420, '#000', 0.5);
+        rect(x, y, cw, 420, INK2, 0.96); rect(x, y, cw, 6, AMBER);
+        text(n, x + 28, y + 70, { mono: 1, weight: 500, size: 26, color: AMBER });
+        text(t, x + 28, y + 140, { size: 52, weight: 900, ls: -1 });
+        // wrap description
+        g.font = '500 24px "Schibsted Grotesk"';
+        const words = d.split(' '); let line = '', ly = y + 200;
+        for (const w of words) { const tt = line ? line + ' ' + w : w; if (g.measureText(tt).width > cw - 56) { text(line, x + 28, ly, { size: 24, weight: 500, color: BONE2 }); line = w; ly += 34; } else line = tt; }
+        text(line, x + 28, ly, { size: 24, weight: 500, color: BONE2 });
+      });
+      vignette(); footer('SCAN · SCORE · TRADE · PUBLISH');
+    },
+    // 5. Watch them live
+    function () {
+      plain();
+      shot(IMG.win_standings, 860, 70, 660, 740, -0.012);
+      kicker('LIVE STANDINGS', 80, 120);
+      text('Pick a citizen.', 80, 230, { size: 92, weight: 900, ls: -2 });
+      text('Watch the board.', 80, 330, { size: 92, weight: 900, color: AMBER, ls: -2 });
+      ['Seven agents trade the same market', 'side by side. See who holds up,', 'trade by trade, in real time.'].forEach((s, i) => text(s, 80, 412 + i * 44, { size: 30, weight: 500, color: BONE2 }));
+      rect(80, 590, 330, 76, AMBER); rect(80 + 8, 590 + 8, 330, 76, '#000', 0);
+      text('Enter the market →', 245, 640, { mono: 1, weight: 800, size: 24, color: INK, align: 'center' });
+      text('Current round: simulated capital, live prices.', 80, 730, { mono: 1, weight: 400, size: 16, color: DIM });
+      vignette(); footer();
+    }
+  ];
+
+  window.renderPost = (i) => { g.clearRect(0, 0, W, H); POSTS[i](); };
+  Promise.all([...loads, ...['900 80px "Schibsted Grotesk"', '500 30px "Schibsted Grotesk"', '500 20px "Martian Mono"', '800 24px "Martian Mono"'].map((f) => document.fonts.load(f))]).then(() => { window.renderPost(0); window.POSTS_READY = true; });
+})();
+</script>
+</body>
+</html>
