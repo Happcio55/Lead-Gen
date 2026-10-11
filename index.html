@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Sherwood — Paper-trade Robinhood memecoins</title>
-  <meta name="description" content="Sherwood is a paper-trading floor for every memecoin listed on Robinhood. Live prices, live charts, $10,000 of virtual cash. No real money." />
+  <title>Sherwood</title>
+  <meta name="description" content="Sherwood is a paper-trading floor for Robinhood's 100 most popular stocks and ETFs, plus Robinhood's memecoins. Real quotes, live charts, $10,000 of virtual cash." />
   <meta name="theme-color" content="#0c130f" />
   <link rel="icon" href="assets/sherwood-mark.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -26,14 +26,15 @@
       </a>
 
       <nav class="nav" aria-label="Primary">
-        <a href="#/" data-nav="markets">Markets</a>
+        <a href="#/" data-nav="stocks">Stocks</a>
+        <a href="#/crypto" data-nav="crypto">Crypto</a>
         <a href="#/portfolio" data-nav="portfolio">Portfolio</a>
         <a href="#/activity" data-nav="activity">Activity</a>
       </nav>
 
       <div class="search" role="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-        <input id="search" type="search" placeholder="Search memecoins" autocomplete="off" spellcheck="false" aria-label="Search memecoins" />
+        <input id="search" type="search" placeholder="Search stocks, ETFs, crypto" autocomplete="off" spellcheck="false" aria-label="Search stocks, ETFs and crypto" />
         <kbd>/</kbd>
         <div class="search__results" id="searchResults" role="listbox" hidden></div>
       </div>
@@ -61,17 +62,17 @@
         <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><use href="#mark" /></svg>
         <div>
           <strong>Sherwood</strong>
-          <p>A paper-trading floor for the memecoins listed on Robinhood. Virtual money only — nothing here is real, and nothing here is advice.</p>
+          <p>A paper-trading floor for Robinhood’s most popular stocks and ETFs, plus Robinhood’s memecoins. Virtual money only. Nothing here is real, and nothing here is advice.</p>
         </div>
       </div>
       <div class="footer__cols">
         <div>
           <h4>Data</h4>
-          <p>Live prices: Coinbase Exchange, Kraken, DexScreener. Candles: Coinbase, Kraken, GeckoTerminal. Supply: CoinGecko.</p>
+          <p>Stocks &amp; ETFs: Robinhood market data (quotes, fundamentals, charts, market hours, analyst ratings). Crypto: Coinbase Exchange, Kraken, DexScreener, GeckoTerminal, CoinGecko.</p>
         </div>
         <div>
           <h4>Sources</h4>
-          <p>Coin list and descriptions from <a href="https://robinhood.com/us/en/support/articles/coin-availability/" target="_blank" rel="noopener">robinhood.com</a>. Logos are the official artwork of each project and belong to their owners.</p>
+          <p>Stock list from Robinhood’s <a href="https://robinhood.com/us/en/collections/100-most-popular/" target="_blank" rel="noopener">100 Most Popular</a>; coin list from <a href="https://robinhood.com/us/en/support/articles/coin-availability/" target="_blank" rel="noopener">robinhood.com</a>. Logos are each company’s or project’s official marks and belong to their owners.</p>
         </div>
         <div>
           <h4>Not affiliated</h4>
@@ -82,7 +83,8 @@
   </footer>
 
   <nav class="mobile-nav" aria-label="Primary">
-    <a href="#/" data-nav="markets"><svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 4 8-8" /><path d="M15 8h5v5" /></svg>Markets</a>
+    <a href="#/" data-nav="stocks"><svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 4 8-8" /><path d="M15 8h5v5" /></svg>Stocks</a>
+    <a href="#/crypto" data-nav="crypto"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M9.5 8h4a2 2 0 0 1 0 4h-4m0 0h4.5a2 2 0 0 1 0 4H9.5V8m1.5-2v2m0 8v2m2-12v2m0 8v2" /></svg>Crypto</a>
     <a href="#/portfolio" data-nav="portfolio"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5V12l6 6" /></svg>Portfolio</a>
     <a href="#/activity" data-nav="activity"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" /></svg>Activity</a>
   </nav>
@@ -110,6 +112,7 @@
   </svg>
 
   <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="assets/js/stocks.js"></script>
   <script src="assets/js/coins.js"></script>
   <script src="assets/js/market.js"></script>
   <script src="assets/js/portfolio.js"></script>

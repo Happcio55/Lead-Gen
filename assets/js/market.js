@@ -1,66 +1,71 @@
 /* Sherwood — live market data layer.
- *  - Coinbase Exchange websocket (ticker) for most coins
- *  - Kraken v2 websocket for MEW
- *  - DexScreener polling for CASHCAT (Robinhood Chain)
- *  - CoinGecko for supply / market cap metadata
- * Everything is public, keyless and CORS-enabled, so the app runs as static files. */
+ *  Stocks & ETFs: Robinhood's own public market data (quotes, fundamentals, historicals,
+ *                 market hours, analyst ratings) through the bundled proxy (server.js).
+ *  Crypto:        Coinbase Exchange + Kraken websockets, DexScreener for CASHCAT (Robinhood Chain),
+ *                 CoinGecko for supply.
+ */
 (function () {
-  const COINS = window.COINS;
-  const BY_SYM = Object.fromEntries(COINS.map((c) => [c.sym, c]));
-  const CACHE_KEY = 'sw.market.v1';
-  // Preview mode: a sandbox without network access (e.g. a hosted preview) ships a real
-  // snapshot of prices and candles and animates it with simulated ticks.
+  const STOCKS = (window.STOCKS || []).map((s) => ({ ...s, cls: 'stock', src: { type: 'rh' } }));
+  const COINS = (window.COINS || []).map((c) => ({ ...c, cls: 'crypto', kind: 'Crypto' }));
+  const ASSETS = (window.ASSETS = [...STOCKS, ...COINS]);
+  const BY_SYM = Object.fromEntries(ASSETS.map((a) => [a.sym, a]));
+  const API = (window.SW_API || 'api/rh/').replace(/\/?$/, '/');
+  const CACHE_KEY = 'sw.market.v2';
+
+  // Preview mode: a sandbox without network access ships a real snapshot and animates it.
   const SNAP = window.SW_SNAPSHOT || null;
   const DEMO = !!(window.SW_DEMO && SNAP);
   const SNAP_SHIFT = DEMO ? Math.floor(Date.now() / 1000) - SNAP.at : 0;
 
   const M = (window.Market = {
     state: {},
-    status: { coinbase: 'connecting', kraken: 'connecting', dex: 'connecting' },
+    status: { robinhood: 'connecting', coinbase: 'connecting', kraken: 'connecting', dex: 'connecting' },
+    session: { state: 'unknown', label: 'Market hours…' },
     listeners: new Set(),
     statusListeners: new Set(),
-    on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); },
-    onStatus(fn) { this.statusListeners.add(fn); return () => this.statusListeners.delete(fn); },
     demo: DEMO,
     snapshotAt: SNAP ? SNAP.at * 1000 : null,
-    coin: (sym) => BY_SYM[sym],
+    on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); },
+    onStatus(fn) { this.statusListeners.add(fn); return () => this.statusListeners.delete(fn); },
+    asset: (sym) => BY_SYM[sym],
     price: (sym) => (M.state[sym] ? M.state[sym].price : null),
   });
+  M.coin = M.asset;
 
-  COINS.forEach((c) => {
-    M.state[c.sym] = { price: null, open24: null, high24: null, low24: null, vol24: null, change24: null, mcap: null, supply: null, rank: null, ts: 0, dir: 0 };
+  ASSETS.forEach((a) => {
+    M.state[a.sym] = { price: null, open24: null, high24: null, low24: null, vol24: null, change24: null, mcap: null, supply: null, ts: 0, dir: 0 };
   });
 
-  // Restore last known snapshot so the UI paints instantly on reload.
   try {
     const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
-    for (const s in cache) if (M.state[s]) Object.assign(M.state[s], cache[s], { dir: 0 });
+    for (const s in cache) if (M.state[s]) Object.assign(M.state[s], cache[s], { dir: 0, ts: 0 });
   } catch (e) {}
-  setInterval(() => {
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify(M.state)); } catch (e) {}
-  }, 10000);
+  setInterval(() => { try { localStorage.setItem(CACHE_KEY, JSON.stringify(M.state)); } catch (e) {} }, 10000);
 
   function emit(sym) { for (const fn of M.listeners) fn(sym, M.state[sym]); }
+  function emitStatus() { for (const fn of M.statusListeners) fn(M.status, M.session); }
   function setStatus(src, v) {
     if (M.status[src] === v) return;
     M.status[src] = v;
-    for (const fn of M.statusListeners) fn(M.status);
+    emitStatus();
   }
 
-  function update(sym, patch) {
+  function update(sym, patch, quiet) {
     const s = M.state[sym];
     if (!s) return;
     const prev = s.price;
-    for (const k in patch) if (patch[k] != null && !Number.isNaN(patch[k])) s[k] = patch[k];
+    for (const k in patch) if (patch[k] != null && !(typeof patch[k] === 'number' && Number.isNaN(patch[k]))) s[k] = patch[k];
     if (patch.price != null && !Number.isNaN(patch.price)) {
       s.dir = prev == null ? 0 : patch.price > prev ? 1 : patch.price < prev ? -1 : 0;
       s.ts = Date.now();
       if (s.supply) s.mcap = s.supply * s.price;
       if (s.open24) s.change24 = ((s.price - s.open24) / s.open24) * 100;
-      if (s.high24 != null && s.price > s.high24) s.high24 = s.price;
-      if (s.low24 != null && s.price < s.low24) s.low24 = s.price;
+      if (BY_SYM[sym].cls === 'crypto') {
+        if (s.high24 != null && s.price > s.high24) s.high24 = s.price;
+        if (s.low24 != null && s.price < s.low24) s.low24 = s.price;
+      }
     }
-    emit(sym);
+    if (!quiet) emit(sym);
   }
   M._update = update;
 
@@ -69,18 +74,108 @@
     if (!r.ok) throw new Error(r.status + ' ' + url);
     return r.json();
   };
+  const chunks = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n));
+  const num = (v) => (v == null || v === '' ? null : +v);
 
-  /* ---------- Coinbase ---------- */
+  /* =================== Stocks — Robinhood =================== */
+  const stockSyms = STOCKS.map((s) => s.sym);
+  const BY_ID = Object.fromEntries(STOCKS.map((s) => [s.id, s.sym]));
+
+  async function pollQuotes() {
+    try {
+      for (const part of chunks(stockSyms, 60)) {
+        const j = await getJSON(`${API}marketdata/quotes/?symbols=${part.join(',')}`);
+        for (const q of j.results || []) {
+          if (!q || !BY_SYM[q.symbol]) continue;
+          const reg = num(q.last_trade_price);
+          const non = num(q.last_non_reg_trade_price) ?? num(q.last_extended_hours_trade_price);
+          const tReg = Date.parse(q.venue_last_trade_time || 0) || 0;
+          const tNon = Date.parse(q.venue_last_non_reg_trade_time || 0) || 0;
+          const useNon = non != null && tNon > tReg;
+          const price = useNon ? non : reg;
+          const s = M.state[q.symbol];
+          const patch = {
+            price, regPrice: reg, extended: useNon && Math.abs(non - reg) > 1e-9,
+            open24: num(q.adjusted_previous_close) || num(q.previous_close),
+            bid: num(q.bid_price), ask: num(q.ask_price), halted: q.trading_halted,
+          };
+          update(q.symbol, patch, s.ts && s.price === price && s.open24 === patch.open24);
+        }
+      }
+      setStatus('robinhood', 'live');
+    } catch (e) {
+      setStatus('robinhood', 'reconnecting');
+    }
+  }
+
+  async function loadFundamentals() {
+    try {
+      for (const part of chunks(stockSyms, 50)) {
+        const j = await getJSON(`${API}fundamentals/?symbols=${part.join(',')}`);
+        (j.results || []).forEach((f) => {
+          const sym = f && f.instrument && BY_ID[f.instrument.replace(/\/$/, '').split('/').pop()];
+          if (!sym) return;
+          const s = M.state[sym];
+          Object.assign(s, {
+            high24: num(f.high), low24: num(f.low), dayOpen: num(f.open), volume: num(f.volume), avgVolume: num(f.average_volume),
+            hi52: num(f.high_52_weeks), lo52: num(f.low_52_weeks), pe: num(f.pe_ratio), divYield: num(f.dividend_yield),
+            supply: num(f.shares_outstanding), description: f.description, ceo: f.ceo, employees: f.num_employees,
+            founded: f.year_founded, hq: [f.headquarters_city, f.headquarters_state].filter(Boolean).join(', '),
+            sector: f.sector, industry: f.industry,
+          });
+          s.mcap = s.supply && s.price ? s.supply * s.price : num(f.market_cap);
+          emit(sym);
+        });
+      }
+    } catch (e) {}
+  }
+
+  // Market session from Robinhood's XNYS hours (regular, extended and 24 Hour Market).
+  const hours = {};
+  const etDate = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(d);
+  async function loadHours() {
+    const now = new Date();
+    for (const d of [etDate(now), etDate(new Date(now.getTime() + 864e5))]) {
+      if (hours[d]) continue;
+      try { hours[d] = await getJSON(`${API}markets/XNYS/hours/${d}/`); } catch (e) {}
+    }
+    computeSession();
+  }
+  function computeSession() {
+    if (DEMO) { M.session = { state: 'preview', label: 'Preview' }; emitStatus(); return; }
+    const now = Date.now();
+    const t = (s) => (s ? Date.parse(s) : NaN);
+    let st = 'closed', next = null;
+    for (const d of Object.values(hours)) {
+      if (!d || !d.is_open) continue;
+      const o = t(d.opens_at), c = t(d.closes_at), eo = t(d.extended_opens_at), ec = t(d.extended_closes_at), ao = t(d.all_day_opens_at), ac = t(d.all_day_closes_at);
+      if (now >= o && now < c) { st = 'regular'; break; }
+      if (now >= eo && now < o) { st = 'pre'; break; }
+      if (now >= c && now < ec) { st = 'after'; break; }
+      if (now >= ao && now < ac && st === 'closed') st = 'overnight';
+      if (o > now && (!next || o < next)) next = o;
+    }
+    const labels = { regular: 'Market open', pre: 'Pre-market', after: 'After hours', overnight: '24 Hour Market', closed: 'Market closed' };
+    M.session = { state: st, label: labels[st], next };
+    emitStatus();
+  }
+  M.isStockSessionLive = () => ['regular', 'pre', 'after', 'overnight', 'preview'].includes(M.session.state);
+
+  M.ratings = async function (sym) {
+    const a = BY_SYM[sym];
+    if (DEMO) return (SNAP.ratings && SNAP.ratings[sym]) || null;
+    try { return await getJSON(`${API}midlands/ratings/${a.id}/`); } catch (e) { return null; }
+  };
+
+  /* =================== Crypto =================== */
   const cbCoins = COINS.filter((c) => c.src.type === 'coinbase');
   function connectCoinbase() {
+    if (!cbCoins.length) return;
     let retry = 0;
     const open = () => {
       let ws;
       try { ws = new WebSocket('wss://ws-feed.exchange.coinbase.com'); } catch (e) { setStatus('coinbase', 'offline'); return; }
-      ws.onopen = () => {
-        retry = 0;
-        ws.send(JSON.stringify({ type: 'subscribe', product_ids: cbCoins.map((c) => c.src.id), channels: ['ticker'] }));
-      };
+      ws.onopen = () => { retry = 0; ws.send(JSON.stringify({ type: 'subscribe', product_ids: cbCoins.map((c) => c.src.id), channels: ['ticker'] })); };
       ws.onmessage = (e) => {
         const m = JSON.parse(e.data);
         if (m.type !== 'ticker') return;
@@ -89,16 +184,12 @@
         const price = +m.price;
         update(sym, { price, open24: +m.open_24h, high24: +m.high_24h, low24: +m.low_24h, vol24: +m.volume_24h * price });
       };
-      ws.onclose = () => {
-        setStatus('coinbase', 'reconnecting');
-        setTimeout(open, Math.min(30000, 1000 * 2 ** retry++));
-      };
+      ws.onclose = () => { setStatus('coinbase', 'reconnecting'); setTimeout(open, Math.min(30000, 1000 * 2 ** retry++)); };
       ws.onerror = () => ws.close();
     };
     open();
   }
 
-  /* ---------- Kraken ---------- */
   const krCoins = COINS.filter((c) => c.src.type === 'kraken');
   const krSym = Object.fromEntries(krCoins.map((c) => [c.src.id, c.sym]));
   function connectKraken() {
@@ -107,30 +198,22 @@
     const open = () => {
       let ws;
       try { ws = new WebSocket('wss://ws.kraken.com/v2'); } catch (e) { setStatus('kraken', 'offline'); return; }
-      ws.onopen = () => {
-        retry = 0;
-        ws.send(JSON.stringify({ method: 'subscribe', params: { channel: 'ticker', symbol: krCoins.map((c) => c.src.id) } }));
-      };
+      ws.onopen = () => { retry = 0; ws.send(JSON.stringify({ method: 'subscribe', params: { channel: 'ticker', symbol: krCoins.map((c) => c.src.id) } })); };
       ws.onmessage = (e) => {
         const m = JSON.parse(e.data);
         if (m.channel !== 'ticker' || !m.data) return;
         setStatus('kraken', 'live');
         for (const d of m.data) {
           const sym = krSym[d.symbol];
-          if (!sym) continue;
-          update(sym, { price: +d.last, high24: +d.high, low24: +d.low, vol24: +d.volume * +d.last, open24: +d.last / (1 + +d.change_pct / 100) });
+          if (sym) update(sym, { price: +d.last, high24: +d.high, low24: +d.low, vol24: +d.volume * +d.last, open24: +d.last / (1 + +d.change_pct / 100) });
         }
       };
-      ws.onclose = () => {
-        setStatus('kraken', 'reconnecting');
-        setTimeout(open, Math.min(30000, 1000 * 2 ** retry++));
-      };
+      ws.onclose = () => { setStatus('kraken', 'reconnecting'); setTimeout(open, Math.min(30000, 1000 * 2 ** retry++)); };
       ws.onerror = () => ws.close();
     };
     open();
   }
 
-  /* ---------- DexScreener (Robinhood Chain) ---------- */
   const dexCoins = COINS.filter((c) => c.src.type === 'dex');
   async function pollDex() {
     for (const c of dexCoins) {
@@ -145,14 +228,11 @@
         if (p.marketCap && !M.state[c.sym].supply) patch.supply = +p.marketCap / price;
         update(c.sym, patch);
         setStatus('dex', 'live');
-      } catch (e) {
-        setStatus('dex', 'reconnecting');
-      }
+      } catch (e) { setStatus('dex', 'reconnecting'); }
     }
   }
 
-  /* ---------- REST fallback when websockets are blocked ---------- */
-  async function pollFallback() {
+  async function pollCryptoFallback() {
     if (M.status.coinbase !== 'live') {
       for (const c of cbCoins) {
         try {
@@ -174,99 +254,128 @@
     }
   }
 
-  /* ---------- CoinGecko metadata (supply, rank) ---------- */
-  async function loadMeta() {
+  async function loadCryptoMeta() {
     try {
-      const ids = COINS.map((c) => c.cg).join(',');
-      const rows = await getJSON(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}`);
+      const rows = await getJSON(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${COINS.map((c) => c.cg).join(',')}`);
       const byId = Object.fromEntries(COINS.map((c) => [c.cg, c.sym]));
       for (const r of rows) {
         const sym = byId[r.id];
         if (!sym) continue;
         const s = M.state[sym];
-        const patch = {
-          supply: r.circulating_supply || (r.market_cap && r.current_price ? r.market_cap / r.current_price : null),
-          rank: r.market_cap_rank,
-        };
-        // Only seed price data if no live feed has delivered yet.
-        if (s.price == null || !s.ts) {
-          patch.price = r.current_price;
-          patch.high24 = r.high_24h;
-          patch.low24 = r.low_24h;
-          patch.vol24 = r.total_volume;
-          if (r.price_change_percentage_24h != null) patch.open24 = r.current_price / (1 + r.price_change_percentage_24h / 100);
-          update(sym, patch);
+        s.supply = r.circulating_supply || (r.market_cap && r.current_price ? r.market_cap / r.current_price : null);
+        s.rank = r.market_cap_rank;
+        if (!s.ts) {
+          update(sym, { price: r.current_price, high24: r.high_24h, low24: r.low_24h, vol24: r.total_volume, open24: r.price_change_percentage_24h != null ? r.current_price / (1 + r.price_change_percentage_24h / 100) : null });
           s.ts = 0;
         } else {
-          Object.assign(s, patch);
           if (s.supply && s.price) s.mcap = s.supply * s.price;
           emit(sym);
         }
       }
-    } catch (e) { /* rate limited — keep cached values */ }
+    } catch (e) {}
   }
 
-  /* ---------- Historical candles ---------- */
-  // span = seconds shown, plus a per-source bucket size.
+  /* =================== Historical candles =================== */
   const RANGES = {
-    '1H': { span: 3600, cb: 60, kr: 1, gt: ['minute', 1, 60] },
-    '1D': { span: 86400, cb: 300, kr: 5, gt: ['minute', 5, 300] },
-    '1W': { span: 604800, cb: 3600, kr: 60, gt: ['hour', 1, 3600] },
-    '1M': { span: 2592000, cb: 21600, kr: 240, gt: ['hour', 4, 14400] },
-    '3M': { span: 7776000, cb: 86400, kr: 1440, gt: ['day', 1, 86400] },
+    stock: {
+      '1D': { q: 'interval=5minute&span=day&bounds=trading', bucket: 300 },
+      '1W': { q: 'interval=10minute&span=week&bounds=trading', bucket: 600 },
+      '1M': { q: 'interval=hour&span=month&bounds=regular', bucket: 3600 },
+      '3M': { q: 'interval=day&span=3month&bounds=regular', bucket: 86400 },
+      '1Y': { q: 'interval=day&span=year&bounds=regular', bucket: 86400 },
+      '5Y': { q: 'interval=week&span=5year&bounds=regular', bucket: 604800 },
+    },
+    crypto: {
+      '1H': { span: 3600, cb: 60, kr: 1, gt: ['minute', 1, 60] },
+      '1D': { span: 86400, cb: 300, kr: 5, gt: ['minute', 5, 300] },
+      '1W': { span: 604800, cb: 3600, kr: 60, gt: ['hour', 1, 3600] },
+      '1M': { span: 2592000, cb: 21600, kr: 240, gt: ['hour', 4, 14400] },
+      '3M': { span: 7776000, cb: 86400, kr: 1440, gt: ['day', 1, 86400] },
+    },
   };
-  M.RANGES = RANGES;
+  M.rangesFor = (sym) => Object.keys(RANGES[BY_SYM[sym].cls]);
   const histCache = new Map();
+  const snapFiles = new Map();
+
+  function snapHistory(sym) {
+    if (!snapFiles.has(sym)) {
+      const inline = SNAP.hist && SNAP.hist[sym];
+      const p = inline ? Promise.resolve(inline) : getJSON(`snap/${sym.toLowerCase().replace('.', '-')}.json`);
+      p.catch(() => snapFiles.delete(sym));
+      snapFiles.set(sym, p);
+    }
+    return snapFiles.get(sym);
+  }
 
   M.history = async function (sym, range) {
+    const a = BY_SYM[sym];
     if (DEMO) {
-      const h = SNAP.hist[sym][range];
-      // move the snapshot forward so it ends now; the live candle continues from there
-      const shift = Math.floor(SNAP_SHIFT / h.bucket) * h.bucket;
-      return { bucket: h.bucket, bars: h.bars.map((b) => ({ time: b[0] + shift, open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5] })) };
+      const all = await snapHistory(sym);
+      const h = all[range];
+      const shift = a.cls === 'crypto' ? Math.floor(SNAP_SHIFT / h.bucket) * h.bucket : 0;
+      return { bucket: h.bucket, prevClose: h.prevClose, bars: h.bars.map((b) => ({ time: b[0] + shift, open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5] })) };
     }
     const key = sym + ':' + range;
     const hit = histCache.get(key);
     if (hit && Date.now() - hit.at < 30000) return hit.data;
-    const c = BY_SYM[sym];
-    const R = RANGES[range];
+    const R = RANGES[a.cls][range];
+    let bars = [], bucket, prevClose = null;
     const now = Math.floor(Date.now() / 1000);
-    const start = now - R.span;
-    let bars = [];
-    let bucket;
-    if (c.src.type === 'coinbase') {
-      bucket = R.cb;
-      const url = `https://api.exchange.coinbase.com/products/${c.src.id}/candles?granularity=${R.cb}&start=${new Date(start * 1000).toISOString()}&end=${new Date(now * 1000).toISOString()}`;
-      const rows = await getJSON(url);
-      bars = rows.map((r) => ({ time: r[0], low: r[1], high: r[2], open: r[3], close: r[4], volume: r[5] * r[4] }));
-    } else if (c.src.type === 'kraken') {
-      bucket = R.kr * 60;
-      const j = await getJSON(`https://api.kraken.com/0/public/OHLC?pair=${c.src.rest}&interval=${R.kr}&since=${start}`);
-      const rows = Object.entries(j.result).find(([k]) => k !== 'last')[1];
-      bars = rows.map((r) => ({ time: r[0], open: +r[1], high: +r[2], low: +r[3], close: +r[4], volume: +r[6] * +r[4] }));
+    if (a.cls === 'stock') {
+      bucket = R.bucket;
+      const j = await getJSON(`${API}marketdata/historicals/?symbols=${encodeURIComponent(sym)}&${R.q}`);
+      const r = j.results && j.results[0];
+      if (!r) throw new Error('no data');
+      prevClose = num(r.previous_close_price);
+      bars = r.historicals.filter((h) => !h.interpolated).map((h) => ({
+        time: Math.floor(Date.parse(h.begins_at) / 1000), open: +h.open_price, high: +h.high_price, low: +h.low_price, close: +h.close_price, volume: +h.volume,
+      }));
     } else {
-      const [tf, agg, b] = R.gt;
-      bucket = b;
-      const limit = Math.min(1000, Math.ceil(R.span / b));
-      const j = await getJSON(`https://api.geckoterminal.com/api/v2/networks/${c.src.chain}/pools/${c.src.pair}/ohlcv/${tf}?aggregate=${agg}&limit=${limit}&currency=usd`);
-      bars = j.data.attributes.ohlcv_list.map((r) => ({ time: r[0], open: r[1], high: r[2], low: r[3], close: r[4], volume: r[5] }));
+      const start = now - R.span;
+      if (a.src.type === 'coinbase') {
+        bucket = R.cb;
+        const rows = await getJSON(`https://api.exchange.coinbase.com/products/${a.src.id}/candles?granularity=${R.cb}&start=${new Date(start * 1000).toISOString()}&end=${new Date(now * 1000).toISOString()}`);
+        bars = rows.map((r) => ({ time: r[0], low: r[1], high: r[2], open: r[3], close: r[4], volume: r[5] * r[4] }));
+      } else if (a.src.type === 'kraken') {
+        bucket = R.kr * 60;
+        const j = await getJSON(`https://api.kraken.com/0/public/OHLC?pair=${a.src.rest}&interval=${R.kr}&since=${start}`);
+        const rows = Object.entries(j.result).find(([k]) => k !== 'last')[1];
+        bars = rows.map((r) => ({ time: r[0], open: +r[1], high: +r[2], low: +r[3], close: +r[4], volume: +r[6] * +r[4] }));
+      } else {
+        const [tf, agg, b] = R.gt;
+        bucket = b;
+        const j = await getJSON(`https://api.geckoterminal.com/api/v2/networks/${a.src.chain}/pools/${a.src.pair}/ohlcv/${tf}?aggregate=${agg}&limit=${Math.min(1000, Math.ceil(R.span / b))}&currency=usd`);
+        bars = j.data.attributes.ohlcv_list.map((r) => ({ time: r[0], open: r[1], high: r[2], low: r[3], close: r[4], volume: r[5] }));
+      }
+      bars = bars.filter((b) => b.time >= start - bucket);
     }
-    bars = bars.filter((b) => b.time >= start - bucket).sort((a, b) => a.time - b.time);
-    // de-dupe identical timestamps
+    bars.sort((x, y) => x.time - y.time);
     bars = bars.filter((b, i) => i === 0 || b.time !== bars[i - 1].time);
-    const data = { bars, bucket };
+    const data = { bars, bucket, prevClose };
     histCache.set(key, { at: Date.now(), data });
     return data;
   };
 
-  // 24h hourly closes for sparklines.
-  const sparks = {};
-  M.sparks = sparks;
-  M.loadSparks = async function (onEach, list = COINS, attempt = 0) {
+  /* =================== Sparklines (last trading day) =================== */
+  const sparks = (M.sparks = {});
+  M.loadSparks = async function (onEach) {
     if (DEMO) {
-      for (const c of COINS) { sparks[c.sym] = SNAP.sparks[c.sym] || []; onEach && onEach(c.sym); }
+      for (const a of ASSETS) { sparks[a.sym] = (SNAP.sparks && SNAP.sparks[a.sym]) || []; onEach && onEach(a.sym); }
       return;
     }
+    for (const part of chunks(stockSyms, 40)) {
+      try {
+        const j = await getJSON(`${API}marketdata/historicals/?symbols=${part.join(',')}&interval=5minute&span=day&bounds=regular`);
+        for (const r of j.results || []) {
+          if (!r) continue;
+          sparks[r.symbol] = r.historicals.map((h) => +h.close_price);
+          onEach && onEach(r.symbol);
+        }
+      } catch (e) {}
+    }
+    loadCryptoSparks(onEach);
+  };
+  async function loadCryptoSparks(onEach, list = COINS, attempt = 0) {
     const failed = [];
     for (const c of list) {
       try {
@@ -294,39 +403,53 @@
       await new Promise((r) => setTimeout(r, 90));
     }
     // rate-limited responses come back without CORS headers — retry later
-    if (failed.length && attempt < 3) setTimeout(() => M.loadSparks(onEach, failed, attempt + 1), 20000 * (attempt + 1));
-  };
+    if (failed.length && attempt < 3) setTimeout(() => loadCryptoSparks(onEach, failed, attempt + 1), 20000 * (attempt + 1));
+  }
 
+  /* =================== Preview simulation =================== */
   function startDemo() {
-    for (const c of COINS) {
-      const s = SNAP.state[c.sym];
-      M.state[c.sym].ts = 0;
-      update(c.sym, { ...s });
+    for (const a of ASSETS) {
+      const s = SNAP.state[a.sym];
+      if (!s) continue;
+      M.state[a.sym].ts = 0;
+      update(a.sym, { ...s });
     }
     for (const k in M.status) M.status[k] = 'demo';
-    for (const fn of M.statusListeners) fn(M.status);
-    // random walk with gentle pull back toward the snapshot price
+    computeSession();
     const tick = () => {
-      const c = COINS[Math.floor(Math.random() * COINS.length)];
-      const s = M.state[c.sym];
-      const anchor = SNAP.state[c.sym].price;
-      const z = (Math.random() + Math.random() + Math.random() - 1.5) * 1.6;
-      const drift = Math.log(anchor / s.price) * 0.02;
-      update(c.sym, { price: s.price * Math.exp(z * 0.0011 + drift), vol24: s.vol24 ? s.vol24 * (1 + Math.random() * 0.00002) : null });
-      setTimeout(tick, 120 + Math.random() * 380);
+      const a = ASSETS[Math.floor(Math.random() * ASSETS.length)];
+      const s = M.state[a.sym];
+      const base = SNAP.state[a.sym] && SNAP.state[a.sym].price;
+      if (s.price && base) {
+        const z = (Math.random() + Math.random() + Math.random() - 1.5) * 1.6;
+        const vol = a.cls === 'crypto' ? 0.0011 : a.kind === 'ETF' ? 0.00012 : 0.00035;
+        update(a.sym, { price: s.price * Math.exp(z * vol + Math.log(base / s.price) * 0.02) });
+      }
+      setTimeout(tick, 40 + Math.random() * 160);
     };
     tick();
   }
 
+  /* =================== start =================== */
   M.start = function () {
     if (DEMO) { startDemo(); return; }
+    loadHours();
+    setInterval(loadHours, 600000);
+    setInterval(computeSession, 15000);
+    loadFundamentals();
+    setInterval(loadFundamentals, 300000);
+    const loop = async () => {
+      await pollQuotes();
+      setTimeout(loop, M.isStockSessionLive() ? 2000 : 15000);
+    };
+    loop();
     connectCoinbase();
     connectKraken();
     pollDex();
     setInterval(pollDex, 5000);
-    loadMeta();
-    setInterval(loadMeta, 180000);
-    setTimeout(pollFallback, 4000);
-    setInterval(pollFallback, 8000);
+    loadCryptoMeta();
+    setInterval(loadCryptoMeta, 180000);
+    setTimeout(pollCryptoFallback, 4000);
+    setInterval(pollCryptoFallback, 8000);
   };
 })();

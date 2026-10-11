@@ -11,7 +11,7 @@
     positions: {}, // sym -> { qty, cost, locked }
     orders: [], // newest first
     history: [], // [t, equity]
-    watch: ['DOGE', 'PEPE', 'CASHCAT'],
+    watch: ['NVDA', 'AAPL', 'TSLA', 'DOGE'],
     realized: 0,
     createdAt: Date.now(),
   });
