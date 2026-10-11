@@ -66,16 +66,16 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:200;o
 .cta-row{display:flex;flex-wrap:wrap;gap:16px;margin-top:30px}
 .hero-faces{display:flex;align-items:center;gap:14px;margin-top:36px;font-size:14.5px;color:var(--ink2)}
 .hero-faces .stack{display:flex}
-.hero-faces .stack span{width:40px;height:48px;border:2px solid var(--ink);margin-left:-8px;overflow:hidden;background:var(--card)}
+.hero-faces .stack span{width:44px;height:44px;border:2px solid var(--ink);border-radius:50%;margin-left:-10px;overflow:hidden;background:var(--card)}
 .hero-faces .stack span:first-child{margin-left:0}
-.hero-faces svg{width:100%;height:100%}
+.hero-faces img{width:100%;height:100%;object-fit:cover;display:block}
 
 /* ---------- CRT ---------- */
 .tv{position:relative;background:#26231f;border:2px solid var(--ink);border-radius:26px;padding:20px 92px 20px 20px;box-shadow:10px 10px 0 var(--ink)}
 .tv::before{content:"";position:absolute;inset:6px;border-radius:20px;border:1px solid rgba(255,255,255,.07);pointer-events:none}
 .screen{position:relative;aspect-ratio:4/3;border-radius:22px/30px;overflow:hidden;background:#000;box-shadow:inset 0 0 0 3px #111}
-.screen .feed{position:absolute;inset:0;display:flex;justify-content:center;align-items:flex-end;transition:filter .2s}
-.screen .feed svg{height:96%;width:auto}
+.screen .feed{position:absolute;inset:0}
+.screen .feed img{width:100%;height:100%;object-fit:cover;object-position:50% 38%;display:block;filter:saturate(1.08) contrast(1.05)}
 .screen .scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.22) 2px 3px);z-index:3}
 .screen .vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%);z-index:4;box-shadow:inset 0 0 40px rgba(0,0,0,.6)}
 .screen .glare{position:absolute;inset:0;pointer-events:none;z-index:5;background:linear-gradient(130deg,rgba(255,255,255,.12),transparent 30%)}
@@ -155,8 +155,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:200;o
 .cert-head span{font-family:var(--tt);font-size:20px;color:var(--yel)}
 .cert-body{display:grid;grid-template-columns:150px 1fr;gap:20px;padding:20px}
 .photo{width:150px;height:180px;border:2px solid var(--ink);background:var(--paper2);position:relative;overflow:hidden}
-.photo svg{width:100%;height:100%;opacity:0;filter:blur(6px) sepia(1);transition:opacity 1s,filter 1.4s}
-.cert.s1 .photo svg{opacity:1;filter:none}
+.photo img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;filter:blur(6px) sepia(1);transition:opacity 1s,filter 1.4s}
+.cert.s1 .photo img{opacity:1;filter:grayscale(.15) contrast(1.05)}
 .photo::after{content:"PHOTO";position:absolute;inset:0;display:grid;place-items:center;font-family:var(--tt);font-size:20px;color:var(--mute);transition:opacity .4s}
 .cert.s1 .photo::after{opacity:0}
 .fields{display:grid;gap:7px;align-content:start}
@@ -259,7 +259,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:200;o
 .slot .ch{font-family:var(--disp);font-weight:900;font-size:30px;line-height:1}
 .slot .pt{width:56px;height:66px;border:2px solid var(--ink);overflow:hidden;background:var(--card)}
 .slot:hover .pt{border-color:var(--paper)}
-.slot .pt svg{width:100%;height:100%}
+.slot .pt img{width:100%;height:100%;object-fit:cover;display:block}
 .slot .nm{font-family:var(--disp);font-weight:900;text-transform:uppercase;font-size:28px;line-height:.95}
 .slot .show{font-size:15.5px;color:var(--ink2)}
 .slot:hover .show{color:#cfc9bc}
@@ -272,7 +272,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:200;o
 .slot.yours .nm{color:var(--sig)}
 .peek{position:fixed;left:0;top:0;width:200px;height:240px;border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);pointer-events:none;z-index:90;opacity:0;transform:rotate(-3deg) scale(.9);transition:opacity .15s,transform .15s;background:var(--card)}
 .peek.on{opacity:1;transform:rotate(-3deg) scale(1)}
-.peek svg{width:100%;height:100%}
+.peek img{width:100%;height:100%;object-fit:cover;display:block}
 
 /* ---------- call-in ---------- */
 .call{background:#191815;color:var(--paper);border-block:2px solid var(--ink)}
@@ -706,91 +706,22 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const fine = matchMedia('(pointer:fine)').matches;
 
-/* ================= portrait generator (riso-print style) ================= */
-const INK = '#141412';
-function face(p){
-  const S = `stroke="${INK}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"`;
-  const curls = (cx, cy, rx, ry, a0, a1, n, r, fill, st) => {
-    let s = '';
-    for(let k=0;k<n;k++){ const a = (a0+(a1-a0)*k/(n-1))*Math.PI/180; s += `<circle cx="${(cx+rx*Math.cos(a)).toFixed(1)}" cy="${(cy+ry*Math.sin(a)).toFixed(1)}" r="${r}" fill="${fill}" ${st}/>`; }
-    return s;
-  };
-  const hairBack = (fill, st) => ({
-    bob:`<path d="M26 50 C24 26 38 21 50 21 C62 21 76 26 74 50 L75 77 Q50 83 25 77 Z" fill="${fill}" ${st}/>`,
-    long:`<path d="M25 50 C23 24 38 20 50 20 C62 20 77 24 75 50 L80 106 Q50 112 20 106 Z" fill="${fill}" ${st}/>`,
-    curly:curls(50,46,24,24,170,370,12,8,fill,st),
-    bun:`<circle cx="50" cy="18" r="8.5" fill="${fill}" ${st}/>`,
-  }[p.hair] || '');
-  const hairFront = (fill, st) => ({
-    bob:`<path d="M30 47 C30 30 40 25 50 25 C62 25 70 30 70 47 C62 43 56 37 54 32 C50 40 40 44 30 47 Z" fill="${fill}" ${st}/>`,
-    long:`<path d="M30 48 C30 30 40 24 50 24 C60 24 70 30 70 48 C64 40 54 34 50 28 C46 34 36 40 30 48 Z" fill="${fill}" ${st}/>`,
-    buzz:`<path d="M30 47 C29 30 40 25 50 25 C60 25 71 30 70 47 C66 38 58 35 50 35 C42 35 34 38 30 47 Z" fill="${fill}" ${st}/>`,
-    bun:`<path d="M30 47 C29 30 40 25 50 25 C60 25 71 30 70 47 C64 36 58 33 50 33 C42 33 36 36 30 47 Z" fill="${fill}" ${st}/>`,
-    curly:curls(50,33,15,5,180,360,6,6.5,fill,st),
-    mohawk:`<path d="M44 36 C43 18 48 9 57 4 C54 14 58 24 56 36 Z" fill="${fill}" ${st}/>`,
-    cap:`<path d="M29 46 C29 28 40 22 50 22 C60 22 71 28 71 46 Z" fill="${fill}" ${st}/><path d="M27 46 Q50 39 73 46 Q75 51 70 51 Q50 46 30 51 Q25 51 27 46 Z" fill="${fill}" ${st}/>`,
-  }[p.hair] || '');
-  const body = (skin, shirt, st) =>
-    `<path d="M12 121 C14 96 30 88 50 88 C70 88 86 96 88 121 Z" fill="${shirt}" ${st}/>` +
-    `<path d="M43 70 L43 88 Q50 93 57 88 L57 70 Z" fill="${skin}" ${st}/>` +
-    `<ellipse cx="30.5" cy="55" rx="3.6" ry="5.2" fill="${skin}" ${st}/><ellipse cx="69.5" cy="55" rx="3.6" ry="5.2" fill="${skin}" ${st}/>` +
-    `<path d="M30 50 C30 30 40 26 50 26 C60 26 70 30 70 50 C70 66 62 78 50 78 C38 78 30 66 30 50 Z" fill="${skin}" ${st}/>`;
-  const eyes = {
-    dot:`<circle cx="42" cy="53" r="2" fill="${INK}"/><circle cx="58" cy="53" r="2" fill="${INK}"/>`,
-    glasses:`<circle cx="42" cy="53" r="2" fill="${INK}"/><circle cx="58" cy="53" r="2" fill="${INK}"/><circle cx="42" cy="53" r="6" fill="rgba(255,255,255,.25)" ${S}/><circle cx="58" cy="53" r="6" fill="rgba(255,255,255,.25)" ${S}/><path d="M48 53 L52 53" ${S}/>`,
-    shades:`<path d="M34 49 H48 V54 Q48 59 41 59 Q34 59 34 54 Z M52 49 H66 V54 Q66 59 59 59 Q52 59 52 54 Z" fill="${INK}" ${S}/><path d="M48 51 H52" ${S}/>`,
-    sleepy:`<path d="M39 54 Q42 52 45 54 M55 54 Q58 52 61 54" fill="none" ${S}/>`,
-  }[p.eyes];
-  const mouth = {
-    smile:`<path d="M44 67 Q50 72 56 67" fill="none" ${S}/>`,
-    flat:`<path d="M45 69 L55 69" fill="none" ${S}/>`,
-    o:`<ellipse cx="50" cy="69" rx="2.6" ry="3.2" fill="${INK}"/>`,
-    smirk:`<path d="M45 69 Q52 70 56 66" fill="none" ${S}/>`,
-    grin:`<path d="M43 66 Q50 74 57 66 Z" fill="#fff" ${S}/>`,
-  }[p.mouth];
-  const extra = (p.freckles ? [[39,61],[42,62.5],[45,61],[55,61],[58,62.5],[61,61]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r=".8" fill="#9c4a2a"/>`).join('') : '') +
-    (p.earring ? `<circle cx="30.5" cy="62" r="1.8" fill="#ffc629" ${S}/>` : '') +
-    (p.blush ? `<ellipse cx="38" cy="62" rx="3.5" ry="2" fill="#ff4a1c" opacity=".35"/><ellipse cx="62" cy="62" rx="3.5" ry="2" fill="#ff4a1c" opacity=".35"/>` : '');
-  const brows = p.eyes==='shades' ? '' : `<path d="M37.5 46.5 Q42 44.5 46 46.5 M54 46.5 Q58 44.5 62.5 46.5" fill="none" ${S}/>`;
-  const nose = `<path d="M50 56 Q47.5 62 50 63 L52 63" fill="none" ${S}/>`;
-  // misregistered print layer underneath, in a second ink
-  const mis = `<g transform="translate(2.4 1.8)" opacity=".9">${hairBack(p.mis,'')}${body(p.mis,p.mis,'')}${hairFront(p.mis,'')}</g>`;
-  return `<svg viewBox="0 0 100 120" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <defs><pattern id="ht" width="3.2" height="3.2" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="1.6" cy="1.6" r=".75" fill="${INK}" opacity=".16"/></pattern></defs>
-    <rect width="100" height="120" fill="${p.bg}"/><rect width="100" height="120" fill="url(#ht)"/>
-    ${mis}${hairBack(p.hairC,S)}${body(p.skin,p.shirt,S)}${hairFront(p.hairC,S)}${brows}${eyes}${nose}${mouth}${extra}
-    <rect width="100" height="120" fill="url(#ht)" opacity=".7"/>
-  </svg>`;
-}
-
 /* ================= cast ================= */
 const cast = [
-  {id:'margo', name:'Margo Static', show:'Hardcore Minecraft, day 212. Alone. Talks to the sheep.', genre:'games', time:'20:00', ch:'07', live:true,
-   skin:'#eab48f', hair:'bob', hairC:'#1b1b1b', bg:'#29b6d8', shirt:'#ffc629', eyes:'sleepy', mouth:'flat', mis:'#ff4a1c', freckles:1},
-  {id:'ludo', name:'Ludo Brack', show:'Markets and one spin an hour. Zero emotion.', genre:'money', time:'20:30', ch:'03',
-   skin:'#c98d66', hair:'buzz', hairC:'#2a1d14', bg:'#ff4a1c', shirt:'#f4f0e6', eyes:'glasses', mouth:'smirk', mis:'#2f4fd8'},
-  {id:'pim', name:'Pim Ossle', show:'Makes a lofi beat live from whatever chat hums.', genre:'music', time:'21:00', ch:'11',
-   skin:'#f2caa6', hair:'curly', hairC:'#c2462b', bg:'#2fa84f', shirt:'#efeadf', eyes:'dot', mouth:'smile', mis:'#ffc629', earring:1},
-  {id:'kettle', name:'Dr. Rosalind Kettle', show:'Not a doctor. Reads symptoms aloud and panics.', genre:'life', time:'21:30', ch:'22',
-   skin:'#8d5a3b', hair:'bun', hairC:'#141412', bg:'#ffc629', shirt:'#ffffff', eyes:'glasses', mouth:'grin', mis:'#29b6d8'},
-  {id:'bao', name:'Bao Down', show:'Speedruns until chat says stop. Chat never says stop.', genre:'games', time:'22:00', ch:'09',
-   skin:'#e8c095', hair:'mohawk', hairC:'#e2468f', bg:'#2f4fd8', shirt:'#ff4a1c', eyes:'shades', mouth:'o', mis:'#ffc629'},
-  {id:'saffi', name:'Saffi Lune', show:'Synth-pop idol from 2089. Sings songs she wrote last week.', genre:'music', time:'22:30', ch:'14',
-   skin:'#f3d2c1', hair:'long', hairC:'#e2468f', bg:'#efeadf', shirt:'#29b6d8', eyes:'dot', mouth:'smile', mis:'#2f4fd8', blush:1},
-  {id:'mole', name:'Augustin Mole', show:'Memecoin archaeologist. Digs up dead tokens, reads the eulogy.', genre:'money', time:'23:00', ch:'31',
-   skin:'#d9a37c', hair:'cap', hairC:'#2fa84f', bg:'#e4ddcd', shirt:'#6b4b2e', eyes:'glasses', mouth:'flat', mis:'#ff4a1c'},
-  {id:'tula', name:'Tula Breeze', show:'Morning routine at 3pm. Takes four hours. Worth it.', genre:'life', time:'23:30', ch:'18',
-   skin:'#a8704c', hair:'curly', hairC:'#141412', bg:'#e2468f', shirt:'#ffc629', eyes:'dot', mouth:'grin', mis:'#29b6d8', earring:1},
-  {id:'kip', name:'Kip Ardent', show:'Plays chess against chat. Poorly. Confidently.', genre:'games', time:'00:00', ch:'05',
-   skin:'#f0c7a0', hair:'buzz', hairC:'#d9a21b', bg:'#ffc629', shirt:'#2f4fd8', eyes:'dot', mouth:'o', mis:'#e2468f', freckles:1},
-  {id:'ines', name:'Inès Quarry', show:'Prediction markets, live. Bets on tomorrow\'s weather.', genre:'money', time:'00:30', ch:'27',
-   skin:'#c58a64', hair:'long', hairC:'#3a2316', bg:'#2f4fd8', shirt:'#efeadf', eyes:'shades', mouth:'smirk', mis:'#ff4a1c'},
-  {id:'rocco', name:'Rocco Fumo', show:'Reviews street food in a city that doesn\'t exist.', genre:'life', time:'01:00', ch:'40',
-   skin:'#e0a982', hair:'cap', hairC:'#ff4a1c', bg:'#2fa84f', shirt:'#141412', eyes:'dot', mouth:'smile', mis:'#ffc629'},
+  {id:'margo', name:'Margo Static', show:'Hardcore Minecraft, day 212. Alone. Talks to the sheep.', genre:'games', time:'20:00', ch:'07', live:true},
+  {id:'ludo', name:'Ludo Brack', show:'Markets and one spin an hour. Zero emotion.', genre:'money', time:'20:30', ch:'03'},
+  {id:'pim', name:'Pim Ossle', show:'Makes a lofi beat live from whatever chat hums.', genre:'music', time:'21:00', ch:'11'},
+  {id:'kettle', name:'Dr. Rosalind Kettle', show:'Not a doctor. Reads symptoms aloud and panics.', genre:'life', time:'21:30', ch:'22'},
+  {id:'bao', name:'Bao Down', show:'Speedruns until chat says stop. Chat never says stop.', genre:'games', time:'22:00', ch:'09'},
+  {id:'saffi', name:'Saffi Lune', show:'Synth-pop idol from 2089. Sings songs she wrote last week.', genre:'music', time:'22:30', ch:'14'},
+  {id:'mole', name:'Augustin Mole', show:'Memecoin archaeologist. Digs up dead tokens, reads the eulogy.', genre:'money', time:'23:00', ch:'31'},
+  {id:'tula', name:'Tula Breeze', show:'Morning routine at 3pm. Takes four hours. Worth it.', genre:'life', time:'23:30', ch:'18'},
+  {id:'kip', name:'Kip Ardent', show:'Plays chess against chat. Poorly. Confidently.', genre:'games', time:'00:00', ch:'05'},
+  {id:'ines', name:'Inès Quarry', show:'Prediction markets, live. Bets on tomorrow\'s weather.', genre:'money', time:'00:30', ch:'27'},
+  {id:'rocco', name:'Rocco Fumo', show:'Reviews street food in a city that doesn\'t exist.', genre:'life', time:'01:00', ch:'40'},
 ];
 const byId = Object.fromEntries(cast.map(c=>[c.id,c]));
-const svgCache = {};
-const portrait = c => svgCache[c.id] ||= face(c);
+const portrait = c => `<img src="img/${c.id}.jpg" alt="${c.name}" loading="lazy" decoding="async">`;
 
 /* ================= reveal ================= */
 const io = new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} }),{threshold:.2});
@@ -831,7 +762,7 @@ function makeTV(root){
     };
     cancelAnimationFrame(raf); raf = requestAnimationFrame(draw);
   }
-  function show(c){ feed.innerHTML = portrait(c); feed.style.background = c.bg; }
+  function show(c){ feed.innerHTML = portrait(c).replace(' loading="lazy"',''); }
   return {show, staticBurst};
 }
 
