@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#05060a">
+<title>Kairo · AI token scanner and DEX</title>
+<meta name="description" content="Drop in any token address. Kairo rates the launch 1–10, its AI tells you what it found, and you can buy from 17 chains in one signature.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23b6ff3c'/%3E%3Cstop offset='1' stop-color='%23a87bff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='%2305060a'/%3E%3Cpath d='M9 7v18M23 7 12.5 16 23 25' stroke='url(%23g)' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="bgfx" aria-hidden="true">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+  <div class="grid"></div><div class="noise"></div>
+  <div class="spot"></div>
+</div>
+
+<header class="topnav" id="topnav">
+  <div class="wrap in">
+    <a class="brand" href="#" aria-label="Kairo home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <defs><linearGradient id="kg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b6ff3c"/><stop offset=".5" stop-color="#6ae3ff"/><stop offset="1" stop-color="#a87bff"/></linearGradient></defs>
+        <rect x="1" y="1" width="30" height="30" rx="9" fill="none" stroke="rgba(255,255,255,.14)"/>
+        <path d="M10 8v16M22.5 8 13 16l9.5 8" stroke="url(#kg)" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Kairo <span class="beta">beta</span>
+    </a>
+    <nav class="navlinks" aria-label="Main">
+      <a href="#hero">Swap</a>
+      <a href="#feed">Explore</a>
+      <a href="#score">Score</a>
+      <a href="#stocks">Stocks</a>
+    </nav>
+    <form class="nsearch" id="navSearch" role="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input name="q" id="navQ" placeholder="Search a token or paste 0x…" aria-label="Search a token or paste an address" autocomplete="off" spellcheck="false">
+      <kbd aria-hidden="true">/</kbd>
+    </form>
+    <div class="navr">
+      <button class="mbtn" type="button" id="mBtn" aria-label="Menu" aria-expanded="false" aria-controls="mSheet">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="btn btn-acc" type="button" id="navConnect">Connect<span class="lbl-long">&nbsp;wallet</span></button>
+      <button class="btn btn-ghost acct" type="button" id="navAcct" hidden><span class="ad"></span><span id="acctAddr"></span></button>
+    </div>
+  </div>
+  <nav class="msheet" id="mSheet" aria-label="Menu" hidden>
+    <a href="#hero">Swap</a>
+    <a href="#feed">Explore</a>
+    <a href="#score">Kairo score</a>
+    <a href="#route">Chains</a>
+    <a href="#stocks">Stock tokens</a>
+  </nav>
+</header>
+
+<main>
+<section class="hero" id="hero" aria-label="Check and buy">
+  <div class="wrap">
+    <div>
+      <span class="pill"><i class="dot"></i><b>Live on Robinhood Chain</b> · AI scoring every launch</span>
+      <h1>Scan it.<br><span class="grad-text">Then send it.</span></h1>
+      <p class="hlead">Drop in any token address. Kairo rates the launch <b>1 to 10</b>, its AI tells you what it found in plain language, and you can buy with funds from <b>17 chains</b> in a single signature.</p>
+      <form class="hcheck" id="heroCheck" role="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input name="ca" id="heroCa" placeholder="0x… token address" aria-label="Token address" autocomplete="off" spellcheck="false">
+        <button class="btn btn-acc" type="submit">Scan token</button>
+      </form>
+      <div class="htry">
+        <span class="lab">Try</span>
+        <div class="trychips" id="tryChips"></div>
+      </div>
+      <div class="hstats">
+        <div><b data-count="18342">0</b><span>Launches scored</span></div>
+        <div><b data-count="47" data-suffix="s">0</b><span>Median time to score</span></div>
+        <div><b data-count="17">0</b><span>Chains to pay from</span></div>
+      </div>
+    </div>
+
+    <div class="swap" id="swap" aria-label="Swap">
+      <div class="swhead">
+        <div class="swtabs" role="tablist">
+          <button class="on" role="tab" aria-selected="true" data-mode="buy">Buy</button>
+          <button role="tab" aria-selected="false" data-mode="sell">Sell</button>
+        </div>
+        <button class="swset" type="button" id="slipBtn" aria-label="Slippage">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+      </div>
+      <div class="swbox">
+        <div class="top"><span id="payLab">You pay</span><span id="payBal">Balance —</span></div>
+        <div class="mid">
+          <input id="payAmt" inputmode="decimal" placeholder="0" aria-label="Amount to pay" value="0.25">
+          <button class="tsel" type="button" id="paySel"></button>
+        </div>
+        <div class="bot"><span id="payUsd">$0.00</span><button class="swmax" type="button" id="maxBtn">MAX</button></div>
+      </div>
+      <button class="swflip" type="button" id="flipBtn" aria-label="Switch direction">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16m0 0-6-6m6 6 6-6" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="swbox">
+        <div class="top"><span id="getLab">You receive</span><span>on Robinhood Chain</span></div>
+        <div class="mid">
+          <input id="getAmt" readonly placeholder="0" aria-label="Amount you receive">
+          <button class="tsel" type="button" id="getSel"></button>
+        </div>
+        <div class="bot"><span id="getUsd">$0.00</span><span id="rate"></span></div>
+      </div>
+      <div class="swscore" id="swScore"></div>
+      <div class="swdetails">
+        <div><span>Route</span><b id="dRoute">—</b></div>
+        <div><span>Est. time</span><b id="dTime">—</b></div>
+        <div><span>Slippage</span><b id="dSlip">1.0%</b></div>
+      </div>
+      <button class="btn btn-acc swgo" type="button" id="swGo">Connect wallet</button>
+    </div>
+  </div>
+</section>
+
+<section class="strip" aria-label="Network stats">
+  <div class="wrap">
+    <div class="glassbar">
+      <div class="sl"><i class="dot"></i><span>Robinhood Chain, right now</span></div>
+      <div><span>Red flags · 24h</span><b data-pulse="flagged">—</b></div>
+      <div><span>New tokens · 24h</span><b data-pulse="tokens">—</b></div>
+      <div><span>Block</span><b data-pulse="block">—</b></div>
+      <div><span>Block time</span><b data-pulse="blockMs">—</b></div>
+      <div><span>Stock tokens</span><b data-pulse="stocks">—</b></div>
+    </div>
+  </div>
+  <div class="marquee" aria-hidden="true"><div class="track" id="marq"></div></div>
+</section>
+
+<section class="cs" id="feed">
+  <div class="wrap cgrid">
+    <div class="bh rv">
+      <span class="ey"><i class="dot"></i><span class="num">01</span> Live feed</span>
+      <h2>Fresh launches, rated the moment they land.</h2>
+      <p>New tokens show up here with a Kairo score usually within a minute of deploying. Tap one to read the full report.</p>
+      <a href="#feed" class="more" id="feedMore">Open the explorer <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    </div>
+    <div class="cpanel feedbox rv tilt">
+      <div class="ftop">
+        <div class="ftabs" role="tablist">
+          <button role="tab" class="on" aria-selected="true" data-feed="recent">New</button>
+          <button role="tab" aria-selected="false" data-feed="trending">Trending</button>
+          <button role="tab" aria-selected="false" data-feed="safe">Top rated</button>
+        </div>
+        <label class="fflt"><input type="checkbox" id="hideRisky"> Hide score &lt; 4</label>
+      </div>
+      <div class="fhead"><span>Token</span><span class="fhide">Age</span><span class="fhide">Volume</span><span>24h</span><span style="text-align:center">Score</span></div>
+      <div class="frows" id="feedRows"></div>
+    </div>
+  </div>
+</section>
+
+<section class="cs" id="score">
+  <div class="wrap cgrid rev">
+    <div class="bh rv">
+      <span class="ey"><span class="num">02</span> Kairo score</span>
+      <h2>Everything a rug hides, in one number.</h2>
+      <p>Dev wallets dumping into the curve, bundled snipers in block one, holders that dodge the tax, clones of a token that already pumped. Kairo runs every check, weighs it, and tells you which flag matters.</p>
+      <div class="parts">
+        <div><span>Launch health · 60%</span><b id="sLaunch">—</b><div class="bar"><i id="sLaunchBar"></i></div></div>
+        <div><span>Market quality · 40%</span><b id="sMarket">—</b><div class="bar"><i id="sMarketBar"></i></div></div>
+      </div>
+      <a class="more" href="#score" id="nextScore">Show me another <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    </div>
+    <div class="cpanel rv tilt" id="scoreCard"></div>
+  </div>
+</section>
+
+<section class="cs" id="route">
+  <div class="wrap cgrid">
+    <div class="bh rv">
+      <span class="ey"><span class="num">03</span> Buy from anywhere</span>
+      <h2>Your funds are on another chain? Doesn't matter.</h2>
+      <p>Pay in ETH, BNB or POL from any of 17 networks. One signature bridges and buys in a single move. Selling back runs through the same flow.</p>
+      <div class="times">
+        <span class="lab">Typical arrival</span>
+        <div class="trow"><span class="tk" style="background:#b6ff3c">RH</span><span>Already on Robinhood Chain</span><b>~1 s</b></div>
+        <div class="trow"><span class="tk" style="background:#3b7bff;color:#fff">BA</span><span>From Base</span><b>~10 s</b></div>
+        <div class="trow"><span class="tk" style="background:#a8b3ff">ET</span><span>From Ethereum</span><b>&lt; 1 min</b></div>
+      </div>
+    </div>
+    <div class="cpanel routebox rv tilt">
+      <div class="chains" id="chainGrid"></div>
+      <div class="routeline" id="routeLine"></div>
+    </div>
+  </div>
+</section>
+
+<section class="cs" id="wallet">
+  <div class="wrap cgrid rev">
+    <div class="bh rv">
+      <span class="ey"><span class="num">04</span> Self-custody</span>
+      <h2>Keys stay in your pocket.</h2>
+      <p>Use the wallet you already have. Every transaction is signed by you, Kairo never touches your funds, and whatever you buy lands straight in your portfolio.</p>
+    </div>
+    <div class="cpanel walletvis rv tilt">
+      <button class="connect" type="button" id="walletConnect2">
+        <span class="wico"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h13v4M3 7v10a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2Zm14 6h.01" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span id="wc2Label">Connect wallet</span>
+      </button>
+      <div class="wlist">
+        <div><i style="background:linear-gradient(135deg,#f6851b,#e2761b)"></i>MetaMask</div>
+        <div><i style="background:linear-gradient(135deg,#3b99fc,#1a5dd6)"></i>WalletConnect</div>
+        <div><i style="background:linear-gradient(135deg,#0052ff,#2b6bff)"></i>Coinbase</div>
+        <div><i style="background:linear-gradient(135deg,#ab9ff2,#7d6bf0)"></i>Rabby</div>
+      </div>
+      <ol class="steps" id="steps">
+        <li class="done"><span class="c">✓</span><span>Sign once</span></li>
+        <li class="done"><span class="c">✓</span><span>Bridging to Robinhood Chain…</span></li>
+        <li class="now"><span class="c">3</span><span>2,918,440 ORBIT landed in your wallet</span></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="cs" id="stocks">
+  <div class="wrap cgrid">
+    <div class="bh rv">
+      <span class="ey"><span class="num">05</span> Stock tokens</span>
+      <h2>NVDA, TSLA and 60+ more, on-chain.</h2>
+      <p>Tokenized stocks on Robinhood Chain, payable in ETH, BNB or POL from any supported network.</p>
+      <a class="snote2" href="#stocks-note">Regional restrictions apply — see below.</a>
+    </div>
+    <div class="cpanel stockgrid rv tilt" id="stockGrid"></div>
+  </div>
+</section>
+
+<section class="cfinal">
+  <div class="wrap">
+    <div class="box rv">
+      <h2>Don't ape blind. <span class="grad-text">Scan first.</span></h2>
+      <p>One paste, one score, one sentence that tells you why.</p>
+      <form class="hcheck" id="ctaCheck" role="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input name="ca" placeholder="0x… token address" aria-label="Token address" autocomplete="off" spellcheck="false">
+        <button class="btn btn-acc" type="submit">Scan token</button>
+      </form>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <a class="brand" href="#"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="9" fill="none" stroke="rgba(255,255,255,.14)"/><path d="M10 8v16M22.5 8 13 16l9.5 8" stroke="url(#kg)" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Kairo</a>
+        <p>Token intelligence and cross-chain swaps for Robinhood Chain.</p>
+        <p class="fchain"><span class="dot"></span>block <span data-pulse="block">—</span></p>
+      </div>
+      <div>
+        <b>Product</b>
+        <a href="#hero">Swap</a>
+        <a href="#feed">Explore</a>
+        <a href="#stocks">Stock tokens</a>
+      </div>
+      <div>
+        <b>Learn</b>
+        <a href="#score">Kairo score</a>
+        <a href="#route">Supported chains</a>
+      </div>
+      <div>
+        <b>Community</b>
+        <a href="#">X / Twitter</a>
+        <a href="#">Telegram</a>
+      </div>
+    </div>
+    <div class="disc">
+      <p>Kairo scores are derived from public on-chain data at the moment shown and are not price predictions. Nothing on this site is financial advice. Kairo is non-custodial: you sign every transaction yourself.</p>
+      <p id="stocks-note">Stock tokens are not offered to persons in the United States and are restricted in Canada, the United Kingdom, Switzerland and other jurisdictions. Check your local rules before buying.</p>
+      <p>© 2026 Kairo</p>
+    </div>
+  </div>
+</footer>
+
+<div class="modal" id="report" hidden role="dialog" aria-modal="true" aria-labelledby="repTitle">
+  <div class="sheet">
+    <div class="mh"><span class="ey" id="repTitle">Token report</span><button class="x" type="button" data-close aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+    <div id="repBody"></div>
+    <div class="mact">
+      <button class="btn btn-ghost" type="button" id="repCopy">Copy address</button>
+      <button class="btn btn-acc" type="button" id="repBuy">Buy this token</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="demo-tag" title="Market data on this page is simulated">DEMO DATA</div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
