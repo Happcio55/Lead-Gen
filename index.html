@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sherwood — Paper-trade Robinhood memecoins</title>
+  <meta name="description" content="Sherwood is a paper-trading floor for every memecoin listed on Robinhood. Live prices, live charts, $10,000 of virtual cash. No real money." />
+  <meta name="theme-color" content="#0c130f" />
+  <link rel="icon" href="assets/sherwood-mark.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script>
+    try { const t = localStorage.getItem('sw.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="#/" aria-label="Sherwood home">
+        <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><use href="#mark" /></svg>
+        <span class="brand__word">Sherwood</span>
+      </a>
+
+      <nav class="nav" aria-label="Primary">
+        <a href="#/" data-nav="markets">Markets</a>
+        <a href="#/portfolio" data-nav="portfolio">Portfolio</a>
+        <a href="#/activity" data-nav="activity">Activity</a>
+      </nav>
+
+      <div class="search" role="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <input id="search" type="search" placeholder="Search memecoins" autocomplete="off" spellcheck="false" aria-label="Search memecoins" />
+        <kbd>/</kbd>
+        <div class="search__results" id="searchResults" role="listbox" hidden></div>
+      </div>
+
+      <div class="topbar__right">
+        <div class="live-pill" id="livePill" title="Market data status"><span class="dot"></span><span class="label">Connecting</span></div>
+        <a class="bp" href="#/portfolio" title="Buying power">
+          <span class="bp__label">Buying power</span>
+          <span class="bp__value mono" data-cash>$10,000.00</span>
+        </a>
+        <button class="icon-btn" id="themeBtn" aria-label="Toggle theme">
+          <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" /><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" /></svg>
+          <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" /></svg>
+        </button>
+      </div>
+    </div>
+    <div class="tape" aria-label="Live prices"><div class="tape__track" id="tape"></div></div>
+  </header>
+
+  <main id="app" class="app" tabindex="-1"></main>
+
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><use href="#mark" /></svg>
+        <div>
+          <strong>Sherwood</strong>
+          <p>A paper-trading floor for the memecoins listed on Robinhood. Virtual money only — nothing here is real, and nothing here is advice.</p>
+        </div>
+      </div>
+      <div class="footer__cols">
+        <div>
+          <h4>Data</h4>
+          <p>Live prices: Coinbase Exchange, Kraken, DexScreener. Candles: Coinbase, Kraken, GeckoTerminal. Supply: CoinGecko.</p>
+        </div>
+        <div>
+          <h4>Sources</h4>
+          <p>Coin list and descriptions from <a href="https://robinhood.com/us/en/support/articles/coin-availability/" target="_blank" rel="noopener">robinhood.com</a>. Logos are the official artwork of each project and belong to their owners.</p>
+        </div>
+        <div>
+          <h4>Not affiliated</h4>
+          <p>Sherwood is an independent simulator and is not affiliated with, endorsed by, or connected to Robinhood Markets, Inc.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <nav class="mobile-nav" aria-label="Primary">
+    <a href="#/" data-nav="markets"><svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 4 8-8" /><path d="M15 8h5v5" /></svg>Markets</a>
+    <a href="#/portfolio" data-nav="portfolio"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5V12l6 6" /></svg>Portfolio</a>
+    <a href="#/activity" data-nav="activity"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" /></svg>Activity</a>
+  </nav>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <dialog class="modal" id="confirmModal">
+    <form method="dialog">
+      <h3 id="confirmTitle">Are you sure?</h3>
+      <p id="confirmBody"></p>
+      <div class="modal__actions">
+        <button value="cancel" class="btn btn--ghost">Cancel</button>
+        <button value="ok" class="btn btn--danger" id="confirmOk">Confirm</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Sherwood mark: a leaf whose midrib is an arrow -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="mark" viewBox="0 0 32 32">
+      <path d="M16 2.5c7.2 4.6 10.6 10.3 10.2 16.4-.3 5-3.8 8.6-10.2 10.6-6.4-2-9.9-5.6-10.2-10.6C5.4 12.8 8.8 7.1 16 2.5Z" fill="currentColor" opacity=".18" />
+      <path d="M16 2.5c7.2 4.6 10.6 10.3 10.2 16.4-.3 5-3.8 8.6-10.2 10.6-6.4-2-9.9-5.6-10.2-10.6C5.4 12.8 8.8 7.1 16 2.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+      <path d="M16 27V9.5M11.6 13.6 16 9.2l4.4 4.4M12.4 19.8 16 17.2l3.6 2.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+  </svg>
+
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="assets/js/coins.js"></script>
+  <script src="assets/js/market.js"></script>
+  <script src="assets/js/portfolio.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
