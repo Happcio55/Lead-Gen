@@ -1,6 +1,6 @@
-import { memo, useEffect, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { useStore } from '../lib/store.js'
-import { market, pollNewPairs, pollTrending, pollTop, loadNewPairsPage2 } from '../lib/api.js'
+import { market, pollNewPairs, pollTrending, pollTop, loadNewPairsPage2, prefetchCandles } from '../lib/api.js'
 import { paper, account, buy, updateSettings } from '../lib/paper.js'
 import { fmtAge, fmtUsdC, fmtPct, fmtEth, parseAmount, fmtCompact } from '../lib/format.js'
 import { Icon, EthIcon, TokenLogo, Socials, CopyAddr, useNow, toast, mcTier } from '../components/ui.jsx'
@@ -25,8 +25,25 @@ const Card = memo(function Card({ pool, now, fresh, qb, held }) {
   const ageMs = now - (pool.createdAt || now)
   const liqRatio = pool.mc ? (pool.liq / pool.mc) * 100 : 0
   const go = () => (location.hash = '#/t/' + pool.pool)
+  const hover = useRef(null)
+  // warm the chart while the pointer rests on a card, so the token page opens instantly
+  const warm = () => {
+    hover.current = setTimeout(() => {
+      prefetchCandles(pool.pool, '1m')
+      import('./TokenPage.jsx')
+    }, 150)
+  }
   return (
-    <div className={'card' + (fresh ? ' fresh' : '')} role="link" tabIndex={0} onClick={go} onKeyDown={(e) => e.key === 'Enter' && go()}>
+    <div
+      className={'card' + (fresh ? ' fresh' : '')}
+      role="link"
+      tabIndex={0}
+      onClick={go}
+      onKeyDown={(e) => e.key === 'Enter' && go()}
+      onMouseEnter={warm}
+      onMouseLeave={() => clearTimeout(hover.current)}
+      onTouchStart={() => prefetchCandles(pool.pool, '1m')}
+    >
       <TokenLogo pool={pool} />
       <div className="c-main">
         <div className="c-t">

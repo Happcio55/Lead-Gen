@@ -45,17 +45,13 @@ async function draw(cv, d) {
 
   const sans = 'Geist, "DM Sans", system-ui, sans-serif'
   // brand
-  c.fillStyle = '#c9ff3f'
-  c.beginPath()
-  c.roundRect(64, 56, 44, 44, 11)
-  c.fill()
-  c.strokeStyle = '#0b0c08'
-  c.lineWidth = 4.2
-  c.lineJoin = 'round'
-  c.lineCap = 'round'
-  c.beginPath()
-  ;[[70, 81], [77, 81], [82, 69], [90, 90], [95, 79], [102, 79]].forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)))
-  c.stroke()
+  const logo = await new Promise((res) => {
+    const im = new Image()
+    im.onload = () => res(im)
+    im.onerror = () => res(null)
+    im.src = '/logo-256.png'
+  })
+  if (logo) c.drawImage(logo, 54, 42, 62, 62)
   c.fillStyle = '#f4f5f9'
   c.font = `700 30px ${sans}`
   c.fillText('Paper Pulse', 124, 88)

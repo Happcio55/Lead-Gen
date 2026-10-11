@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createChart, CandlestickSeries, HistogramSeries, createSeriesMarkers, CrosshairMode } from 'lightweight-charts'
-import { loadCandles } from '../lib/api.js'
+import { loadCandles, cachedCandles } from '../lib/api.js'
 import { fmtTiny, fmtCompact } from '../lib/format.js'
 
 const TF_SEC = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 }
@@ -45,6 +45,26 @@ export default function Chart({ pool, tf, mode, myTrades }) {
     return () => chart.remove()
   }, [])
 
+  // follow light/dark switches
+  const paintRef = useRef(null)
+  paintRef.current = () => paint()
+  useEffect(() => {
+    const mo = new MutationObserver(() => {
+      const { chart, candles } = api.current
+      if (!chart) return
+      chart.applyOptions({
+        layout: { textColor: css('--fg-3') },
+        grid: { vertLines: { color: css('--line') }, horzLines: { color: css('--line') } },
+        rightPriceScale: { borderColor: css('--line') },
+        timeScale: { borderColor: css('--line') },
+      })
+      candles.applyOptions({ upColor: css('--up'), downColor: css('--down'), wickUpColor: css('--up'), wickDownColor: css('--down') })
+      paintRef.current()
+    })
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => mo.disconnect()
+  }, [])
+
   useEffect(() => {
     api.current.candles?.applyOptions({ priceFormat: { type: 'custom', minMove: 1e-14, formatter: fmt } })
     paint()
@@ -81,17 +101,23 @@ export default function Chart({ pool, tf, mode, myTrades }) {
   useEffect(() => {
     if (!pool?.pool) return
     let alive = true
-    setStatus('loading')
-    raw.current = []
+    const cached = cachedCandles(pool.pool, tf)
+    raw.current = cached ? cached.map((c) => ({ ...c })) : []
+    setStatus(raw.current.length ? 'ok' : 'loading')
+    if (raw.current.length) {
+      paint()
+      api.current.chart.timeScale().fitContent()
+    }
     const load = async (first) => {
       try {
-        const data = await loadCandles(pool.pool, tf)
+        const data = (await loadCandles(pool.pool, tf)).map((c) => ({ ...c }))
         if (!alive) return
+        const hadData = raw.current.length > 0
         raw.current = data
         if (!data.length) return setStatus('empty')
         setStatus('ok')
         paint()
-        if (first) api.current.chart.timeScale().fitContent()
+        if (first && !hadData) api.current.chart.timeScale().fitContent()
       } catch {
         if (alive && !raw.current.length) setStatus('error')
       }

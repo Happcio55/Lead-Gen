@@ -24,18 +24,26 @@ const newAccount = (start) => ({
   createdAt: Date.now(),
 })
 
+export const freshState = () => ({
+  onboarded: false,
+  accounts: { [ACTIVE_CHAIN.id]: newAccount(1) },
+  settings: { quickBuy: { new: 0.05, trending: 0.1, top: 0.25 }, buyPresets: [0.01, 0.05, 0.1, 0.5], sellPresets: [10, 25, 50, 100], slippage: 20 },
+  history: [],
+})
+const valid = (s) => s && s.accounts && s.settings
+
+// Guests persist under KEY; a signed-in wallet persists under its own key (and in the cloud).
+let storeKey = KEY
 const saved = storage.get(KEY, null)
-export const paper = createStore(
-  saved && saved.accounts
-    ? saved
-    : {
-        onboarded: false,
-        accounts: { [ACTIVE_CHAIN.id]: newAccount(1) },
-        settings: { quickBuy: { new: 0.05, trending: 0.1, top: 0.25 }, buyPresets: [0.01, 0.05, 0.1, 0.5], sellPresets: [10, 25, 50, 100], slippage: 20 },
-        history: [],
-      },
-)
-paper.subscribe(() => storage.set(KEY, paper.get()))
+export const paper = createStore(valid(saved) ? saved : freshState())
+paper.subscribe(() => storage.set(storeKey, paper.get()))
+
+// Switch whose paper account is loaded. `state` wins when given, else the cached copy for that key.
+export function switchIdentity(address, state) {
+  storeKey = address ? KEY + ':' + address : KEY
+  const next = valid(state) ? state : storage.get(storeKey, null)
+  paper.set(valid(next) ? next : address ? { ...paper.get() } : freshState())
+}
 
 export const account = (s = paper.get()) => {
   const a = s.accounts[ACTIVE_CHAIN.id] || newAccount(1)

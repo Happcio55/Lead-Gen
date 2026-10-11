@@ -1,23 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { refreshPrices, market } from './lib/api.js'
 import { paper, account, checkOrders, recordEquity } from './lib/paper.js'
 import { fmtEth, fmtSignedEth, fmtUsdC } from './lib/format.js'
-import { TopBar, StatusBar, BottomNav, Onboarding } from './components/Header.jsx'
+import { TopBar, StatusBar, BottomNav, Onboarding, Ticker, useTheme } from './components/Header.jsx'
+import './lib/wallet.js'
 import { Toasts, toast } from './components/ui.jsx'
 import Pulse from './pages/Pulse.jsx'
-import TokenPage from './pages/TokenPage.jsx'
-import Portfolio from './pages/Portfolio.jsx'
+const TokenPage = lazy(() => import('./pages/TokenPage.jsx'))
+const Portfolio = lazy(() => import('./pages/Portfolio.jsx'))
+const Discover = lazy(() => import('./pages/Discover.jsx'))
+const Loading = () => <main className="tok"><div className="empty" style={{ padding: 80 }}>Loading…</div></main>
 
 function parseRoute() {
   const h = location.hash.replace(/^#/, '')
   const m = h.match(/^\/t\/(0x[0-9a-fA-F]+)/)
   if (m) return { name: 'token', id: m[1].toLowerCase() }
   if (h.startsWith('/portfolio')) return { name: 'portfolio' }
+  if (h.startsWith('/discover')) return { name: 'discover' }
   return { name: 'pulse' }
 }
 
 export default function App() {
   const [route, setRoute] = useState(parseRoute)
+  const [theme, setTheme] = useTheme()
 
   useEffect(() => {
     const on = () => setRoute(parseRoute())
@@ -37,7 +42,7 @@ export default function App() {
       if (ids.length) refreshPrices(ids)
     }
     tick()
-    const id = setInterval(tick, 4000)
+    const id = setInterval(tick, 2000)
     return () => clearInterval(id)
   }, [])
 
@@ -77,10 +82,14 @@ export default function App() {
 
   return (
     <div className="shell">
-      <TopBar route={route} />
+      <Ticker />
+      <TopBar route={route} theme={theme} setTheme={setTheme} />
       {route.name === 'pulse' && <Pulse />}
-      {route.name === 'token' && <TokenPage key={route.id} id={route.id} />}
-      {route.name === 'portfolio' && <Portfolio />}
+      <Suspense fallback={<Loading />}>
+        {route.name === 'token' && <TokenPage key={route.id} id={route.id} />}
+        {route.name === 'portfolio' && <Portfolio />}
+        {route.name === 'discover' && <Discover />}
+      </Suspense>
       <BottomNav route={route} />
       <StatusBar />
       <Onboarding />

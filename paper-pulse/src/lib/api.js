@@ -12,26 +12,62 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 export const net = createStore({ throttledUntil: 0, lastOk: 0, error: null })
 
 /* ------------------------------------------------------------------ */
-/* GeckoTerminal: free tier allows ~30 calls/min per visitor, so every */
-/* call goes through one priority queue with a fixed gap and a backoff */
-/* on 429. Identical in-flight requests are shared.                    */
+/* GeckoTerminal. Fast path: our own edge proxy (/api/gt), which caches  */
+/* responses at the CDN so every visitor shares them; calls run in        */
+/* parallel. Fallback: direct calls through one throttled queue, because  */
+/* the free tier allows ~30 calls/min per visitor IP.                     */
 /* ------------------------------------------------------------------ */
 const GAP = 2800
 const queue = []
 const inflight = new Map()
 let pumping = false
 let nextAt = 0
+let proxyOk = true
+let active = 0
+const waiting = []
+const MAX_PARALLEL = 6
+
+async function viaProxy(path) {
+  if (active >= MAX_PARALLEL) await new Promise((r) => waiting.push(r))
+  active++
+  try {
+    const r = await fetch('/api/gt?p=' + encodeURIComponent(path), { headers: { accept: 'application/json' } })
+    if (r.status === 404 || !(r.headers.get('content-type') || '').includes('json')) {
+      proxyOk = false // no proxy here (local dev); use direct calls from now on
+      return null
+    }
+    if (!r.ok) return null
+    const j = await r.json()
+    net.set({ lastOk: Date.now(), error: null, throttledUntil: 0 })
+    return j
+  } catch {
+    return null
+  } finally {
+    active--
+    waiting.shift()?.()
+  }
+}
 
 export function gecko(path, { priority = 5 } = {}) {
   if (inflight.has(path)) return inflight.get(path)
-  const p = new Promise((resolve, reject) => {
+  const p = (async () => {
+    if (proxyOk) {
+      const j = await viaProxy(path)
+      if (j) return j
+    }
+    return geckoDirect(path, priority)
+  })()
+  inflight.set(path, p)
+  p.catch(() => {}).finally(() => inflight.delete(path))
+  return p
+}
+
+function geckoDirect(path, priority) {
+  return new Promise((resolve, reject) => {
     queue.push({ path, priority, resolve, reject, at: performance.now(), tries: 0 })
     queue.sort((a, b) => a.priority - b.priority || a.at - b.at)
     pump()
   })
-  inflight.set(path, p)
-  p.catch(() => {}).finally(() => inflight.delete(path))
-  return p
 }
 
 async function pump() {
@@ -66,7 +102,7 @@ async function pump() {
 let dsNext = 0
 async function dexs(path) {
   const wait = dsNext - Date.now()
-  dsNext = Math.max(Date.now(), dsNext) + 350
+  dsNext = Math.max(Date.now(), dsNext) + 120
   if (wait > 0) await sleep(wait)
   const r = await fetch(DS + path)
   if (!r.ok) throw new Error('DexScreener HTTP ' + r.status)
@@ -279,7 +315,19 @@ export async function refreshPrices(pools) {
 }
 
 /* Candles. Gecko returns newest first. */
+const candleCache = new Map()
+export const cachedCandles = (pool, tf) => candleCache.get(pool + tf)?.data || null
+export function prefetchCandles(pool, tf = '1m') {
+  const c = candleCache.get(pool + tf)
+  if (c && Date.now() - c.at < 30000) return
+  loadCandles(pool, tf).catch(() => {})
+}
 export async function loadCandles(pool, tf) {
+  const data = await fetchCandles(pool, tf)
+  candleCache.set(pool + tf, { at: Date.now(), data })
+  return data
+}
+async function fetchCandles(pool, tf) {
   const [unit, agg] = { '1m': ['minute', 1], '5m': ['minute', 5], '15m': ['minute', 15], '1h': ['hour', 1], '4h': ['hour', 4] }[tf]
   const j = await gecko(`${P}/pools/${pool}/ohlcv/${unit}?aggregate=${agg}&limit=300&currency=usd&token=base`, { priority: 1 })
   const list = j.data?.attributes?.ohlcv_list || []
