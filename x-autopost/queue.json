@@ -1,0 +1,152 @@
+[
+  {
+    "id": "p001",
+    "status": "queued",
+    "text": "Stocks, squared. Both ways.\n\nBull² for a rising price.\nBear² for a falling one.\n\nTry it with virtual money. No wallet needed.\n\nuseparabol.com/demo"
+  },
+  {
+    "id": "p002",
+    "status": "queued",
+    "text": "Right call. Still wiped out?\n\nA 10× long gets closed the moment a dip goes too far, even if the stock recovers a week later.\n\nBull² has no liquidation price. Fully paid. No margin.\n\nRun the simulator: useparabol.com"
+  },
+  {
+    "id": "p003",
+    "status": "queued",
+    "text": "NVDA +20% → Bull² +44%\nTSLA −20% → Bear² +56%\n\nBefore carry and fees. It works the other way too: a move against you hits harder.\n\nSee the full spec sheet: useparabol.com"
+  },
+  {
+    "id": "p004",
+    "status": "queued",
+    "text": "Testnet is open.\n\n1. Connect MetaMask or Phantom to Robinhood Chain testnet (46630)\n2. Get free test ETH for gas\n3. Claim 1,000 test USDG\n4. Pick a side\n\nTest tokens have no value. Use a fresh wallet.\n\nuseparabol.com/testnet"
+  },
+  {
+    "id": "p005",
+    "status": "queued",
+    "text": "What's the most you can lose on Parabol²?\n\nWhat you put in. Never more.\n\nYou pay the full amount up front. No margin. Nothing to liquidate."
+  },
+  {
+    "id": "p006",
+    "status": "queued",
+    "text": "Bear² explained in one line:\n\nProfit when a stock falls. No borrowing shares, no short squeeze, no options expiry.\n\nBuy it. Hold it like any other token.\n\nuseparabol.com"
+  },
+  {
+    "id": "p007",
+    "status": "queued",
+    "text": "Bull² tracks P².\nBear² tracks 1/P².\n\nThat's the whole idea. Squared exposure, both directions, fully paid.\n\nPick a side. Square it."
+  },
+  {
+    "id": "p008",
+    "status": "queued",
+    "text": "Already hold NVDA?\n\n$10,000 NVDA + $1,000 Bear²\nNVDA −30% → Bear² covers about a third of the loss\n\nBefore fees and carry. A modeled hedge, not insurance.\n\nTry the Protect calculator: useparabol.com"
+  },
+  {
+    "id": "p009",
+    "status": "queued",
+    "text": "New in the practice demo: VOL² preview.\n\nHalf Bull², half Bear². A way to explore big moves in either direction.\n\nStart with 10,000 virtual USDG: useparabol.com/demo"
+  },
+  {
+    "id": "p010",
+    "status": "queued",
+    "text": "Mainnet is in development.\n\nUntil then: practice demo with virtual money, and a wallet testnet running on real contracts on Robinhood Chain testnet.\n\nGet your reps in now.\n\nuseparabol.com/testnet"
+  },
+  {
+    "id": "p011",
+    "status": "queued",
+    "text": "Five markets on testnet:\n\n$NVDA\n$TSLA\n$SPY\n$PLTR\n$AAPL\n\nBull², Bear², VOL² and Protect on each.\n\nWhich one are you squaring first?"
+  },
+  {
+    "id": "p012",
+    "status": "queued",
+    "text": "How much can Bear² pay?\n\nNVDA, TSLA, PLTR: up to 4× (floor at −50%)\nAAPL: up to 2.8× (floor at −40%)\nSPY: up to 2× (floor at −30%)\n\nThe floor caps the gain. Know it before you buy."
+  },
+  {
+    "id": "p013",
+    "status": "queued",
+    "text": "What is carry?\n\nA small daily cost that lowers the token's value the longer you hold.\n\nSet from each stock's volatility: calm stocks cost less to hold than wild ones. Shown before you buy."
+  },
+  {
+    "id": "p014",
+    "status": "queued",
+    "text": "Market closed? You can still sell.\n\nPrices use the latest oracle price with wider spreads. New buys pause if that price gets too old.\n\nYour token stays in your wallet the whole time."
+  },
+  {
+    "id": "p015",
+    "status": "queued",
+    "text": "Explore stock moves.\nBefore you trade.\n\nPick a market, set the move, set the days held. See what $1,000 becomes in Bull² and Bear² after carry.\n\nCurve lab → useparabol.com"
+  },
+  {
+    "id": "p016",
+    "status": "queued",
+    "text": "Is there always money to pay Bear² holders?\n\nThe Bear² vault is built to hold enough cash to pay every Bear² token at its max value, and it blocks new buys before that limit is reached."
+  },
+  {
+    "id": "p017",
+    "status": "queued",
+    "text": "Next on the curve: Duels.\n\nOne stock squared against another.\n\nMore soon."
+  },
+  {
+    "id": "p018",
+    "status": "queued",
+    "text": "No wallet. No deposits. Virtual money only.\n\nThe practice demo is the fastest way to see how Bull², Bear² and VOL² react when the price moves and the days pass.\n\nuseparabol.com/demo"
+  },
+  {
+    "id": "p019",
+    "status": "queued",
+    "text": "Why does Bear² cost more to hold than Bull²?\n\nBecause it can't be hedged. Carry reflects that.\n\nNo hidden mechanics. It's all on the spec sheet."
+  },
+  {
+    "id": "p020",
+    "status": "queued",
+    "text": "Price −50%\n\nStock: −50%\nBull²: −75%\nBear²: +300%\n\nSquared works both ways. That's the point, and the risk.\n\nBefore carry. Bear² example uses the 50% floor."
+  },
+  {
+    "id": "p021",
+    "status": "queued",
+    "text": "Your position is a token in your own wallet.\n\nERC-20. No expiry. No liquidation. Priced in USDG on Robinhood Chain.\n\nTry it on testnet: useparabol.com/testnet"
+  },
+  {
+    "id": "p022",
+    "status": "queued",
+    "text": "Testnet tip: the faucet gives 1,000 test USDG once every 24 hours.\n\nClaim, trade, sell, repeat. Break things now so mainnet feels familiar.\n\nuseparabol.com/testnet"
+  },
+  {
+    "id": "p023",
+    "status": "queued",
+    "text": "Make a strong call pay more.\n\nBull² amplifies modeled price changes in both directions. A rising stock can mean a larger gain. A falling stock can mean a larger loss.\n\nCarry and fees reduce returns."
+  },
+  {
+    "id": "p024",
+    "status": "queued",
+    "text": "Using Phantom on testnet?\n\nSettings → Developer Settings → Testnet Mode.\n\nThen switch to Robinhood Chain testnet (46630) and you're in.\n\nuseparabol.com/testnet"
+  },
+  {
+    "id": "p025",
+    "status": "queued",
+    "text": "Built to show you the downside, not hide it.\n\nEvery position on Parabol² shows carry, fees, the price floor and the minimum received before you confirm."
+  },
+  {
+    "id": "p026",
+    "status": "queued",
+    "text": "The road to mainnet:\n\n✅ Practice demo\n✅ Wallet testnet on Robinhood Chain\n✅ Bull², Bear², VOL², Protect\n⏳ Mainnet\n⏳ Duels\n\nFollow along."
+  },
+  {
+    "id": "p027",
+    "status": "queued",
+    "text": "Short a stock without:\n\n• borrowing shares\n• margin calls\n• a short squeeze liquidating you\n• an options expiry date\n\nThat's Bear². Max loss: what you put in."
+  },
+  {
+    "id": "p028",
+    "status": "queued",
+    "text": "Run a scenario in the Curve lab, then hit \"Post this scenario on X\".\n\nShow us your boldest Bull² or Bear² call. 👇"
+  },
+  {
+    "id": "p029",
+    "status": "queued",
+    "text": "Pick a side. Square it.\n\nuseparabol.com"
+  },
+  {
+    "id": "p030",
+    "status": "queued",
+    "text": "Testnet feedback wanted.\n\nTried Bull², Bear², VOL² or Protect on Robinhood Chain testnet? Tell us what felt confusing, slow or broken. Replies open. 👇"
+  }
+]
