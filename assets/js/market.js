@@ -8,6 +8,11 @@
   const COINS = window.COINS;
   const BY_SYM = Object.fromEntries(COINS.map((c) => [c.sym, c]));
   const CACHE_KEY = 'sw.market.v1';
+  // Preview mode: a sandbox without network access (e.g. a hosted preview) ships a real
+  // snapshot of prices and candles and animates it with simulated ticks.
+  const SNAP = window.SW_SNAPSHOT || null;
+  const DEMO = !!(window.SW_DEMO && SNAP);
+  const SNAP_SHIFT = DEMO ? Math.floor(Date.now() / 1000) - SNAP.at : 0;
 
   const M = (window.Market = {
     state: {},
@@ -16,6 +21,8 @@
     statusListeners: new Set(),
     on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); },
     onStatus(fn) { this.statusListeners.add(fn); return () => this.statusListeners.delete(fn); },
+    demo: DEMO,
+    snapshotAt: SNAP ? SNAP.at * 1000 : null,
     coin: (sym) => BY_SYM[sym],
     price: (sym) => (M.state[sym] ? M.state[sym].price : null),
   });
@@ -212,6 +219,12 @@
   const histCache = new Map();
 
   M.history = async function (sym, range) {
+    if (DEMO) {
+      const h = SNAP.hist[sym][range];
+      // move the snapshot forward so it ends now; the live candle continues from there
+      const shift = Math.floor(SNAP_SHIFT / h.bucket) * h.bucket;
+      return { bucket: h.bucket, bars: h.bars.map((b) => ({ time: b[0] + shift, open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5] })) };
+    }
     const key = sym + ':' + range;
     const hit = histCache.get(key);
     if (hit && Date.now() - hit.at < 30000) return hit.data;
@@ -250,6 +263,10 @@
   const sparks = {};
   M.sparks = sparks;
   M.loadSparks = async function (onEach, list = COINS, attempt = 0) {
+    if (DEMO) {
+      for (const c of COINS) { sparks[c.sym] = SNAP.sparks[c.sym] || []; onEach && onEach(c.sym); }
+      return;
+    }
     const failed = [];
     for (const c of list) {
       try {
@@ -280,7 +297,29 @@
     if (failed.length && attempt < 3) setTimeout(() => M.loadSparks(onEach, failed, attempt + 1), 20000 * (attempt + 1));
   };
 
+  function startDemo() {
+    for (const c of COINS) {
+      const s = SNAP.state[c.sym];
+      M.state[c.sym].ts = 0;
+      update(c.sym, { ...s });
+    }
+    for (const k in M.status) M.status[k] = 'demo';
+    for (const fn of M.statusListeners) fn(M.status);
+    // random walk with gentle pull back toward the snapshot price
+    const tick = () => {
+      const c = COINS[Math.floor(Math.random() * COINS.length)];
+      const s = M.state[c.sym];
+      const anchor = SNAP.state[c.sym].price;
+      const z = (Math.random() + Math.random() + Math.random() - 1.5) * 1.6;
+      const drift = Math.log(anchor / s.price) * 0.02;
+      update(c.sym, { price: s.price * Math.exp(z * 0.0011 + drift), vol24: s.vol24 ? s.vol24 * (1 + Math.random() * 0.00002) : null });
+      setTimeout(tick, 120 + Math.random() * 380);
+    };
+    tick();
+  }
+
   M.start = function () {
+    if (DEMO) { startDemo(); return; }
     connectCoinbase();
     connectKraken();
     pollDex();

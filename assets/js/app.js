@@ -178,6 +178,13 @@
   function paintStatus(s) {
     const pill = $('#livePill');
     const vals = Object.values(s);
+    if (vals.includes('demo')) {
+      pill.classList.remove('is-live');
+      pill.classList.add('is-demo');
+      pill.querySelector('.label').textContent = 'Preview';
+      pill.title = 'Real snapshot with simulated ticks';
+      return;
+    }
     const live = vals.includes('live');
     pill.classList.toggle('is-live', live);
     pill.querySelector('.label').textContent = live ? 'Live' : vals.includes('reconnecting') ? 'Reconnecting' : 'Connecting';
@@ -214,8 +221,9 @@
     });
   }
 
+  const currentTheme = () => document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
   $('#themeBtn').addEventListener('click', () => {
-    const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    const t = currentTheme() === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = t;
     try { localStorage.setItem('sw.theme', t); } catch (e) {}
     $('meta[name="theme-color"]').content = cssVar('--bg');
@@ -327,6 +335,7 @@
     const seen = (() => { try { return localStorage.getItem('sw.welcome') === '1'; } catch (e) { return true; } })();
     app.innerHTML = `
       <div class="view">
+        ${M.demo ? `<div class="banner banner--demo"><span><b>Preview.</b> This hosted preview can’t reach the exchanges, so prices start from a real market snapshot taken ${esc(fmtTime(M.snapshotAt))} and move with simulated ticks. Run Sherwood from the repo for real live prices. Trading, charts and your portfolio work as normal.</span></div>` : ''}
         ${seen ? '' : `<div class="banner" id="welcome"><svg width="22" height="22" viewBox="0 0 32 32" style="color:var(--honey);flex-shrink:0"><use href="#mark"/></svg><span><b>Welcome to Sherwood.</b> You have <b>$10,000</b> in paper money and live prices for every memecoin on Robinhood. Nothing here is real — trade boldly.</span><button class="btn btn--ghost btn--sm" id="welcomeX">Got it</button></div>`}
         <section class="hero">
           <div class="card hero__main">
@@ -485,7 +494,7 @@
 
             <div class="quote">
               <div class="quote__px" id="qpx">${fmtPrice(M.price(sym))}</div>
-              <div class="quote__chg"><span id="qchg" class="mono"></span><span class="when" id="qwhen">${RANGE_LABEL[ui.range]}</span><span class="live-dot" id="qlive">Live</span></div>
+              <div class="quote__chg"><span id="qchg" class="mono"></span><span class="when" id="qwhen">${RANGE_LABEL[ui.range]}</span><span class="live-dot" id="qlive">${M.demo ? 'Simulated' : 'Live'}</span></div>
             </div>
 
             <div class="card chart-card">
@@ -1024,7 +1033,7 @@
           <div><h2>Activity</h2><p>Every paper order you’ve placed.</p></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <div class="seg" id="actSeg">${['all', 'filled', 'open', 'canceled'].map((k) => `<button data-a="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div>
-            <button class="btn btn--ghost btn--sm" id="csvBtn">Export CSV</button>
+            ${M.demo ? '' : '<button class="btn btn--ghost btn--sm" id="csvBtn">Export CSV</button>'}
           </div>
         </div>
         <div class="card" id="actList"></div>
@@ -1055,7 +1064,7 @@
     };
     $('#actSeg').onclick = (e) => { const b = e.target.closest('[data-a]'); if (!b) return; ui.actFilter = b.dataset.a; saveUi(); render(); };
     $('#actList').addEventListener('click', (e) => { const b = e.target.closest('[data-cancel]'); if (b) P.cancel(b.dataset.cancel); });
-    $('#csvBtn').onclick = () => {
+    if ($('#csvBtn')) $('#csvBtn').onclick = () => {
       const rows = [['time', 'symbol', 'side', 'type', 'status', 'quantity', 'price', 'total', 'pnl']];
       for (const o of P.state.orders) rows.push([new Date(o.closedAt || o.createdAt).toISOString(), o.sym, o.side, o.type, o.status, o.qty, o.status === 'filled' ? o.price : o.limit, o.total ?? '', o.pnl ?? '']);
       const blob = new Blob([rows.map((r) => r.join(',')).join('\n')], { type: 'text/csv' });

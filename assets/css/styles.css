@@ -69,6 +69,35 @@
   --glow-b: rgba(214, 160, 70, 0.14);
   color-scheme: light;
 }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+  --bg: #f2ecdf;
+  --bg-2: #ece4d3;
+  --surface: #fbf7ee;
+  --surface-2: #f4eee1;
+  --surface-3: #e9e1cf;
+  --line: rgba(40, 52, 36, 0.09);
+  --line-2: rgba(40, 52, 36, 0.16);
+  --text: #1b261d;
+  --text-2: #354234;
+  --muted: #6c7565;
+  --faint: #9aa192;
+
+  --up: #3d7a34;
+  --up-soft: rgba(61, 122, 52, 0.12);
+  --down: #b9532f;
+  --down-soft: rgba(185, 83, 47, 0.12);
+  --honey: #a8761d;
+  --honey-soft: rgba(168, 118, 29, 0.12);
+  --moss: #4f7a45;
+  --bark: #7a5a3a;
+
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 18px 40px -26px rgba(60, 50, 30, 0.35);
+  --glow-a: rgba(111, 154, 74, 0.16);
+  --glow-b: rgba(214, 160, 70, 0.14);
+  color-scheme: light;
+}
+}
 
 /* ---------- base ---------- */
 *,
@@ -201,6 +230,7 @@ img { display: block; }
 }
 .live-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--honey); }
 .live-pill.is-live { color: var(--up); }
+.live-pill.is-demo { color: var(--honey); }
 .live-pill.is-live .dot { background: var(--up); box-shadow: 0 0 0 0 var(--up); animation: pulse 2s infinite; }
 @keyframes pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--up) 60%, transparent); }
@@ -218,7 +248,12 @@ img { display: block; }
   border-radius: 12px; border: 1px solid var(--line); background: var(--surface);
 }
 .icon-btn svg { width: 18px; height: 18px; fill: none; stroke: var(--text-2); stroke-width: 1.8; stroke-linecap: round; }
-:root[data-theme='dark'] .i-moon, :root[data-theme='light'] .i-sun { display: none; }
+.i-moon, :root[data-theme='light'] .i-sun { display: none; }
+:root[data-theme='light'] .i-moon { display: block; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .i-sun { display: none; }
+  :root:not([data-theme]) .i-moon { display: block; }
+}
 
 /* ---------- ticker tape ---------- */
 .tape {
@@ -539,6 +574,7 @@ img { display: block; }
   font-size: 14px; color: var(--text-2);
 }
 .banner b { color: var(--text); }
+.banner--demo { background: var(--surface-2); border-color: var(--line-2); }
 .banner button { margin-left: auto; }
 
 /* ---------- toasts / modal ---------- */
