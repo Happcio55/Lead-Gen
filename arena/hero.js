@@ -120,7 +120,7 @@
     renderer.setSize(w, h, false);
     camera.aspect = w / h; camera.updateProjectionMatrix();
     root.position.x = w > 900 ? 2.9 : 0;
-    root.position.y = w > 900 ? 0 : -3.4;
+    root.position.y = w > 900 ? 0 : -2.3;
     root.scale.setScalar(w > 900 ? 1 : 0.7);
   }
   global.addEventListener('resize', resize);
