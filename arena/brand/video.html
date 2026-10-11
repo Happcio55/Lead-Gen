@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Citizens videos</title>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;500&family=Schibsted+Grotesk:wght@500;600;700&family=VT323&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #120c07; color: #f3e6c8; font: 14px "Martian Mono", monospace; padding: 16px; }
+  canvas { display: block; width: 960px; max-width: 100%; height: auto; }
+  .ctl { display: flex; gap: 10px; margin: 10px 0; align-items: center; }
+  button { font: inherit; background: #ffb000; border: 0; padding: 6px 10px; cursor: pointer; }
+</style>
+</head>
+<body>
+<p>Citizens video compositions. Rendered frame by frame (window.renderFrame) for export; press play to preview.</p>
+<div class="ctl"><button id="pIntro" type="button">Play intro</button><button id="pHow" type="button">Play how it works</button></div>
+<canvas id="cv" width="1920" height="1080"></canvas>
+<script src="../quantum.js"></script>
+<script src="../sprites.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { AGENTS } = Q;
+  const W = 1920, H = 1080;
+  const cv = document.getElementById('cv'), g = cv.getContext('2d');
+  const BONE = '#f3e6c8', BONE2 = '#d8c69c', DIM = '#a08c66', AMBER = '#ffb000', AMBER2 = '#c98400', INK = '#120c07', INK2 = '#1a120a', RULE = '#3a2a18', TEAL = '#34d1bf', RED = '#ff6a4a';
+  const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+  const ease = (x) => { x = clamp(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+  const out = (x) => 1 - Math.pow(1 - clamp(x), 3);
+  // opacity envelope for an element visible between a and b
+  const env = (t, a, b, fi = 0.5, fo = 0.5) => Math.min(clamp((t - a) / fi), clamp((b - t) / fo));
+
+  /* ---------- 5×7 bitmap font for the wordmark ---------- */
+  const F = {
+    C: ['01111','10000','10000','10000','10000','10000','01111'], E: ['11111','10000','10000','11110','10000','10000','11111'],
+    I: ['11111','00100','00100','00100','00100','00100','11111'], N: ['10001','11001','10101','10011','10001','10001','10001'],
+    S: ['01111','10000','10000','01110','00001','00001','11110'], T: ['11111','00100','00100','00100','00100','00100','00100'],
+    Z: ['11111','00001','00010','00100','01000','10000','11111']
+  };
+  function wordmark(text, cx, y, s, reveal = 1, alpha = 1) {
+    const w = text.length * 6 * s - s;
+    let x = Math.round(cx - w / 2);
+    g.globalAlpha = alpha;
+    [...text].forEach((ch, i) => {
+      const k = clamp(reveal * text.length - i);
+      if (k <= 0) { x += 6 * s; return; }
+      const gl = F[ch];
+      const dy = Math.round((1 - out(k)) * -s * 3);
+      for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++) if (gl[r][c] === '1') {
+        g.fillStyle = r === 0 ? '#fffaf0' : r >= 5 ? BONE2 : BONE;
+        g.globalAlpha = alpha * k;
+        g.fillRect(x + c * s, y + r * s + dy, s, s);
+      }
+      x += 6 * s;
+    });
+    g.globalAlpha = 1;
+  }
+  function text(str, x, y, o = {}) {
+    g.save();
+    g.globalAlpha = o.alpha ?? 1;
+    g.font = `${o.weight || 600} ${o.size || 40}px ${o.font === 'mono' ? '"Martian Mono"' : o.font === 'vt' ? '"VT323"' : '"Schibsted Grotesk"'}`;
+    g.fillStyle = o.color || BONE;
+    g.textAlign = o.align || 'left';
+    g.textBaseline = o.base || 'alphabetic';
+    if (o.ls) g.letterSpacing = o.ls + 'px';
+    g.fillText(str, x, y);
+    const m = g.measureText(str).width;
+    g.restore();
+    return m;
+  }
+  function rect(x, y, w, h, c, a = 1) { g.globalAlpha = a; g.fillStyle = c; g.fillRect(x, y, w, h); g.globalAlpha = 1; }
+  function kicker(str, x, y, a, align = 'left') {
+    const m = text(str, align === 'center' ? x + 14 : x + 26, y, { font: 'mono', weight: 500, size: 22, color: AMBER, alpha: a, align });
+    const sx = align === 'center' ? x - m / 2 - 6 : x;
+    rect(sx, y - 15, 12, 12, TEAL, a);
+  }
+
+  /* ---------- background: the dithered amber night ---------- */
+  const P = 4, vw = W / P, vh = H / P;
+  const land = document.createElement('canvas'); land.width = vw; land.height = vh;
+  const lg = land.getContext('2d');
+  const L = Sprites.makeLand(vw, vh, Math.round(vh * 0.84));
+  L.trees = L.trees.filter((tr) => !(tr.front && tr.x > vw * 0.12 && tr.x < vw * 0.88));
+  function scene(t, dim = 0) {
+    Sprites.paintLand(lg, L, 2000 + t * 1000, { moonX: 0.86 });
+    g.imageSmoothingEnabled = false;
+    g.drawImage(land, 0, 0, W, H);
+    if (dim) rect(0, 0, W, H, INK, dim);
+  }
+  function plain(dim = 1) { rect(0, 0, W, H, INK, 1); g.globalAlpha = 0.05; for (let y = 0; y < H; y += 4) { g.fillStyle = AMBER; g.fillRect(0, y, W, 1); } g.globalAlpha = 1; }
+  function vignette() {
+    const v = g.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)');
+    g.fillStyle = v; g.fillRect(0, 0, W, H);
+  }
+
+  /* ---------- shared pieces ---------- */
+  const TOKENS = [['INU', '$0.0₃578', 0.4, 22.1], ['DACITY', '$0.0₄752', 3.2, 9.0], ['AI', '$0.0995', -0.2, 0.8], ['WALLET', '$0.0177', 1.7, -0.6], ['MEME', '$0.0131', 0.1, 0.2], ['WIF', '$0.0₃935', 0.9, 0.3]];
+  function panel(x, y, w, h, title, a) {
+    rect(x, y, w, h, INK2, 0.94 * a);
+    g.globalAlpha = a; g.strokeStyle = RULE; g.lineWidth = 2; g.strokeRect(x + 1, y + 1, w - 2, h - 2); g.globalAlpha = 1;
+    rect(x, y, w, 56, '#22180d', a);
+    text(title, x + 24, y + 37, { font: 'mono', weight: 500, size: 20, color: BONE, alpha: a });
+    text('● LIVE', x + w - 24, y + 37, { font: 'mono', weight: 500, size: 18, color: TEAL, alpha: a, align: 'right' });
+  }
+  function hat(cx, cy, s, a = 1) {
+    g.globalAlpha = a;
+    Sprites.drawHat(g, Math.round(cx - (26 * s) / 2), Math.round(cy - (17 * s) / 2), s);
+    g.globalAlpha = 1;
+  }
+  function lineup(t, t0, y, s, stagger = 0.16, names = true) {
+    const step = 12 * s + 56, total = AGENTS.length * step - 56, x0 = (W - total) / 2;
+    AGENTS.forEach((a, i) => {
+      const k = out((t - t0 - i * stagger) / 0.9);
+      if (k <= 0) return;
+      const tx = x0 + i * step, x = tx - (1 - k) * 260;
+      const walking = k < 1;
+      const bob = walking ? (Math.floor(t * 8) % 2) * s : 0;
+      g.globalAlpha = k;
+      rect(x + 10, y + 14 * s - 2, 12 * s - 20, 8, '#000', 0.4 * k);
+      Sprites.drawSprite(g, a.id, Math.round(x), Math.round(y - bob), s, walking ? Math.floor(t * 8) : 0, a.glow);
+      g.globalAlpha = 1;
+      if (names) {
+        const nk = clamp((t - t0 - i * stagger - 0.7) / 0.4);
+        if (nk > 0) {
+          g.font = '500 20px "Martian Mono"';
+          const w = g.measureText(a.name).width + 22;
+          const nx = tx + (12 * s - w) / 2, ny = y + 14 * s + 18;
+          rect(nx, ny, w, 34, BONE, nk); rect(nx, ny + 34, w, 5, a.color, nk);
+          text(a.name, nx + 11, ny + 24, { font: 'mono', weight: 500, size: 20, color: INK, alpha: nk });
+        }
+      }
+    });
+  }
+
+  /* ================= INTRO (24 s) ================= */
+  function intro(t) {
+    scene(t, t > 5 ? 0.35 : 0.15);
+    // 0–5: hat, wordmark
+    {
+      const a = env(t, 0.2, 5.0, 0.8, 0.5);
+      if (a > 0) {
+        const pop = out((t - 0.4) / 0.8);
+        hat(W / 2, 330 - (1 - pop) * 40, 12, a * pop);
+        wordmark('CITIZENS', W / 2, 500, 22, clamp((t - 1.2) / 1.4), a);
+        if (t > 2.8) kicker('ROBINHOOD CHAIN · MAINNET', W / 2, 760, a * clamp((t - 2.8) / 0.6), 'center');
+      }
+    }
+    // 5–10: seven agents
+    {
+      const a = env(t, 5.0, 10.2, 0.5, 0.5);
+      if (a > 0) {
+        text('Seven agents.', W / 2, 250, { size: 110, weight: 700, alpha: a * clamp((t - 5.1) / 0.5), align: 'center' });
+        text('Seven strategies, each modelled on a major language-model family.', W / 2, 320, { size: 34, weight: 500, color: BONE2, alpha: a * clamp((t - 5.6) / 0.6), align: 'center' });
+        g.globalAlpha = a; lineup(t, 5.6, 520, 13); g.globalAlpha = 1;
+      }
+    }
+    // 10–15: one market
+    {
+      const a = env(t, 10.2, 15.2, 0.5, 0.5);
+      if (a > 0) {
+        text('One market.', 160, 300, { size: 110, weight: 700, alpha: a * clamp((t - 10.3) / 0.5) });
+        text('Every ETH-paired meme coin pool', 160, 380, { size: 34, weight: 500, color: BONE2, alpha: a * clamp((t - 10.8) / 0.5) });
+        text('on Robinhood Chain, read every 30 seconds.', 160, 424, { size: 34, weight: 500, color: BONE2, alpha: a * clamp((t - 10.8) / 0.5) });
+        const px = 980, py = 220, pw = 780;
+        panel(px, py, pw, 600, 'MARKETS / LIVE BOARD', a);
+        const cols = [px + 30, px + 250, px + 500, px + 650];
+        ['TOKEN', 'PRICE', '1H', '24H'].forEach((h, i) => text(h, cols[i] + (i ? 100 : 0), py + 100, { font: 'mono', weight: 500, size: 16, color: DIM, alpha: a, align: i ? 'right' : 'left' }));
+        TOKENS.forEach((r, i) => {
+          const k = clamp((t - 10.8 - i * 0.18) / 0.4) * a;
+          if (k <= 0) return;
+          const y = py + 160 + i * 70;
+          rect(px + 20, y + 22, pw - 40, 1, RULE, k);
+          text(r[0], cols[0], y, { font: 'mono', weight: 500, size: 26, alpha: k });
+          text(r[1], cols[1] + 100, y, { font: 'mono', size: 26, alpha: k, align: 'right' });
+          text((r[2] >= 0 ? '+' : '−') + Math.abs(r[2]).toFixed(1) + '%', cols[2] + 100, y, { font: 'mono', size: 26, color: r[2] >= 0 ? TEAL : RED, alpha: k, align: 'right' });
+          text((r[3] >= 0 ? '+' : '−') + Math.abs(r[3] * 100).toFixed(0) + '%', cols[3] + 100, y, { font: 'mono', size: 26, color: r[3] >= 0 ? TEAL : RED, alpha: k, align: 'right' });
+        });
+      }
+    }
+    // 15–20: every trade on the record
+    {
+      const a = env(t, 15.2, 20.2, 0.5, 0.5);
+      if (a > 0) {
+        text('Every trade on the record.', W / 2, 220, { size: 96, weight: 700, alpha: a * clamp((t - 15.3) / 0.5), align: 'center' });
+        const rows = [['21:04', 'CLAUDIUS', 'BUY', 'WALLET', '85,857,812'], ['21:04', 'GPTONY', 'BUY', 'DACITY', '85,857,812'], ['21:05', 'GROKSTAR', 'BUY', 'INU', '85,857,936'], ['21:07', 'MISTRO', 'SELL', 'MEME', '85,858,104'], ['21:09', 'SEEKER', 'BUY', 'WIF', '85,858,377']];
+        rows.forEach((r, i) => {
+          const k = clamp((t - 15.9 - i * 0.35) / 0.4) * a;
+          if (k <= 0) return;
+          const ag = AGENTS.find((x) => x.name === r[1]);
+          const y = 330 + i * 120, x = 260 + (1 - out(k)) * -80;
+          rect(x, y, 1400, 96, INK2, 0.92 * k);
+          rect(x, y, 8, 96, ag.color, k);
+          text(r[0], x + 40, y + 60, { font: 'mono', size: 26, color: DIM, alpha: k });
+          rect(x + 180, y + 38, 18, 18, ag.color, k);
+          text(r[1], x + 214, y + 60, { font: 'mono', weight: 500, size: 28, alpha: k });
+          rect(x + 500, y + 26, 110, 44, r[2] === 'BUY' ? TEAL : RED, k);
+          text(r[2], x + 555, y + 58, { font: 'mono', weight: 500, size: 24, color: INK, alpha: k, align: 'center' });
+          text(r[3], x + 660, y + 60, { font: 'mono', weight: 500, size: 28, alpha: k });
+          text('block #' + r[4], x + 1360, y + 60, { font: 'mono', size: 24, color: AMBER, alpha: k, align: 'right' });
+        });
+      }
+    }
+    // 20–24: end card
+    {
+      const a = clamp((t - 20.2) / 0.7);
+      if (a > 0) {
+        rect(0, 0, W, H, INK, 0.45 * a);
+        hat(W / 2, 330, 10, a);
+        wordmark('CITIZENS', W / 2, 470, 18, 1, a);
+        text('Seven agents. One market. Every trade public.', W / 2, 720, { size: 40, weight: 600, alpha: a * clamp((t - 20.8) / 0.6), align: 'center' });
+        kicker('LIVE ON ROBINHOOD CHAIN', W / 2, 800, a * clamp((t - 21.3) / 0.6), 'center');
+      }
+    }
+    vignette();
+  }
+
+  /* ================= HOW IT WORKS (40 s) ================= */
+  function step(n, title, sub, t, t0, x = 160, y = 230) {
+    const a = clamp((t - t0) / 0.5);
+    text(n, x, y - 70, { font: 'mono', weight: 500, size: 26, color: AMBER, alpha: a });
+    const lines = Array.isArray(title) ? title : [title];
+    lines.forEach((ln, i) => text(ln, x, y + i * 84, { size: 76, weight: 700, alpha: a }));
+    const sy = y + (lines.length - 1) * 84;
+    sub.forEach((s, i) => text(s, x, sy + 70 + i * 44, { size: 32, weight: 500, color: BONE2, alpha: clamp((t - t0 - 0.3) / 0.5) }));
+  }
+  function how(t) {
+    // 0–5 title
+    if (t < 5.5) {
+      scene(t, 0.25);
+      const a = env(t, 0.2, 5.4, 0.8, 0.5);
+      hat(W / 2, 300, 10, a * out((t - 0.3) / 0.8));
+      text('How Citizens works', W / 2, 560, { size: 104, weight: 700, alpha: a * clamp((t - 0.9) / 0.6), align: 'center' });
+      text('Seven autonomous agents trading meme coins on Robinhood Chain, in public.', W / 2, 640, { size: 34, weight: 500, color: BONE2, alpha: a * clamp((t - 1.5) / 0.6), align: 'center' });
+      kicker('FOUR STEPS · EVERY 30 SECONDS', W / 2, 740, a * clamp((t - 2.2) / 0.6), 'center');
+      vignette(); return;
+    }
+    plain();
+    // 5.5–13: scan
+    if (t < 13.2) {
+      const a = env(t, 5.5, 13.2, 0.4, 0.4);
+      g.globalAlpha = a;
+      step('01 / SCAN', 'Read the market.', ['Every 30 seconds the agents pull price, liquidity,', 'volume and order flow for every ETH-paired', 'meme coin pool on Robinhood Chain.', 'Then the market is cleaned.'], t, 5.6);
+      // grid of pools
+      const gx = 1040, gy = 170, cw = 150, chh = 92;
+      const reasons = { 3: 'STOCK', 7: 'SPOOFED', 10: 'INACTIVE', 14: 'STOCK', 17: 'SPOOFED' };
+      const names = ['INU', 'AI', 'MEME', 'NVDA', 'WIF', 'DACITY', 'WALLET', 'SCAM', 'BASED', 'HUME', 'DEAD', 'PEPE', 'CAT', 'MOON', 'SPY', 'FROG', 'DOGE', 'RUG', 'BONK', 'CHAD'];
+      names.forEach((nm, i) => {
+        const k = clamp((t - 6.4 - i * 0.05) / 0.3);
+        if (k <= 0) return;
+        const cx = gx + (i % 5) * (cw + 14), cy = gy + Math.floor(i / 5) * (chh + 14);
+        const bad = reasons[i];
+        const kill = bad ? clamp((t - 9.2 - (i % 4) * 0.25) / 0.4) : 0;
+        const keep = !bad && t > 11 ? clamp((t - 11) / 0.4) : 0;
+        rect(cx, cy, cw, chh, keep ? '#2a1d0c' : INK2, k * (1 - kill * 0.6));
+        g.globalAlpha = k * (1 - kill * 0.6); g.strokeStyle = keep ? AMBER : RULE; g.lineWidth = 2; g.strokeRect(cx + 1, cy + 1, cw - 2, chh - 2); g.globalAlpha = a;
+        text(nm, cx + 16, cy + 40, { font: 'mono', weight: 500, size: 22, color: keep ? AMBER : BONE, alpha: k * (1 - kill * 0.7) });
+        if (!kill) text('ETH', cx + 16, cy + 72, { font: 'mono', size: 16, color: DIM, alpha: k });
+        if (kill > 0) {
+          g.globalAlpha = kill; g.strokeStyle = RED; g.lineWidth = 4;
+          g.beginPath(); g.moveTo(cx + 10, cy + 10); g.lineTo(cx + cw - 10, cy + chh - 10); g.stroke(); g.globalAlpha = a;
+          text(bad, cx + cw - 12, cy + 72, { font: 'mono', weight: 500, size: 15, color: RED, alpha: kill, align: 'right' });
+        }
+      });
+      if (t > 11.2) text('What remains is the board.', gx, gy + 4 * (chh + 14) + 70, { size: 34, weight: 600, color: AMBER, alpha: clamp((t - 11.2) / 0.5) });
+      g.globalAlpha = 1;
+      vignette(); return;
+    }
+    // 13.2–22.5: score twice
+    if (t < 22.6) {
+      const a = env(t, 13.2, 22.6, 0.4, 0.4);
+      g.globalAlpha = a;
+      step('02 / SCORE', ['Score every', 'token twice.'], ['Once by the agent’s own strategy.', 'Once by a simulated two-qubit circuit.', 'Both are blended into one final score.'], t, 13.3);
+      // classical card
+      const cx = 1000, cy = 160;
+      const k1 = clamp((t - 14.3) / 0.5);
+      rect(cx, cy, 760, 210, INK2, k1 * a);
+      text('CLASSICAL · GPTONY', cx + 28, cy + 48, { font: 'mono', weight: 500, size: 20, color: DIM, alpha: k1 });
+      text('5m +0.6%   1h +3.2%   6h +9.0%   buys 28 / sells 11', cx + 28, cy + 100, { font: 'mono', size: 22, alpha: k1 });
+      const cl = 0.71 * clamp((t - 15) / 1.2);
+      rect(cx + 28, cy + 140, 600, 22, '#2a1d0c', k1); rect(cx + 28, cy + 140, 600 * cl, 22, TEAL, k1);
+      text('+' + cl.toFixed(2), cx + 732, cy + 160, { font: 'mono', weight: 500, size: 26, alpha: k1, align: 'right' });
+      // circuit card
+      const qy = 410, k2 = clamp((t - 16) / 0.5);
+      rect(cx, qy, 760, 340, INK2, k2 * a);
+      text('CIRCUIT · 2 QUBITS', cx + 28, qy + 48, { font: 'mono', weight: 500, size: 20, color: DIM, alpha: k2 });
+      const l0 = qy + 120, l1 = qy + 220;
+      g.globalAlpha = k2; g.strokeStyle = '#5a4325'; g.lineWidth = 3;
+      [l0, l1].forEach((ly) => { g.beginPath(); g.moveTo(cx + 40, ly); g.lineTo(cx + 720, ly); g.stroke(); });
+      const gates = [[cx + 120, l0, 'RY', 16.4], [cx + 120, l1, 'RY', 16.6], [cx + 270, null, 'CNOT', 17.2], [cx + 400, l1, 'RZ', 17.8], [cx + 520, l1, 'H', 18.2], [cx + 520, l0, 'RY', 18.4], [cx + 660, l0, 'M', 18.9], [cx + 660, l1, 'M', 18.9]];
+      gates.forEach(([x, y, lab, t0]) => {
+        const k = clamp((t - t0) / 0.3) * k2;
+        if (k <= 0) return;
+        if (lab === 'CNOT') {
+          g.globalAlpha = k; g.strokeStyle = BONE; g.lineWidth = 3;
+          g.beginPath(); g.moveTo(x, l0); g.lineTo(x, l1 + 18); g.stroke();
+          rect(x - 8, l0 - 8, 16, 16, BONE, k);
+          g.beginPath(); g.arc(x, l1, 18, 0, Math.PI * 2); g.stroke(); g.globalAlpha = 1;
+          return;
+        }
+        rect(x - 38, y - 30, 76, 60, '#22180d', k);
+        g.globalAlpha = k; g.strokeStyle = lab === 'RZ' ? RED : lab === 'H' ? TEAL : lab === 'M' ? BONE : AMBER; g.lineWidth = 3; g.strokeRect(x - 38, y - 30, 76, 60); g.globalAlpha = 1;
+        text(lab, x, y + 9, { font: 'mono', weight: 500, size: 22, alpha: k, align: 'center' });
+      });
+      const pk = clamp((t - 19.3) / 1);
+      const probs = [['|11⟩', 0.52], ['|10⟩', 0.21], ['|01⟩', 0.18], ['|00⟩', 0.09]];
+      probs.forEach(([lab, p], i) => {
+        if (pk <= 0) return;
+        const y = qy + 300;
+        const x = cx + 40 + i * 180;
+        text(lab, x, y, { font: 'mono', size: 18, color: DIM, alpha: pk });
+        rect(x + 64, y - 16, 90, 18, '#2a1d0c', pk); rect(x + 64, y - 16, 90 * Math.min(1, p * 1.9) * pk, 18, i < 2 ? AMBER : BONE2, pk);
+      });
+      // final score
+      if (t > 20.4) {
+        const k = clamp((t - 20.4) / 0.6);
+        const sc = 0.66 * k;
+        rect(cx, 780, 760, 110, '#2a1d0c', k * a);
+        text('FINAL SCORE', cx + 28, 848, { font: 'mono', weight: 500, size: 22, color: DIM, alpha: k });
+        text('+' + sc.toFixed(2), cx + 330, 855, { font: 'mono', weight: 500, size: 52, color: AMBER, alpha: k });
+        if (t > 21.2) { rect(cx + 560, 810, 170, 50, TEAL, clamp((t - 21.2) / 0.3)); text('BUY', cx + 645, 845, { font: 'mono', weight: 500, size: 26, color: INK, alpha: clamp((t - 21.2) / 0.3), align: 'center' }); }
+      }
+      g.globalAlpha = 1;
+      vignette(); return;
+    }
+    // 22.6–30.6: trade with rules
+    if (t < 30.7) {
+      const a = env(t, 22.6, 30.7, 0.4, 0.4);
+      g.globalAlpha = a;
+      step('03 / TRADE', ['Trade within', 'hard limits.'], ['A position opens only when the score', 'clears the agent’s bar. Every agent', 'works under the same risk rules.'], t, 22.7);
+      const rules = [['22%', 'of equity per position'], ['4', 'open positions at most'], ['3%', 'max share of a pool per trade'], ['0.30%', 'fee plus price impact'], ['10 min', 'cooldown before re-entering'], ['Stop · take', 'fixed exits per agent']];
+      rules.forEach(([big, small], i) => {
+        const k = clamp((t - 23.6 - i * 0.35) / 0.4);
+        if (k <= 0) return;
+        const x = 960 + (i % 2) * 440, y = 180 + Math.floor(i / 2) * 230;
+        rect(x, y, 420, 200, INK2, k);
+        rect(x, y, 420, 6, AMBER, k);
+        text(big, x + 28, y + 96, { size: 64, weight: 700, color: AMBER, alpha: k });
+        text(small, x + 28, y + 150, { size: 22, weight: 500, color: BONE2, alpha: k });
+      });
+      g.globalAlpha = 1;
+      vignette(); return;
+    }
+    // 30.7–37: everything public
+    if (t < 37.2) {
+      const a = env(t, 30.7, 37.2, 0.4, 0.4);
+      g.globalAlpha = a;
+      step('04 / PUBLISH', ['Everything', 'is public.'], ['Standings, every fill with its reason,', 'the mainnet block it was decided on,', 'and each agent’s current view.'], t, 30.8);
+      const px = 1000, py = 160;
+      panel(px, py, 760, 720, 'STANDINGS', clamp((t - 31.4) / 0.4));
+      const order = ['grokstar', 'gemtwins', 'mistro', 'gptony', 'seeker', 'claudius', 'llambo'];
+      const rets = [1.82, 1.14, 0.62, 0.21, -0.35, -0.71, -1.08];
+      order.forEach((id, i) => {
+        const ag = AGENTS.find((x) => x.id === id);
+        const k = clamp((t - 31.8 - i * 0.2) / 0.4);
+        if (k <= 0) return;
+        const y = py + 110 + i * 86;
+        rect(px + 20, y, 720, 72, '#22180d', k);
+        text('#' + (i + 1), px + 44, y + 47, { font: 'mono', weight: 500, size: 26, color: DIM, alpha: k });
+        g.globalAlpha = k; Sprites.drawSprite(g, id, px + 110, y + 4, 4, 0, ag.glow); g.globalAlpha = a;
+        text(ag.name, px + 180, y + 47, { font: 'mono', weight: 500, size: 26, alpha: k });
+        const r = rets[i];
+        text((r >= 0 ? '+' : '−') + Math.abs(r).toFixed(2) + '%', px + 716, y + 47, { font: 'mono', weight: 500, size: 26, color: r >= 0 ? TEAL : RED, alpha: k, align: 'right' });
+      });
+      text('Illustrative standings', px + 760, py + 760, { font: 'mono', size: 16, color: DIM, alpha: clamp((t - 33) / 0.5), align: 'right' });
+      g.globalAlpha = 1;
+      vignette(); return;
+    }
+    // 37.2–42: end card
+    scene(t, 0.4);
+    const a = clamp((t - 37.2) / 0.7);
+    hat(W / 2, 300, 10, a);
+    wordmark('CITIZENS', W / 2, 430, 18, 1, a);
+    text('Scan. Score. Trade. Publish.', W / 2, 680, { size: 44, weight: 700, alpha: a * clamp((t - 37.8) / 0.5), align: 'center' });
+    text('Current round: simulated capital on live Robinhood Chain prices.', W / 2, 744, { size: 26, weight: 500, color: BONE2, alpha: a * clamp((t - 38.3) / 0.5), align: 'center' });
+    kicker('LIVE ON ROBINHOOD CHAIN', W / 2, 830, a * clamp((t - 38.6) / 0.5), 'center');
+    vignette();
+  }
+
+  const COMPS = { intro: { fn: intro, dur: 24 }, how: { fn: how, dur: 42 } };
+  window.COMPS = Object.fromEntries(Object.entries(COMPS).map(([k, v]) => [k, v.dur]));
+  window.renderFrame = (name, t) => { COMPS[name].fn(t); };
+  let playing = null;
+  function play(name) {
+    const t0 = performance.now(); playing = name;
+    const loop = (now) => { if (playing !== name) return; const t = (now - t0) / 1000; if (t > COMPS[name].dur) return; COMPS[name].fn(t); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  }
+  document.getElementById('pIntro').onclick = () => play('intro');
+  document.getElementById('pHow').onclick = () => play('how');
+  Promise.all(['700 80px "Schibsted Grotesk"', '600 40px "Schibsted Grotesk"', '500 30px "Schibsted Grotesk"', '500 20px "Martian Mono"', '400 20px "Martian Mono"'].map((f) => document.fonts.load(f))).then(() => { intro(3); window.VIDEO_READY = true; });
+})();
+</script>
+</body>
+</html>
