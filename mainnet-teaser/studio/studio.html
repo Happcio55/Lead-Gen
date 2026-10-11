@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Parabol² studio</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Tokens copied from useparabol.com */
+  :root {
+    --paper:#f7f8f6; --plate:#ffffff; --grid:#cfdbe6; --ink:#121826; --mute:#5d6676;
+    --rule:#d9dde3; --red:#d6362b; --blue:#1f4fd1;
+    --sans:"Archivo",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  html, body { margin:0; width:1920px; height:1080px; overflow:hidden; background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .r { will-change:opacity, transform; }
+  .top { position:absolute; left:0; right:0; top:0; height:112px; border-bottom:1.5px solid var(--ink);
+         display:flex; align-items:center; justify-content:space-between; padding:0 96px; box-sizing:border-box; }
+  .logo { font:800 36px/1 var(--sans); font-stretch:125%; letter-spacing:-.01em; }
+  .logo sup { color:var(--red); font-size:.45em; vertical-align:top; position:relative; top:-.2em; }
+  .handle { font:500 22px/1 var(--mono); letter-spacing:.1em; color:var(--mute); }
+  .left { position:absolute; left:96px; top:196px; width:940px; }
+  .pill { display:inline-flex; align-items:center; gap:14px; background:var(--red); color:#fff;
+          font:500 22px/1 var(--mono); letter-spacing:.12em; padding:13px 20px; text-transform:uppercase; }
+  .pill i { width:12px; height:12px; border-radius:50%; background:#fff; display:block; }
+  .kick { margin-top:24px; font:500 22px/1.4 var(--mono); letter-spacing:.12em; color:var(--mute); text-transform:uppercase; }
+  .heads { position:relative; margin-top:26px; height:470px; }
+  h1 { position:absolute; left:0; top:0; width:100%; margin:0; font-size:132px; line-height:.92; font-weight:850;
+       font-stretch:118%; letter-spacing:-.02em; text-wrap:balance; }
+  .heads.auto h1 { position:relative; }
+  h1 span { color:var(--red); }
+  h1 em { color:var(--blue); font-style:normal; }
+  .sub { font:400 32px/1.4 var(--sans); max-width:860px; }
+  .mono { margin-top:44px; font:500 24px/1.5 var(--mono); letter-spacing:.08em; color:var(--mute); text-transform:uppercase; }
+  .mono b { color:var(--red); font-weight:500; }
+  .plate { position:absolute; right:96px; top:184px; width:720px; height:720px; background:var(--plate);
+           border:1.5px solid var(--ink); box-sizing:border-box; }
+  .fig { position:absolute; right:96px; top:924px; width:720px; font:400 18px/1.4 var(--mono); white-space:nowrap; color:var(--mute);
+         display:flex; justify-content:space-between; }
+  .fig .k { display:flex; gap:26px; }
+  .fig .k s { text-decoration:none; display:inline-block; width:30px; height:3px; vertical-align:middle; margin-right:8px; }
+  .bar { position:absolute; left:0; right:0; bottom:0; height:18px; background:var(--ink); }
+  .disc { position:absolute; left:96px; bottom:46px; font:400 19px/1 var(--mono); color:var(--mute); letter-spacing:.04em; }
+  /* right-panel variants */
+  .list { position:absolute; inset:0; padding:56px 56px; box-sizing:border-box; }
+  .list .h { font:500 20px/1 var(--mono); letter-spacing:.12em; color:var(--mute); text-transform:uppercase; padding-bottom:22px; border-bottom:1.5px solid var(--ink); }
+  .row { display:flex; justify-content:space-between; align-items:center; padding:30px 0; border-bottom:1px solid var(--rule);
+         font:800 40px/1 var(--sans); font-stretch:115%; letter-spacing:-.01em; }
+  .row .v { font:500 22px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase; }
+  .row .ok { color:var(--ink); }
+  .row .wait { color:var(--red); }
+  .row.next { color:var(--red); }
+  .big { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:0 64px; box-sizing:border-box; }
+  .big .n { font:850 168px/0.9 var(--sans); font-stretch:115%; letter-spacing:-.03em; color:var(--blue); }
+  .big .l { margin-top:28px; font:500 24px/1.5 var(--mono); letter-spacing:.08em; color:var(--mute); text-transform:uppercase; }
+</style>
+</head>
+<body>
+<div class="top r" data-in="0"><div class="logo">PARABOL<sup>2</sup></div><div class="handle">@PARABOLNOW</div></div>
+<div class="left">
+  <div class="pill r" id="pill" data-in="0.3"><i></i><span></span></div>
+  <div class="kick r" id="kick" data-in="0.5"></div>
+  <div class="heads" id="heads"></div>
+  <div id="after"></div>
+</div>
+<div class="plate r" id="plate" data-in="0.2"></div>
+<div class="fig r" id="fig" data-in="0.6"></div>
+<div class="disc r" data-in="0.8">Mainnet trading is not live. Practice and testnet use tokens with no value.</div>
+<div class="bar"></div>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+let scene = null;
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const ease = x => 1 - Math.pow(1 - clamp(x), 3);
+
+function el(tag, attrs = {}, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+// Fig. 1 from the site: value of 1 unit vs price. Bull² = P², Bear² = 1/P², dashed 1×.
+function buildChart(plate) {
+  const S = 720, pad = 64, x0 = pad, x1 = S - 30, y0 = 30, y1 = S - pad;
+  const svg = el("svg", { width: S, height: S, viewBox: `0 0 ${S} ${S}` }, plate);
+  const X = p => x0 + (p / 2) * (x1 - x0), Y = v => y1 - (v / 3) * (y1 - y0);
+  for (let i = 0; i <= 40; i++) {
+    const x = x0 + (i / 40) * (x1 - x0);
+    el("line", { x1: x, x2: x, y1: y0, y2: y1, stroke: i % 5 ? "#e3ebf2" : "#a9bccd", "stroke-width": 1 }, svg);
+  }
+  for (let i = 0; i <= 60; i++) {
+    const y = y0 + (i / 60) * (y1 - y0);
+    el("line", { x1: x0, x2: x1, y1: y, y2: y, stroke: i % 10 ? "#e3ebf2" : "#a9bccd", "stroke-width": 1 }, svg);
+  }
+  el("line", { x1: X(1), x2: X(1), y1: y0, y2: y1, stroke: "#121826", "stroke-width": 1.5 }, svg);
+  el("line", { x1: x0, x2: x1, y1: Y(1), y2: Y(1), stroke: "#121826", "stroke-width": 1.5 }, svg);
+  const lab = (x, y, t, anchor) => { const e = el("text", { x, y, "text-anchor": anchor, "font-family": "IBM Plex Mono", "font-size": 17, fill: "#5d6676" }, svg); e.textContent = t; };
+  [0, 0.5, 1, 1.5, 2].forEach(p => lab(X(p), y1 + 30, p.toFixed(1) + "P", "middle"));
+  [0, 1, 2, 3].forEach(v => lab(x0 - 12, Y(v) + 6, v.toFixed(1), "end"));
+  const path = (fn, from, to, attrs) => {
+    let d = "";
+    for (let i = 0; i <= 400; i++) {
+      const p = from + (to - from) * i / 400, v = fn(p);
+      if (v > 3.05) continue;
+      d += (d ? "L" : "M") + X(p).toFixed(1) + " " + Y(Math.max(0, v)).toFixed(1);
+    }
+    return el("path", Object.assign({ d, fill: "none" }, attrs), svg);
+  };
+  const one = path(p => p, 0, 2, { stroke: "#5d6676", "stroke-width": 2, "stroke-dasharray": "7 6" });
+  const bull = path(p => p * p, 0, 2, { stroke: "#d6362b", "stroke-width": 4.5, "stroke-linecap": "round" });
+  const bear = path(p => 1 / (p * p), 0.5, 2, { stroke: "#1f4fd1", "stroke-width": 4.5, "stroke-linecap": "round" });
+  const dot = el("circle", { cx: X(1), cy: Y(1), r: 9, fill: "#fff", stroke: "#121826", "stroke-width": 3 }, svg);
+  const today = el("text", { x: X(1) + 16, y: Y(1) + 26, "font-family": "IBM Plex Mono", "font-size": 18, fill: "#121826" }, svg);
+  today.textContent = "today";
+  for (const c of [one, bull, bear]) { const L = c.getTotalLength(); c.dataset.len = L; c.style.strokeDasharray = c === one ? "7 6" : `${L} ${L}`; }
+  return { svg, one, bull, bear, dot, today };
+}
+
+function setScene(s) {
+  scene = s;
+  document.querySelector("#pill span").textContent = s.pill || "Mainnet · coming soon";
+  document.getElementById("kick").textContent = s.kick || "";
+  const heads = document.getElementById("heads");
+  heads.innerHTML = "";
+  (s.heads || [{ html: s.h1, at: 0.6 }]).forEach(h => {
+    const e = document.createElement("h1");
+    e.className = "r"; e.innerHTML = h.html; e.dataset.in = h.at; if (h.out != null) e.dataset.out = h.out;
+    heads.appendChild(e);
+  });
+  const single = !s.heads;
+  heads.classList.toggle("auto", single);
+  heads.style.height = single ? "auto" : (s.headsHeight || 470) + "px";
+  const after = document.getElementById("after");
+  after.innerHTML = "";
+  if (s.sub) { const e = document.createElement("div"); e.className = "sub r"; e.innerHTML = s.sub; e.dataset.in = s.subAt ?? 1.2; after.appendChild(e); }
+  if (s.mono) { const e = document.createElement("div"); e.className = "mono r"; e.innerHTML = s.mono; e.dataset.in = s.monoAt ?? 1.5; after.appendChild(e); }
+  const plate = document.getElementById("plate");
+  plate.innerHTML = "";
+  scene.chart = null;
+  const panel = s.panel || { type: "chart" };
+  if (panel.type === "chart") {
+    scene.chart = buildChart(plate);
+    document.getElementById("fig").innerHTML = `<span>${panel.fig || "Fig. 1  Value of 1 unit vs. price"}</span><span class="k"><span><s style="background:#5d6676"></s>1×</span><span><s style="background:#d6362b"></s>Bull²</span><span><s style="background:#1f4fd1"></s>Bear²</span></span>`;
+  } else {
+    const wrap = document.createElement("div");
+    wrap.className = panel.type === "big" ? "big" : "list";
+    if (panel.type === "big") {
+      wrap.innerHTML = `<div class="n r" data-in="1">${panel.n}</div><div class="l r" data-in="1.4">${panel.l}</div>`;
+    } else {
+      wrap.innerHTML = `<div class="h">${panel.title}</div>` + panel.rows.map((r, i) =>
+        `<div class="row r ${r.cls || ""}" data-in="${1 + i * 0.45}"><span>${r.k}</span><span class="v ${r.vcls || ""}">${r.v}</span></div>`).join("");
+    }
+    plate.appendChild(wrap);
+    document.getElementById("fig").innerHTML = `<span>${panel.fig || ""}</span>`;
+  }
+  // fit each headline into the heads box
+  for (const h of heads.children) {
+    let size = s.h1Size || 132;
+    h.style.fontSize = size + "px";
+    const maxH = single ? 470 : heads.clientHeight;
+    while ((h.scrollHeight > maxH || h.scrollWidth > heads.clientWidth) && size > 60) {
+      size -= 4; h.style.fontSize = size + "px";
+    }
+  }
+}
+
+function setT(t) {
+  document.querySelectorAll(".r").forEach(e => {
+    const a = +e.dataset.in || 0, o = e.dataset.out != null ? +e.dataset.out : Infinity;
+    let v = ease((t - a) / 0.55);
+    if (t > o) v = Math.min(v, 1 - ease((t - o) / 0.4));
+    e.style.opacity = v;
+    e.style.transform = `translateY(${(1 - v) * 26}px)`;
+  });
+  const c = scene && scene.chart;
+  if (c) {
+    const draw = (p, start, dur) => { const L = +p.dataset.len; p.style.strokeDashoffset = L * (1 - ease((t - start) / dur)); };
+    c.one.style.opacity = ease((t - 0.8) / 0.6);
+    draw(c.bull, 1.0, 1.8);
+    draw(c.bear, 1.6, 1.8);
+    c.dot.style.opacity = c.today.style.opacity = ease((t - 2.8) / 0.4);
+  }
+}
+window.setScene = setScene;
+window.setT = setT;
+</script>
+</body>
+</html>
