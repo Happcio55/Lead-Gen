@@ -1,33 +1,36 @@
 # Qubit Royale
 
-Four quantum-assisted AI agents (FLUX, VEX, ECHO, ANCHOR) compete on live **Robinhood Chain mainnet** (chain id 4663) meme coin markets.
+Four quantum-assisted trading agents (FLUX, VEX, ECHO and ANCHOR) compete on **Robinhood Chain mainnet** (chain id 4663) meme coins. The site is a retro desktop OS. Each agent has its own app window, plus standings, a trade journal with transaction receipts, a live market board, a 2-qubit circuit lab, a wallet inspector, a terminal feed and a data status panel.
 
-## What is live
+## Two modes
 
-| Data | Source |
+| Mode | What you see |
 |---|---|
-| Block height, gas, block hashes | Robinhood Chain mainnet JSON-RPC (`rpc.mainnet.chain.robinhood.com`, with automatic failover to publicnode, nodeflare, globalstake and pocket) |
-| Meme coin prices, liquidity, volume, buy/sell flow | DexScreener API (`chainId = robinhood`), filtered to ETH/WETH pairs with real liquidity, and excluding tokenized stocks |
-| Wallet balances (ETH, WETH, every meme coin on the board) | `eth_getBalance` and batched ERC-20 `balanceOf` calls to mainnet |
-| Wallet transactions | Blockscout API, falling back to an explorer link |
+| **Live wallets** | The four agent wallets, read straight from the chain: ETH and token balances (RPC), every confirmed swap with its Blockscout receipt, deposits and withdrawals, and **funding-adjusted return** = (equity − deposits + withdrawals) ÷ deposits. |
+| **Paper round** | The default when no wallets are linked. Each agent trades 1.00 ETH of paper capital on live DexScreener prices, with pool-depth slippage and a 0.30% fee. Each fill is stamped with the mainnet block it was decided on. |
 
-## How the agents work
+Link the wallets in the **Live wallets** app (saved per browser), or set them for every visitor in `config.js`:
 
-1. Every 30 seconds the arena scans the board.
-2. Each agent computes a classical score for each token (momentum, relative strength, pullback or liquidity).
-3. The same token goes through a 2-qubit statevector circuit. The features become RY angles, a CNOT entangles them, and the 1h buy share becomes an RZ phase before H and RY(β) and measurement. The output is P(|11⟩) + ½P(|10⟩) − ½P(|01⟩) − P(|00⟩).
-4. Final score = w · classical + (1 − w) · quantum. Entries need score ≥ the agent's threshold and live order flow. Exits come from stop-loss, take-profit or a flipped signal.
-5. Fills are **paper trades on real mainnet prices**, with constant-product price impact (size ÷ half the pool) and a 0.30% fee. Every fill is stamped with the mainnet block number it was decided on.
+```js
+window.QR_CONFIG = { wallets: { flux: '0x…', vex: '0x…', echo: '0x…', anchor: '0x…' } };
+```
 
-The round is saved in `localStorage`, and the agents trade while the tab is open. The circuit simulation runs locally and no quantum hardware is involved. Nothing on the page signs or sends a transaction.
+The site is read-only. It never asks for a private key and never signs a transaction.
+
+## Data sources
+
+- Robinhood Chain JSON-RPC, with automatic failover across five public endpoints
+- Blockscout API v2 (`robinhoodchain.blockscout.com`) for transfers, transactions, internal transactions and token balances
+- DexScreener API (`chainId = robinhood`) for prices, liquidity and order flow. Only ETH/WETH pairs are used, and tokenized stocks and spoofed liquidity are filtered out.
+
+## The decision model
+
+Score = classical × w + quantum × (1 − w). The quantum part is a 2-qubit statevector simulation (`quantum.js`). Two features become RY angles, a CNOT entangles them, and the 1h buy share becomes an RZ phase, followed by H and RY(β), then measurement. It runs locally, uses no quantum hardware, and is an experimental input rather than a forecast.
 
 ## Run it
 
 It is a static site with no build step:
 
 ```sh
-cd arena && python3 -m http.server 8080
-# open http://localhost:8080
+cd arena && python3 -m http.server 8080   # http://localhost:8080
 ```
-
-To deploy, publish the `arena/` folder on any static host (GitHub Pages, Netlify, Vercel, Cloudflare Pages).

@@ -185,6 +185,52 @@
     }
   }
 
+  /* Full public activity for one address: ERC-20 transfers, normal txs, internal ETH and current token balances. */
+  async function addressActivity(addr) {
+    const base = `${CHAIN.explorer}/api/v2/addresses/${addr}`;
+    // follow next_page_params so older deposits and swaps are counted too
+    const get = async (p, maxPages = 5) => {
+      const items = [];
+      let url = `${base}/${p}`;
+      for (let i = 0; i < maxPages && url; i++) {
+        const j = await fetchJSON(url, {}, 15000);
+        items.push(...(j.items || []));
+        const np = j.next_page_params;
+        url = np ? `${base}/${p}${p.includes('?') ? '&' : '?'}${new URLSearchParams(np)}` : null;
+      }
+      return items;
+    };
+    try {
+      const [transfers, txs, internals, tokens] = await Promise.all([
+        get('token-transfers?type=ERC-20'), get('transactions'), get('internal-transactions'), get('tokens?type=ERC-20')
+      ]);
+      status.explorer = true;
+      return { transfers, txs, internals, tokens };
+    } catch (e) {
+      status.explorer = false;
+      throw new Error('Blockscout explorer is not reachable right now');
+    }
+  }
+
+  async function tokenPrices(addrs) {
+    const out = new Map();
+    const list = [...new Set(addrs.map((a) => a.toLowerCase()))];
+    for (let i = 0; i < list.length; i += 30) {
+      try {
+        const pairs = await fetchJSON(`${DEX}/tokens/v1/robinhood/${list.slice(i, i + 30).join(',')}`);
+        for (const p of pairs) {
+          const q = (p.quoteToken.symbol || '').toUpperCase();
+          if (q !== 'ETH' && q !== 'WETH') continue;
+          const a = p.baseToken.address.toLowerCase();
+          const liq = num(p.liquidity && p.liquidity.usd);
+          const prev = out.get(a);
+          if (!prev || liq > prev.liq) out.set(a, { priceEth: num(p.priceNative), priceUsd: num(p.priceUsd), liq, url: p.url, sym: p.baseToken.symbol });
+        }
+      } catch (e) { /* unpriced tokens count as zero */ }
+    }
+    return out;
+  }
+
   /* ---------- injected wallet (EIP-1193) ---------- */
   async function connect() {
     const eth = global.ethereum;
@@ -203,5 +249,5 @@
     return account;
   }
 
-  global.Chain = { CHAIN, status, rpc, head, loadMarket, walletBalances, walletTxs, connect, isAddr };
+  global.Chain = { CHAIN, status, rpc, head, loadMarket, walletBalances, walletTxs, addressActivity, tokenPrices, connect, isAddr };
 })(window);

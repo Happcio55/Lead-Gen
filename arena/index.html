@@ -2,209 +2,69 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Qubit Royale</title>
-<meta name="description" content="Four quantum-assisted AI agents compete on live Robinhood Chain mainnet meme coin markets.">
+<meta name="description" content="Four quantum-assisted trading agents compete on Robinhood Chain mainnet meme coins. Follow wallets, trades and funding-adjusted results.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Unbounded:wght@500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='7' fill='%23B8FF3C'/%3E%3Cellipse cx='16' cy='16' rx='15' ry='6' fill='none' stroke='%239466FF' stroke-width='2'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Silkscreen&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="os.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%230a0612'/%3E%3Crect x='2' y='1' width='4' height='1' fill='%23ff3d7f'/%3E%3Crect x='1' y='2' width='6' height='4' fill='%23ff3d7f'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23fff'/%3E%3Crect x='5' y='3' width='1' height='1' fill='%23fff'/%3E%3Crect x='2' y='6' width='1' height='1' fill='%23ff3d7f'/%3E%3Crect x='5' y='6' width='1' height='1' fill='%23ff3d7f'/%3E%3C/svg%3E">
+<script src="config.js"></script>
 </head>
 <body>
-<div class="grain" aria-hidden="true"></div>
+<div id="boot" class="boot" role="dialog" aria-label="Starting Qubit OS">
+  <pre id="bootText"></pre>
+  <button type="button" id="bootSkip" class="px-btn">[ press any key ]</button>
+</div>
 
-<header class="nav" id="top">
-  <a class="brand" href="#top" aria-label="Qubit Royale home">
-    <span class="brand-mark" aria-hidden="true"><i></i></span>
-    <span class="brand-word">QUBIT<b>ROYALE</b></span>
-  </a>
-  <nav class="nav-links" aria-label="Sections">
-    <a href="#arena">Arena</a>
-    <a href="#desks">Desks</a>
-    <a href="#lab">Circuit Lab</a>
-    <a href="#markets">Markets</a>
-    <a href="#journal">Journal</a>
-    <a href="#wallet">Wallet</a>
-  </nav>
-  <div class="nav-right">
-    <a class="chain-pill" id="chainPill" target="_blank" rel="noopener" href="https://robinhoodchain.blockscout.com" title="Robinhood Chain mainnet. Latest block.">
-      <span class="pulse" id="pulseDot"></span>
-      <span class="mono" id="pillBlock">connecting…</span>
-    </a>
-    <button class="btn btn-connect" id="connectBtn" type="button">Connect wallet</button>
+<header class="menubar" id="menubar">
+  <div class="mb-left">
+    <button class="mb-logo" type="button" data-menu="system" aria-label="System menu"><span class="logo-px"></span>QUBIT<b>ROYALE</b></button>
+    <button class="mb-item" type="button" data-menu="agents">Agents</button>
+    <button class="mb-item" type="button" data-menu="arena">Arena</button>
+    <button class="mb-item" type="button" data-menu="view">View</button>
+    <button class="mb-item" type="button" data-menu="help">Help</button>
   </div>
+  <div class="mb-right">
+    <button type="button" class="mode-pill" id="modePill" title="Switch between the simulated round and live wallets"></button>
+    <a class="mb-block" id="mbBlock" target="_blank" rel="noopener" href="https://robinhoodchain.blockscout.com"><span class="led" id="led"></span><span id="mbBlockN">block …</span></a>
+    <button type="button" class="mb-item mb-music" id="musicBtn" aria-pressed="false">♪ off</button>
+    <span class="mb-clock" id="clock"></span>
+  </div>
+  <div class="menu" id="menu" hidden role="menu"></div>
 </header>
 
-<!-- HERO -->
-<section class="hero">
-  <canvas id="heroCanvas" aria-hidden="true"></canvas>
-  <div class="hero-inner">
-    <p class="eyebrow"><span class="dot-live"></span> Live on Robinhood Chain mainnet · chain id 4663</p>
-    <h1 class="hero-title">
-      <span class="line">Four quantum minds.</span>
-      <span class="line grad">One meme&#8209;coin colosseum.</span>
-    </h1>
-    <p class="hero-sub">FLUX, ANCHOR, VEX and ECHO read live Robinhood Chain liquidity, put every token through a 2&#8209;qubit circuit, and trade against each other. Every decision is stamped with a real mainnet block.</p>
-    <div class="hero-cta">
-      <a class="btn btn-primary" href="#arena">Enter the arena</a>
-      <a class="btn btn-ghost" href="#lab">Open the circuit lab</a>
+<main class="desktop" id="desktop">
+  <canvas id="wall" class="wall" aria-hidden="true"></canvas>
+  <div class="crt" aria-hidden="true"></div>
+  <section class="hero-card" id="heroCard" aria-label="About this arena">
+    <p class="hc-eyebrow">ROBINHOOD CHAIN MAINNET · CHAIN 4663</p>
+    <h1>Quantum traders.<br><span>One meme coin colosseum.</span></h1>
+    <p class="hc-sub">FLUX, VEX, ECHO and ANCHOR mix classical market analysis with a 2‑qubit circuit and fight over Robinhood Chain meme coins. Follow their wallets, every confirmed swap and their funding-adjusted results.</p>
+    <div class="hc-cta">
+      <button type="button" class="px-btn hot" data-open="standings">▶ Standings</button>
+      <button type="button" class="px-btn" data-open="journal">Trade journal</button>
+      <button type="button" class="px-btn" data-open="wallets">Live wallets</button>
+      <button type="button" class="px-btn ghost" data-open="guide">How it works</button>
     </div>
-    <dl class="hero-stats">
-      <div><dt>Block</dt><dd class="mono" id="statBlock">—</dd></div>
-      <div><dt>Gas</dt><dd class="mono" id="statGas">—</dd></div>
-      <div><dt>ETH</dt><dd class="mono" id="statEth">—</dd></div>
-      <div><dt>Tokens tracked</dt><dd class="mono" id="statTokens">—</dd></div>
-      <div><dt>Round age</dt><dd class="mono" id="statRound">—</dd></div>
-    </dl>
-  </div>
-  <div class="ticker" aria-label="Live token ticker"><div class="ticker-track" id="ticker"></div></div>
-</section>
+  </section>
+  <nav class="icons" id="icons" aria-label="Desktop apps"></nav>
+  <div id="windows"></div>
+  <canvas class="floor" id="floor" aria-label="Trading floor. Click an agent to open its desk."></canvas>
+</main>
 
-<!-- ARENA -->
-<section class="section" id="arena">
-  <div class="section-head">
-    <span class="kicker">01 · Arena</span>
-    <h2>Leaderboard</h2>
-    <p class="lede">Each agent starts the round with 1.00 ETH of paper capital and trades live mainnet prices, with pool-depth slippage and a 0.30% fee on every fill. Equity is marked to the live price on every tick.</p>
-  </div>
-  <div class="arena-controls">
-    <div class="seg" role="tablist" aria-label="Equity range" id="rangeSeg">
-      <button type="button" data-range="900" role="tab">15m</button>
-      <button type="button" data-range="3600" role="tab">1h</button>
-      <button type="button" data-range="0" role="tab" class="on">Round</button>
-    </div>
-    <div class="arena-meta mono" id="tickMeta">next scan —</div>
-    <button class="btn btn-small btn-ghost" id="resetBtn" type="button">New round</button>
-  </div>
-  <div class="board" id="board"></div>
-  <figure class="chart-card">
-    <figcaption>
-      <span class="chart-title">Equity, ETH</span>
-      <span class="legend" id="legend"></span>
-      <button type="button" class="link-btn" id="tableToggle">Table view</button>
-    </figcaption>
-    <div class="chart-wrap" id="chartWrap">
-      <svg id="equityChart" role="img" aria-label="Equity of each agent over the round"></svg>
-      <div class="tip" id="chartTip" hidden></div>
-    </div>
-    <div class="table-view" id="equityTable" hidden></div>
-  </figure>
-</section>
-
-<!-- DESKS -->
-<section class="section" id="desks">
-  <div class="section-head">
-    <span class="kicker">02 · Desks</span>
-    <h2>Pick a competitor</h2>
-    <p class="lede">Open an agent's desk to see its open positions, its current watchlist and the circuit behind its best pick.</p>
-  </div>
-  <div class="desk-tabs" role="tablist" id="deskTabs"></div>
-  <div class="desk" id="desk"></div>
-</section>
-
-<!-- LAB -->
-<section class="section" id="lab">
-  <div class="section-head">
-    <span class="kicker">03 · Circuit Lab</span>
-    <h2>Inside the 2&#8209;qubit brain</h2>
-    <p class="lede">Market features become rotation angles. A CNOT entangles them and the buy/sell flow sets a phase. The measured amplitudes then become a quantum score. This is a real statevector simulation running in your browser, not quantum hardware, and it's an experimental input, not a forecast.</p>
-  </div>
-  <div class="lab">
-    <div class="lab-left">
-      <div class="lab-pickers">
-        <label>Agent<select id="labAgent"></select></label>
-        <label>Token<select id="labToken"></select></label>
-      </div>
-      <div class="circuit" id="circuit"></div>
-      <div class="sliders" id="sliders"></div>
-      <button class="btn btn-small btn-ghost" id="labReset" type="button">Reset to live data</button>
-    </div>
-    <div class="lab-right">
-      <div class="probs" id="probs"></div>
-      <div class="phase-wrap">
-        <svg id="phaseWheel" viewBox="-110 -110 220 220" aria-label="Amplitude phase wheel"></svg>
-        <div class="readout" id="readout"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- MARKETS -->
-<section class="section" id="markets">
-  <div class="section-head">
-    <span class="kicker">04 · Markets</span>
-    <h2>Live meme board</h2>
-    <p class="lede">Every ETH-quoted meme pair on Robinhood Chain that passes the sanity filters: real liquidity, real volume, and no tokenized stocks. The four dots show each agent's live verdict.</p>
-  </div>
-  <div class="market-tools">
-    <input type="search" id="mSearch" placeholder="Search symbol, name or address" aria-label="Search tokens">
-    <span class="mono muted" id="mUpdated"></span>
-  </div>
-  <div class="table-scroll">
-    <table class="mtable" id="mtable">
-      <thead><tr>
-        <th data-k="sym">Token</th>
-        <th data-k="priceUsd" class="r">Price</th>
-        <th data-k="m5" class="r">5m</th>
-        <th data-k="h1" class="r">1h</th>
-        <th data-k="h24" class="r">24h</th>
-        <th data-k="liq" class="r">Liquidity</th>
-        <th data-k="vol" class="r">Vol 24h</th>
-        <th data-k="mcap" class="r">Mcap</th>
-        <th data-k="flow">Flow 1h</th>
-        <th data-k="consensus">Agents</th>
-        <th></th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</section>
-
-<!-- JOURNAL -->
-<section class="section" id="journal">
-  <div class="section-head">
-    <span class="kicker">05 · Journal</span>
-    <h2>Trade journal</h2>
-    <p class="lede">Every fill is logged with its reason, its quantum probability and the mainnet block it was decided on. Click the block to check it on the explorer.</p>
-  </div>
-  <div class="seg" id="jFilter" role="tablist" aria-label="Filter journal"></div>
-  <ol class="journal" id="journalList"></ol>
-</section>
-
-<!-- WALLET -->
-<section class="section" id="wallet">
-  <div class="section-head">
-    <span class="kicker">06 · You vs. the machines</span>
-    <h2>Mainnet wallet</h2>
-    <p class="lede">Connect a wallet or paste any address to read live balances straight from Robinhood Chain mainnet: ETH plus every meme token on the board. The page is read-only. Nothing here asks you to sign a transaction.</p>
-  </div>
-  <form class="wallet-form" id="walletForm">
-    <input id="walletInput" placeholder="0x… address on Robinhood Chain" aria-label="Wallet address" spellcheck="false" autocomplete="off">
-    <button class="btn btn-primary" type="submit">Scan wallet</button>
-  </form>
-  <div class="wallet" id="walletOut"><p class="muted">No wallet loaded yet.</p></div>
-</section>
-
-<footer class="foot">
-  <div class="foot-grid">
-    <div>
-      <div class="brand-word big">QUBIT<b>ROYALE</b></div>
-      <p class="muted">Live data: Robinhood Chain mainnet RPC, the Blockscout explorer and the DexScreener API. The agents trade paper capital on real prices while this tab is open, and the round is saved in your browser. Circuit scores are experimental inputs, not forecasts or financial advice. Meme coins can go to zero.</p>
-    </div>
-    <div class="foot-links">
-      <a href="#arena">Arena</a><a href="#desks">Desks</a><a href="#lab">Circuit Lab</a><a href="#markets">Markets</a><a href="#journal">Journal</a><a href="#wallet">Wallet</a>
-      <a href="https://robinhoodchain.blockscout.com" target="_blank" rel="noopener">Explorer ↗</a>
-      <a href="https://dexscreener.com/robinhood" target="_blank" rel="noopener">DexScreener ↗</a>
-    </div>
-  </div>
-  <div class="status-row mono" id="statusRow"></div>
+<footer class="dock">
+  <div class="ticker" aria-label="Latest trades"><div class="ticker-track" id="ticker"></div></div>
+  <div class="taskbar" id="taskbar" aria-label="Open windows"></div>
 </footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="quantum.js"></script>
 <script src="chain.js"></script>
-<script src="hero.js"></script>
-<script src="app.js"></script>
+<script src="sim.js"></script>
+<script src="live.js"></script>
+<script src="audio.js"></script>
+<script src="sprites.js"></script>
+<script src="os.js"></script>
 </body>
 </html>
