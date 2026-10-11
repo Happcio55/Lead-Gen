@@ -14,7 +14,7 @@ tokens with one click. Take-profit, stop-loss and trailing stops are built in.
 ## How it works
 
 ```
-Robinhood Chain RPC ──► server/indexer.js ──SSE──► web (React)
+Robinhood Chain RPC ──► server/indexer.js ──/api/board──► web (React)
    PoolManager logs:       pools, prices,           board, chart, trade panel
    Initialize + Swap       volume, candles               │
                                                          ▼
@@ -33,7 +33,7 @@ Robinhood Chain RPC ──► server/indexer.js ──SSE──► web (React)
   and later sells need none.
 - **Non-custodial**: transactions are built in the browser and signed by the user's wallet. The
   server never sees keys. Its RPC proxy only forwards reads and already-signed transactions.
-- **TP/SL** is checked in the browser on every board update (once a second) while a Surge tab is
+- **TP/SL** is checked in the browser on every board update (every 2 seconds) while a Surge tab is
   open. With a Privy embedded wallet, sells go through without a popup. A browser wallet asks
   you to confirm each one.
 
@@ -47,14 +47,40 @@ Contract addresses (in `shared/chain.js`) were checked on-chain:
 | Permit2 | `0x000000000022D473030F116dDEE9F6B43aC78BA3` |
 | WETH | `0x0bd7d308f8e1639fab988df18a8011f41eacad73` |
 
-## Running it
+## Deploy to Vercel
 
-Requires Node 20+.
+The repo deploys to Vercel without changes. The web app is built into `dist/`, and every `/api/*`
+route runs as a single serverless function (`api/[...path].js`). A warm instance keeps its index in
+memory and fetches only new blocks on each request. A cold instance backfills the last hour in the
+background (about 10–20 s) while the app shows "Syncing…". The CDN caches board responses for one
+second, so all viewers share the same work.
+
+1. **Privy**: create an app at [dashboard.privy.io](https://dashboard.privy.io).
+   - Login methods: turn on Email, Google, X and/or Wallet.
+   - Embedded wallets: turn on **Ethereum** and create wallets on login for users who don't have one.
+   - Copy the **App ID**.
+2. **Vercel**: open [vercel.com/new](https://vercel.com/new), import this GitHub repo and keep the
+   detected settings (they come from `vercel.json`).
+3. Under **Environment Variables**, add:
+   - `PRIVY_APP_ID`: the App ID from step 1. Required for email login.
+   - `RH_RPC_URL` *(optional)*: your own Robinhood Chain RPC, if you have one.
+
+   Then click **Deploy**.
+4. In Privy, add your Vercel URL (e.g. `https://surge-yourname.vercel.app`) and any custom domain
+   under **Configuration → App settings → Domains → Allowed origins**. Login doesn't work until the
+   domain is on that list.
+
+The app reads `PRIVY_APP_ID` at runtime through `/api/config`, so changing it only needs a redeploy.
+Vercel builds production from the repo's default branch. Other branches get preview URLs.
+
+## Running locally
+
+Requires Node 22.
 
 ```bash
 npm install
-npm run build          # builds the web app into dist/
-PRIVY_APP_ID=<your app id> npm start    # http://localhost:8787
+npm run build
+PRIVY_APP_ID=<your app id> npm start    # http://localhost:8787 (background indexer, same API)
 ```
 
 For development with hot reload (API on :8787, web on :5173):
@@ -63,6 +89,10 @@ For development with hot reload (API on :8787, web on :5173):
 PRIVY_APP_ID=<your app id> npm run dev
 ```
 
+To run the API the way Vercel does (lazy, per-request indexing), build first and then run
+`node scripts/serverless-preview.mjs` (http://localhost:8790). For local login, add
+`http://localhost:8787` / `:5173` / `:8790` to Privy's allowed origins.
+
 ### Environment
 
 | Variable | Default | Purpose |
@@ -70,15 +100,7 @@ PRIVY_APP_ID=<your app id> npm run dev
 | `PRIVY_APP_ID` | *(empty)* | Turns on Privy login (email/social plus embedded wallet). Without it, the app falls back to browser wallets (MetaMask, Rabby, …). |
 | `RH_RPC_URL` | `https://rpc.mainnet.chain.robinhood.com` | Robinhood Chain RPC. It must allow `eth_getLogs` over ranges of a few thousand blocks. |
 | `BACKFILL_BLOCKS` | `36000` (~1 hour) | How much history to index on startup. |
-| `PORT` | `8787` | HTTP port. |
-
-### Setting up Privy (email login + embedded wallets)
-
-1. Create an app at [dashboard.privy.io](https://dashboard.privy.io).
-2. Under **Login methods**, enable Email, Google, X and/or Wallet.
-3. Under **Embedded wallets**, enable Ethereum wallets.
-4. Under **App settings → Domains**, add the domain you serve Surge from (and `http://localhost:5173` / `http://localhost:8787` for local testing).
-5. Copy the **App ID** and start the server with `PRIVY_APP_ID=...`.
+| `PORT` | `8787` | HTTP port (local server only). |
 
 Users fund their wallet by bridging ETH to Robinhood Chain (robinhood.com/chain) or by sending ETH
 on Robinhood Chain to the address under the account menu. From the same menu they can export their

@@ -1,18 +1,32 @@
-// Live data hooks: the board stream (SSE), pool detail polling and the wallet's ETH balance.
+// Live data hooks: board polling, pool detail polling and the wallet's ETH balance.
 import { useEffect, useMemo, useState } from 'react';
 import { chainClient } from './lib.js';
 
 export function useBoard() {
   const [state, setState] = useState({ rows: [], feed: [], meta: null, status: 'connecting' });
   useEffect(() => {
-    const es = new EventSource('/api/stream');
-    es.addEventListener('board', (e) => {
-      const { rows, meta, feed } = JSON.parse(e.data);
-      setState({ rows, meta, feed: feed || [], status: 'live' });
-    });
-    es.addEventListener('syncing', (e) => setState((s) => ({ ...s, meta: JSON.parse(e.data), status: 'syncing' })));
-    es.onerror = () => setState((s) => ({ ...s, status: 'reconnecting' }));
-    return () => es.close();
+    // Polling (not SSE) so the same client works against serverless hosting with a CDN in front.
+    let stop = false;
+    let timer;
+    const tick = async () => {
+      try {
+        const res = await fetch('/api/board', { cache: 'no-store' });
+        const body = await res.json();
+        if (stop) return;
+        if (res.status === 503 || body.syncing) setState((s) => ({ ...s, meta: body.meta, status: 'syncing' }));
+        else if (res.ok) setState({ rows: body.rows, meta: body.meta, feed: body.feed || [], status: 'live' });
+        else setState((s) => ({ ...s, status: 'reconnecting' }));
+      } catch {
+        if (!stop) setState((s) => ({ ...s, status: 'reconnecting' }));
+      }
+      // Slow down while the tab is hidden.
+      if (!stop) timer = setTimeout(tick, document.hidden ? 10_000 : 2000);
+    };
+    tick();
+    return () => {
+      stop = true;
+      clearTimeout(timer);
+    };
   }, []);
 
   const byId = useMemo(() => new Map(state.rows.map((r) => [r.id, r])), [state.rows]);

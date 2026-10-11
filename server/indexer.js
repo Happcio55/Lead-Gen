@@ -15,7 +15,8 @@ const STALE_MS = 3 * 3600_000; // drop pools with no swaps for this long (unless
 
 export class Indexer {
   constructor({ rpcUrl, backfillBlocks = 36_000n, pollMs = 1500, log = console } = {}) {
-    this.client = createPublicClient({ chain: robinhood, transport: http(rpcUrl, { batch: true, retryCount: 3 }) });
+    // cacheTime 0: viem otherwise caches eth_blockNumber for 4s, which would throttle every poll.
+    this.client = createPublicClient({ chain: robinhood, cacheTime: 0, transport: http(rpcUrl, { batch: true, retryCount: 3 }) });
     this.backfillBlocks = BigInt(backfillBlocks);
     this.pollMs = pollMs;
     this.log = log;
@@ -32,6 +33,9 @@ export class Indexer {
     this.pinned = new Set();
     this.feed = []; // recent sizeable buys across all pools, newest first
     this.feedPending = [];
+    this.ready = null;
+    this.polling = null;
+    this.pricesAt = 0;
   }
 
   on(fn) {
@@ -43,29 +47,62 @@ export class Indexer {
     for (const fn of this.listeners) fn(evt);
   }
 
+  // Long-running mode (local `npm start`): backfill once, then poll forever in the background.
   async start() {
-    await this.refreshEthUsd();
+    await this.init({ maxAttempts: Infinity });
     setInterval(() => this.refreshEthUsd(), 60_000).unref();
     setInterval(() => this.refreshGas(), 15_000).unref();
-    this.refreshGas();
+    this.loop();
+  }
 
-    const head = await this.client.getBlockNumber();
-    this.head = head;
-    this.cursor = head - this.backfillBlocks;
+  // Backfill the recent window. Progress lives in this.cursor, so a retry resumes where it failed.
+  async init({ maxAttempts = 3 } = {}) {
+    await Promise.all([this.refreshEthUsd(), this.refreshGas()]);
+    this.head = await this.client.getBlockNumber();
+    this.cursor = this.head - this.backfillBlocks;
     this.log.info?.(`[indexer] backfilling ${this.backfillBlocks} blocks from ${this.cursor}`);
     for (let attempt = 1; ; attempt++) {
       try {
         await this.catchUp();
         break;
       } catch (e) {
-        // Progress is kept in this.cursor, so a retry resumes where the failure happened.
         this.log.warn?.(`[indexer] backfill error (attempt ${attempt}): ${describe(e)}`);
+        if (attempt >= maxAttempts) throw e;
         await sleep(Math.min(15_000, 1000 * attempt));
       }
     }
     this.status.synced = true;
+    this.status.lastPollAt = Date.now();
     this.log.info?.(`[indexer] synced: ${this.pools.size} ETH pools tracked`);
-    this.loop();
+  }
+
+  // Serverless mode (Vercel): no background work. Each request brings the index up to date,
+  // and concurrent requests share the same in-flight work.
+  async ensureFresh() {
+    if (!this.ready) {
+      this.ready = this.init().catch((e) => {
+        this.ready = null; // let the next request try again
+        throw e;
+      });
+    }
+    await this.ready;
+    const now = Date.now();
+    const chores = [];
+    if (now - this.status.lastPollAt >= this.pollMs) {
+      this.polling ??= this.catchUp()
+        .then(() => (this.status.lastPollAt = Date.now()))
+        .catch((e) => {
+          this.status.errors++;
+          this.log.warn?.(`[indexer] poll failed: ${describe(e)}`);
+        })
+        .finally(() => (this.polling = null));
+      chores.push(this.polling);
+    }
+    if (now - this.pricesAt > 60_000) {
+      this.pricesAt = now;
+      chores.push(this.refreshEthUsd(), this.refreshGas());
+    }
+    await Promise.all(chores);
   }
 
   async loop() {
@@ -84,6 +121,8 @@ export class Indexer {
 
   async catchUp() {
     this.head = await this.client.getBlockNumber();
+    // After a long idle (e.g. a sleeping serverless instance) skip ahead instead of replaying hours of blocks.
+    if (this.head - this.cursor > this.backfillBlocks) this.cursor = this.head - this.backfillBlocks;
     while (this.cursor < this.head) {
       const from = this.cursor + 1n;
       const to = from + this.range - 1n < this.head ? from + this.range - 1n : this.head;
@@ -321,7 +360,7 @@ export class Indexer {
     };
     const ch = (ref) => (ref ? (p.priceEth / ref - 1) * 100 : 0);
     const liqEth = p.liquidity ? virtualEthReserve(p.liquidity, p.sqrtPriceX96) * 2 : 0;
-    const spark = sample(p.history, 30, now - 3600_000);
+    const spark = sample(p.history, 30, now - 3600_000).map((v) => Number(v.toPrecision(4)));
     return {
       id: p.id,
       token: p.token.address,
