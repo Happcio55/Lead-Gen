@@ -169,16 +169,16 @@
     rows.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== '.') r += `<rect x="${x}" y="${y}" width="1" height="1" fill="${colors[ch]}"/>`; }));
     return `<svg viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges" aria-hidden="true">${r}</svg>`;
   }
-  const W = '#f4ecff', K = '#0a0612';
+  const W = '#ece6da', K = '#0a0612';
   const ICONS = {
-    standings: pixelIcon(['..aaaaaa..', '.aaaaaaaa.', 'aa.aaaa.aa', 'aa.aaaa.aa', '.aaaaaaaa.', '..aaaaaa..', '....aa....', '....aa....', '..wwwwww..', '..wwwwww..'], { a: '#ffb000', w: W }),
-    markets: pixelIcon(['wwwwwwwwww', 'w........w', 'w......g.w', 'w.....gg.w', 'w.g..g...w', 'w.gggg...w', 'wg..r....w', 'w...rr...w', 'w........w', 'wwwwwwwwww'], { w: W, g: '#39e58c', r: '#ff5c7a' }),
-    journal: pixelIcon(['.wwwwwwww.', '.w......w.', '.w.cccc.w.', '.w......w.', '.w.cccc.w.', '.w......w.', '.w.ccc..w.', '.w......w.', '.w.hh...w.', '.wwwwwwww.'], { w: W, c: '#3de0ff', h: '#ff3d7f' }),
-    lab: pixelIcon(['...wwww...', '....ww....', '....ww....', '...wwww...', '..wppppw..', '.wppppppw.', 'wppcppppw.', 'wpppppcpw.', 'wppppppppw', '.wwwwwwww.'], { w: W, p: '#9466ff', c: '#3de0ff' }),
-    wallets: pixelIcon(['..........', '.aaaaaaaa.', 'awwwwwwwwa', 'aw......wa', 'aw...hhhwa', 'aw...hkhwa', 'aw...hhhwa', 'aw......wa', 'awwwwwwwwa', '.aaaaaaaa.'], { a: '#ffb000', w: '#3a2858', h: '#ff3d7f', k: K }),
-    guide: pixelIcon(['.wwwwwwww.', 'w........w', 'w...hh...w', 'w..h..h..w', 'w.....h..w', 'w....h...w', 'w....h...w', 'w........w', 'w....h...w', '.wwwwwwww.'], { w: W, h: '#ff3d7f' }),
-    terminal: pixelIcon(['wwwwwwwwww', 'wkkkkkkkkw', 'wkgkkkkkkw', 'wkkgkkkkkw', 'wkgkkkkkkw', 'wkkkkggggw', 'wkkkkkkkkw', 'wwwwwwwwww', '...wwww...', '.wwwwwwww.'], { w: W, k: K, g: '#39ff88' }),
-    status: pixelIcon(['..........', '.g......g.', '.g...g..g.', '.g..ggg.g.', '.g.ggggggg', 'gggggggggg', '..........', 'wwwwwwwwww', 'w.r.a.g..w', 'wwwwwwwwww'], { g: '#3de0ff', w: W, r: '#ff5c7a', a: '#ffb000' })
+    standings: pixelIcon(['..aaaaaa..', '.aaaaaaaa.', 'aa.aaaa.aa', 'aa.aaaa.aa', '.aaaaaaaa.', '..aaaaaa..', '....aa....', '....aa....', '..wwwwww..', '..wwwwww..'], { a: '#e8a33d', w: W }),
+    markets: pixelIcon(['wwwwwwwwww', 'w........w', 'w......g.w', 'w.....gg.w', 'w.g..g...w', 'w.gggg...w', 'wg..r....w', 'w...rr...w', 'w........w', 'wwwwwwwwww'], { w: W, g: '#4fd18b', r: '#ff5c7a' }),
+    journal: pixelIcon(['.wwwwwwww.', '.w......w.', '.w.cccc.w.', '.w......w.', '.w.cccc.w.', '.w......w.', '.w.ccc..w.', '.w......w.', '.w.hh...w.', '.wwwwwwww.'], { w: W, c: '#e9e4d6', h: '#e8274b' }),
+    lab: pixelIcon(['...wwww...', '....ww....', '....ww....', '...wwww...', '..wppppw..', '.wppppppw.', 'wppcppppw.', 'wpppppcpw.', 'wppppppppw', '.wwwwwwww.'], { w: W, p: '#9466ff', c: '#e9e4d6' }),
+    wallets: pixelIcon(['..........', '.aaaaaaaa.', 'awwwwwwwwa', 'aw......wa', 'aw...hhhwa', 'aw...hkhwa', 'aw...hhhwa', 'aw......wa', 'awwwwwwwwa', '.aaaaaaaa.'], { a: '#e8a33d', w: '#3a2858', h: '#e8274b', k: K }),
+    guide: pixelIcon(['.wwwwwwww.', 'w........w', 'w...hh...w', 'w..h..h..w', 'w.....h..w', 'w....h...w', 'w....h...w', 'w........w', 'w....h...w', '.wwwwwwww.'], { w: W, h: '#e8274b' }),
+    terminal: pixelIcon(['wwwwwwwwww', 'wkkkkkkkkw', 'wkgkkkkkkw', 'wkkgkkkkkw', 'wkgkkkkkkw', 'wkkkkggggw', 'wkkkkkkkkw', 'wwwwwwwwww', '...wwww...', '.wwwwwwww.'], { w: W, k: K, g: '#ece6da' }),
+    status: pixelIcon(['..........', '.g......g.', '.g...g..g.', '.g..ggg.g.', '.g.ggggggg', 'gggggggggg', '..........', 'wwwwwwwwww', 'w.r.a.g..w', 'wwwwwwwwww'], { g: '#e9e4d6', w: W, r: '#ff5c7a', a: '#e8a33d' })
   };
 
   function renderIcons() {
@@ -300,7 +300,7 @@
     const W0 = box.clientWidth || 500, H0 = box.clientHeight || 240;
     const series = snap.agents.map((s) => ({ a: agentById(s.id), pts: seriesOf(s) })).filter((x) => x.pts.length);
     const all = series.flatMap((x) => x.pts);
-    if (all.length < 4) { box.innerHTML = `<svg viewBox="0 0 ${W0} ${H0}"><text x="${W0 / 2}" y="${H0 / 2}" text-anchor="middle" fill="#8a7aa8" font-family="Silkscreen" font-size="11">${snap.mode === 'live' ? 'THE CURVE FILLS IN AS WALLETS ARE SAMPLED' : 'THE CURVE STARTS AFTER TWO SCANS'}</text></svg>`; return; }
+    if (all.length < 4) { box.innerHTML = `<svg viewBox="0 0 ${W0} ${H0}"><text x="${W0 / 2}" y="${H0 / 2}" text-anchor="middle" fill="#877d73" font-family="Silkscreen" font-size="11">${snap.mode === 'live' ? 'THE CURVE FILLS IN AS WALLETS ARE SAMPLED' : 'THE CURVE STARTS AFTER TWO SCANS'}</text></svg>`; return; }
     const m = { l: 46, r: 64, t: 10, b: 22 };
     const t0 = Math.min(...all.map((p) => p[0])), t1 = Math.max(...all.map((p) => p[0]));
     let mn = Math.min(0, ...all.map((p) => p[1])), mx = Math.max(0, ...all.map((p) => p[1]));
@@ -310,9 +310,9 @@
     const step0 = (mx - mn) / 4, mag = Math.pow(10, Math.floor(Math.log10(step0)));
     const st = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((s) => s >= step0);
     let g = '';
-    for (let v = Math.ceil(mn / st) * st; v <= mx; v += st) g += `<line x1="${m.l}" x2="${W0 - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#3a285855"/><text x="${m.l - 6}" y="${Y(v) + 5}" fill="#8a7aa8" font-size="16" text-anchor="end" font-family="VT323">${(+v.toFixed(2))}%</text>`;
-    g += `<line x1="${m.l}" x2="${W0 - m.r}" y1="${Y(0)}" y2="${Y(0)}" stroke="#c7b8e6" stroke-dasharray="4 4" opacity=".6"/>`;
-    for (let k = 0; k <= 3; k++) { const t = t0 + (t1 - t0) * k / 3; g += `<text x="${X(t)}" y="${H0 - 5}" fill="#8a7aa8" font-size="16" font-family="VT323" text-anchor="${k === 0 ? 'start' : k === 3 ? 'end' : 'middle'}">${hhmm(t)}</text>`; }
+    for (let v = Math.ceil(mn / st) * st; v <= mx; v += st) g += `<line x1="${m.l}" x2="${W0 - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#2e262955"/><text x="${m.l - 6}" y="${Y(v) + 5}" fill="#877d73" font-size="16" text-anchor="end" font-family="VT323">${(+v.toFixed(2))}%</text>`;
+    g += `<line x1="${m.l}" x2="${W0 - m.r}" y1="${Y(0)}" y2="${Y(0)}" stroke="#bdb4a6" stroke-dasharray="4 4" opacity=".6"/>`;
+    for (let k = 0; k <= 3; k++) { const t = t0 + (t1 - t0) * k / 3; g += `<text x="${X(t)}" y="${H0 - 5}" fill="#877d73" font-size="16" font-family="VT323" text-anchor="${k === 0 ? 'start' : k === 3 ? 'end' : 'middle'}">${hhmm(t)}</text>`; }
     const ends = [];
     for (const s of series) {
       const d = s.pts.map((p, i) => `${i ? 'L' : 'M'}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join('');
@@ -322,8 +322,8 @@
     }
     ends.sort((p, q) => p.y - q.y);
     ends.forEach((e, k) => { e.ly = k ? Math.max(e.y, ends[k - 1].ly + 14) : e.y; });
-    for (const e of ends) g += `<rect x="${e.x - 3}" y="${e.y - 3}" width="7" height="7" fill="${e.a.color}" stroke="#07040d" stroke-width="2"/><text x="${e.x + 8}" y="${e.ly + 4}" fill="#c7b8e6" font-size="10" font-family="Silkscreen">${e.a.name}</text>`;
-    g += `<line class="xh" y1="${m.t}" y2="${H0 - m.b}" stroke="#f4ecff" stroke-dasharray="2 3" visibility="hidden"/><g class="xd"></g><rect class="hit" x="${m.l}" y="0" width="${W0 - m.l - m.r}" height="${H0}" fill="transparent"/>`;
+    for (const e of ends) g += `<rect x="${e.x - 3}" y="${e.y - 3}" width="7" height="7" fill="${e.a.color}" stroke="#0a0809" stroke-width="2"/><text x="${e.x + 8}" y="${e.ly + 4}" fill="#bdb4a6" font-size="10" font-family="Silkscreen">${e.a.name}</text>`;
+    g += `<line class="xh" y1="${m.t}" y2="${H0 - m.b}" stroke="#ece6da" stroke-dasharray="2 3" visibility="hidden"/><g class="xd"></g><rect class="hit" x="${m.l}" y="0" width="${W0 - m.l - m.r}" height="${H0}" fill="transparent"/>`;
     box.innerHTML = `<svg viewBox="0 0 ${W0} ${H0}" role="img" aria-label="Return per agent over time">${g}</svg>`;
     box.appendChild(tipEl);
     const svg = $('svg', box), hit = $('.hit', box);
@@ -333,7 +333,7 @@
       const rows = series.map((s) => { let b = s.pts[0]; for (const p of s.pts) if (Math.abs(p[0] - tt) < Math.abs(b[0] - tt)) b = p; return { a: s.a, p: b }; }).sort((x, y) => y.p[1] - x.p[1]);
       const x = X(rows[0].p[0]);
       const xh = $('.xh', box); xh.setAttribute('x1', x); xh.setAttribute('x2', x); xh.setAttribute('visibility', 'visible');
-      $('.xd', box).innerHTML = rows.map((rw) => `<rect x="${X(rw.p[0]) - 4}" y="${Y(rw.p[1]) - 4}" width="9" height="9" fill="${rw.a.color}" stroke="#07040d" stroke-width="2"/>`).join('');
+      $('.xd', box).innerHTML = rows.map((rw) => `<rect x="${X(rw.p[0]) - 4}" y="${Y(rw.p[1]) - 4}" width="9" height="9" fill="${rw.a.color}" stroke="#0a0809" stroke-width="2"/>`).join('');
       tipEl.hidden = false;
       tipEl.innerHTML = `<div class="muted">${hms(rows[0].p[0])}</div>` + rows.map((rw) => `<div class="row2"><span class="sw" style="background:${rw.a.color}"></span>${rw.a.name}<b>${plain(rw.p[1], 2)}</b></div>`).join('');
       const px = x * (r.width / W0);
@@ -483,7 +483,7 @@
     },
 
     wallets: {
-      title: 'Live wallets', w: 680, h: 620, color: '#ffb000',
+      title: 'Live wallets', w: 680, h: 620, color: '#e8a33d',
       status: () => `<span>read-only · nothing here signs a transaction</span><span>${lastLive ? 'read ' + hms(lastLive) : ''}</span>`,
       mount(b) {
         b.innerHTML = `<p class="h">Agent wallets</p><p class="muted" style="margin:0 0 10px;font-size:14px">Link the public address each agent trades from. The arena then rebuilds everything from Robinhood Chain: balances, confirmed swaps, deposits and withdrawals. The addresses are saved in this browser; put them in <code>config.js</code> to make them the default for everyone.</p>
@@ -535,7 +535,7 @@
     },
 
     terminal: {
-      title: 'Terminal', w: 560, h: 320, color: '#39ff88',
+      title: 'Terminal', w: 560, h: 320, color: '#ece6da',
       pos: (dw, dh, w, h) => ({ x: 40, y: Math.max(16, dh - h - 100) }),
       mount(b) { b.innerHTML = '<div class="term"></div>'; },
       update(b) {
@@ -547,7 +547,7 @@
     },
 
     status: {
-      title: 'Data status', w: 460, h: 420, color: '#3de0ff',
+      title: 'Data status', w: 460, h: 420, color: '#e9e4d6',
       mount(b) { b.innerHTML = '<div class="st"></div><div class="row" style="margin-top:14px"><button type="button" class="px-btn small ghost" id="resetSim">Reset paper round</button></div>'; $('#resetSim', b).addEventListener('click', (e) => resetRound(e.target)); },
       update(b) {
         const s = Chain.status;
@@ -609,17 +609,17 @@
   function feat(a, k) { return ({ flux: { a: '1h+5m momentum', b: '6h momentum' }, vex: { a: '24h z-score', b: '6h z-score' }, echo: { a: '24h trend', b: '1h dip' }, anchor: { a: 'pool depth', b: 'turnover' } })[a.id][k]; }
   function circuitSVG(p, color) {
     const deg = (r) => (r * 180 / Math.PI).toFixed(0) + '°';
-    const gate = (x, y, l, v, c = color) => `<rect x="${x - 32}" y="${y - 19}" width="64" height="38" fill="#1e1333" stroke="${c}" stroke-width="2"/><text x="${x}" y="${y - 2}" text-anchor="middle" fill="#f4ecff" font-size="11" font-family="Silkscreen">${l}</text><text x="${x}" y="${y + 13}" text-anchor="middle" fill="#c7b8e6" font-size="15" font-family="VT323">${v}</text>`;
+    const gate = (x, y, l, v, c = color) => `<rect x="${x - 32}" y="${y - 19}" width="64" height="38" fill="#1f191b" stroke="${c}" stroke-width="2"/><text x="${x}" y="${y - 2}" text-anchor="middle" fill="#ece6da" font-size="11" font-family="Silkscreen">${l}</text><text x="${x}" y="${y + 13}" text-anchor="middle" fill="#bdb4a6" font-size="15" font-family="VT323">${v}</text>`;
     const y0 = 46, y1 = 122;
     return `<svg viewBox="0 0 620 170" role="img" aria-label="Two-qubit circuit">
-      <text x="8" y="${y0 + 5}" fill="#c7b8e6" font-family="VT323" font-size="18">q0 |0⟩</text><text x="8" y="${y1 + 5}" fill="#c7b8e6" font-family="VT323" font-size="18">q1 |0⟩</text>
-      <line x1="66" x2="586" y1="${y0}" y2="${y0}" stroke="#5b4386" stroke-width="2"/><line x1="66" x2="586" y1="${y1}" y2="${y1}" stroke="#5b4386" stroke-width="2"/>
+      <text x="8" y="${y0 + 5}" fill="#bdb4a6" font-family="VT323" font-size="18">q0 |0⟩</text><text x="8" y="${y1 + 5}" fill="#bdb4a6" font-family="VT323" font-size="18">q1 |0⟩</text>
+      <line x1="66" x2="586" y1="${y0}" y2="${y0}" stroke="#4a3d41" stroke-width="2"/><line x1="66" x2="586" y1="${y1}" y2="${y1}" stroke="#4a3d41" stroke-width="2"/>
       ${gate(116, y0, 'RY', 'θa ' + deg(p.thetaA))}${gate(116, y1, 'RY', 'θb ' + deg(p.thetaB))}
-      <line x1="214" x2="214" y1="${y0}" y2="${y1 + 13}" stroke="#f4ecff" stroke-width="2"/><rect x="208" y="${y0 - 6}" width="12" height="12" fill="#f4ecff"/>
-      <rect x="201" y="${y1 - 13}" width="26" height="26" fill="none" stroke="#f4ecff" stroke-width="2"/><line x1="201" x2="227" y1="${y1}" y2="${y1}" stroke="#f4ecff" stroke-width="2"/>
-      ${gate(304, y1, 'RZ', 'φ ' + deg(p.phi), '#ff3d7f')}${gate(400, y1, 'H', 'mix', '#3de0ff')}${gate(400, y0, 'RY', 'β ' + deg(p.beta), '#ffb000')}
-      ${[y0, y1].map((y) => `<rect x="500" y="${y - 17}" width="44" height="34" fill="#07040d" stroke="#f4ecff" stroke-width="2"/><path d="M508 ${y + 8} q14 -18 28 0" fill="none" stroke="#f4ecff" stroke-width="2"/><line x1="522" y1="${y + 8}" x2="532" y2="${y - 9}" stroke="#f4ecff" stroke-width="2"/>`).join('')}
-      <text x="214" y="162" text-anchor="middle" fill="#8a7aa8" font-size="9" font-family="Silkscreen">ENTANGLE</text><text x="304" y="162" text-anchor="middle" fill="#8a7aa8" font-size="9" font-family="Silkscreen">FLOW PHASE</text><text x="522" y="162" text-anchor="middle" fill="#8a7aa8" font-size="9" font-family="Silkscreen">MEASURE</text></svg>`;
+      <line x1="214" x2="214" y1="${y0}" y2="${y1 + 13}" stroke="#ece6da" stroke-width="2"/><rect x="208" y="${y0 - 6}" width="12" height="12" fill="#ece6da"/>
+      <rect x="201" y="${y1 - 13}" width="26" height="26" fill="none" stroke="#ece6da" stroke-width="2"/><line x1="201" x2="227" y1="${y1}" y2="${y1}" stroke="#ece6da" stroke-width="2"/>
+      ${gate(304, y1, 'RZ', 'φ ' + deg(p.phi), '#e8274b')}${gate(400, y1, 'H', 'mix', '#e9e4d6')}${gate(400, y0, 'RY', 'β ' + deg(p.beta), '#e8a33d')}
+      ${[y0, y1].map((y) => `<rect x="500" y="${y - 17}" width="44" height="34" fill="#0a0809" stroke="#ece6da" stroke-width="2"/><path d="M508 ${y + 8} q14 -18 28 0" fill="none" stroke="#ece6da" stroke-width="2"/><line x1="522" y1="${y + 8}" x2="532" y2="${y - 9}" stroke="#ece6da" stroke-width="2"/>`).join('')}
+      <text x="214" y="162" text-anchor="middle" fill="#877d73" font-size="9" font-family="Silkscreen">ENTANGLE</text><text x="304" y="162" text-anchor="middle" fill="#877d73" font-size="9" font-family="Silkscreen">FLOW PHASE</text><text x="522" y="162" text-anchor="middle" fill="#877d73" font-size="9" font-family="Silkscreen">MEASURE</text></svg>`;
   }
 
   async function inspect(addr, out) {
@@ -756,11 +756,13 @@
   function leaveOS() {
     document.body.classList.remove('in-os');
     scrollTo(0, 0);
+    setTimeout(() => window.PixelText && PixelText.renderAll(), 50);
     dispatchEvent(new Event('resize'));
   }
   window.QROS = {
     enter: enterOS, leave: leaveOS,
     data: () => ({ head, market, evals, mode, snap, rpcMs }),
+    open: (id) => { openWin(id); renderWin(id); },
     music: toggleMusic
   };
   start();
