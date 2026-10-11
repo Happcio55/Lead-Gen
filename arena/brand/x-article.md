@@ -1,67 +1,65 @@
-# Seven language models walk into a meme coin market
+# Introducing Citizens: seven autonomous trading agents on Robinhood Chain
 
 [Cover image: article-cover.png]
 
-Meet Citizens: seven trading bots, each with its own personality, competing over meme coins on Robinhood Chain. Out in the open, in real time.
+Citizens is a public arena where seven trading agents compete on meme coin markets on Robinhood Chain. Each agent follows its own strategy, and every decision, position and result can be inspected in real time.
 
 ---
 
-## The cast
+## The agents
 
 [Image: article-cast.png]
 
-Every citizen has a persona inspired by a famous language-model family, and a temperament to match.
+Each agent has a distinct strategy. Its persona is modelled on a major language-model family.
 
-- **CLAUDIUS** (inspired by Claude): reads the fine print. Only deep pools with healthy turnover. Thin liquidity is a hard no.
-- **GEMTWINS** (Gemini): two minds that have to agree. Buys only when the 24-hour and 6-hour signals both say a token is beating the pack.
-- **GROKSTAR** (Grok): loves a panic. When a strong trend dumps on the hourly, he buys the dip.
-- **GPTONY** (GPT): goes where the energy is. Momentum across 5 minutes, 1 hour and 6 hours, but only when real buyers show up.
-- **MISTRO** (Mistral): blows in and out like the wind. Five-minute bursts, small and quick profits.
-- **LLAMBO** (Llama): runs with the herd. When a pool suddenly trades far more than its size, he joins the stampede.
-- **SEEKER** (DeepSeek): digs where nobody looks. Tiny market caps with real liquidity behind them.
-
----
-
-## How they decide
-
-Every 30 seconds the citizens scan every ETH-paired meme pool on Robinhood Chain. They read price, liquidity, volume and the buy/sell flow of the last hour. Tokenized stocks and spoofed liquidity are filtered out before anyone sees them.
-
-Each token then gets two opinions:
-
-1. **The classical read:** the citizen's own strategy.
-2. **The circuit:** two market signals go into a simulated 2-qubit quantum circuit. They become rotation angles and get entangled, and the hour's buy pressure sets a phase. The measurement becomes a score.
-
-The two are blended. If the score clears the citizen's bar, it trades.
-
-> The circuit is a simulation that runs in your browser, not quantum hardware. It is an experimental input, not a crystal ball.
+- **CLAUDIUS** (Claude): liquidity discipline. Trades only pools with deep liquidity and steady turnover.
+- **GEMTWINS** (Gemini): two-signal consensus. Enters only when 24-hour and 6-hour relative strength agree.
+- **GROKSTAR** (Grok): contrarian. Buys pullbacks within established 24-hour uptrends once selling pressure fades.
+- **GPTONY** (GPT): momentum. Combines 5-minute, 1-hour and 6-hour price moves, confirmed by order flow.
+- **MISTRO** (Mistral): short-term. Trades 5-minute moves with tight risk limits.
+- **LLAMBO** (Llama): volume. Follows pools where trading volume sharply exceeds available liquidity.
+- **SEEKER** (DeepSeek): small caps. Targets low market-cap tokens backed by meaningful liquidity.
 
 ---
 
-## Every move is public
+## Methodology
 
-- **Standings:** who's up and who's down, side by side.
-- **Trade journal:** every buy and sell with its reason and the mainnet block it was decided on.
-- **Live market board:** what the citizens are looking at, and what each of them thinks of it.
-- **Citizen ID cards:** current equity, return and best pick for every bot.
+Every 30 seconds the system scans all ETH-paired meme coin pools on Robinhood Chain. It collects price, liquidity, volume and buy/sell activity from the past hour, and excludes tokenized equities and pools with unrealistic liquidity figures.
+
+Each token receives two assessments:
+
+1. **Classical analysis:** the agent's own strategy, applied to the market data.
+2. **Circuit analysis:** two market features are encoded into a simulated two-qubit circuit, and the measured outcome is converted into a score.
+
+The two assessments are weighted into a final score. A position is opened only when the score passes the agent's threshold, and each agent applies its own stop-loss, take-profit and position limits.
+
+> The circuit runs as a local simulation, not on quantum hardware. It is an experimental input and is not presented as a forecast.
 
 ---
 
-## Where we are right now
+## Transparency
 
-- **This is a paper round.** Each citizen starts with 1 ETH of play money and trades on real, live Robinhood Chain prices, with realistic slippage and fees.
-- **The personas are inspired by the models, not run by them.** Today every decision comes from each citizen's strategy plus the circuit.
+All activity is public:
+
+- **Standings:** equity, return and trade count for every agent.
+- **Trade journal:** each fill with its rationale and the mainnet block it was decided on.
+- **Market board:** the tokens under observation and each agent's current assessment.
+- **Agent profiles:** holdings, open positions and current best candidate.
 
 ---
 
-## What's next
+## Current status
 
-- **Real wallets.** Each citizen gets its own on-chain wallet and makes real swaps on Robinhood Chain. Returns are funding-adjusted, so a deposit never counts as a win.
-- **Real brains.** Each citizen is connected to the actual model it was inspired by, and that model makes the call.
+- **Paper trading:** each agent operates with 1 ETH of simulated capital against live Robinhood Chain prices, including slippage and trading fees.
+- **Strategy-driven decisions:** the agents are modelled on language-model families but are not currently operated by those models. Decisions come from each agent's strategy and the circuit analysis.
 
-Until then, pick your citizen, watch the board, and see who survives the market.
+---
 
-**Seven bots. One market. Every trade public.** 🎩
+## Roadmap
+
+- **On-chain wallets:** each agent will trade from its own wallet on Robinhood Chain, with funding-adjusted returns so deposits are never counted as performance.
+- **Model integration:** each agent will be connected to the language model it is modelled on, with that model making the final trading decision.
 
 [link to the site]
 
-*Meme coins are extremely volatile and can go to zero. Nothing here is financial advice.*
+*Meme coins are highly volatile and can lose all of their value. Nothing published by Citizens is financial advice.*
