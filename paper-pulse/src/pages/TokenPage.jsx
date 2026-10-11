@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useStore } from '../lib/store.js'
+import { useStore, storage } from '../lib/store.js'
 import { market, loadPool, loadTrades } from '../lib/api.js'
 import { paper, account, buy, sell, quoteBuy, quoteSell, positionValue, updateSettings, placeLimit, cancelOrder, openPositions, FEE } from '../lib/paper.js'
 import { dexLabel } from '../lib/chains.js'
@@ -391,13 +391,32 @@ function Bottom({ pool, myTrades }) {
   )
 }
 
-export default function TokenPage({ id }) {
+// Full TradingView chart (1s candles, indicators, drawing tools) from DexScreener's embed.
+function TvChart({ pool, theme }) {
+  const [loaded, setLoaded] = useState(false)
+  const t = theme === 'dark' ? 'dark' : 'light'
+  const base = pool.dexscreener || `https://dexscreener.com/robinhood/${pool.pool}`
+  const src = `${base}?embed=1&loadChartSettings=0&trades=0&tabs=0&info=0&chartLeftToolbar=1&chartTheme=${t}&theme=${t}&chartStyle=1&chartType=marketCap&interval=1`
+  return (
+    <div className="chart-box tv">
+      {!loaded && <div className="chart-msg">Loading chart…</div>}
+      <iframe key={src} src={src} title={`${pool.symbol} chart`} onLoad={() => setLoaded(true)} allow="clipboard-write" referrerPolicy="strict-origin-when-cross-origin" />
+    </div>
+  )
+}
+
+export default function TokenPage({ id, theme }) {
   const pool = useStore(market, (s) => s.pools[id])
   const p = useStore(paper)
   const pools = useStore(market, (s) => s.pools)
   const ethUsd = useStore(market, (s) => s.ethUsd)
   const [tf, setTf] = useState('1m')
   const [mode, setMode] = useState('mc')
+  const [view, setViewState] = useState(() => storage.get('paperpulse:chart', 'tv'))
+  const setView = (v) => {
+    setViewState(v)
+    storage.set('paperpulse:chart', v)
+  }
   const [missing, setMissing] = useState(false)
   const [share, setShare] = useState(null)
   const now = useNow(1000)
@@ -457,18 +476,27 @@ export default function TokenPage({ id }) {
         <div className="tmain">
           <div className="chart-bar">
             <div className="seg">
-              {['1m', '5m', '15m', '1h', '4h'].map((t) => (
-                <button key={t} className={tf === t ? 'on' : ''} onClick={() => setTf(t)}>{t}</button>
-              ))}
+              <button className={view === 'tv' ? 'on' : ''} onClick={() => setView('tv')}>TradingView</button>
+              <button className={view === 'lite' ? 'on' : ''} onClick={() => setView('lite')}>Lite + my trades</button>
             </div>
-            <span className="sep" />
-            <div className="seg">
-              <button className={mode === 'mc' ? 'on' : ''} onClick={() => setMode('mc')}>MarketCap</button>
-              <button className={mode === 'price' ? 'on' : ''} onClick={() => setMode('price')}>Price</button>
-            </div>
-            <span className="legend">Candles <b>GeckoTerminal</b> · live ticks <b>DexScreener</b></span>
+            {view === 'lite' && (
+              <>
+                <span className="sep" />
+                <div className="seg">
+                  {['1m', '5m', '15m', '1h', '4h'].map((t) => (
+                    <button key={t} className={tf === t ? 'on' : ''} onClick={() => setTf(t)}>{t}</button>
+                  ))}
+                </div>
+                <span className="sep" />
+                <div className="seg">
+                  <button className={mode === 'mc' ? 'on' : ''} onClick={() => setMode('mc')}>MarketCap</button>
+                  <button className={mode === 'price' ? 'on' : ''} onClick={() => setMode('price')}>Price</button>
+                </div>
+              </>
+            )}
+            <span className="legend">{view === 'tv' ? <>Live chart by <b>DexScreener</b></> : <>Candles <b>GeckoTerminal</b> · live ticks <b>DexScreener</b></>}</span>
           </div>
-          <Chart pool={pool} tf={tf} mode={mode} myTrades={myTrades} />
+          {view === 'tv' ? <TvChart pool={pool} theme={theme} /> : <Chart pool={pool} tf={tf} mode={mode} myTrades={myTrades} />}
           <Bottom pool={pool} myTrades={myTrades} />
         </div>
         <aside className="tside">

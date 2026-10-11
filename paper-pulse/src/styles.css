@@ -494,3 +494,6 @@ tr.big td { font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 .disc-tbl th:nth-child(2), .disc-tbl td:nth-child(2) { text-align: left; }
 .tok-cell { font-family: var(--f-sans); letter-spacing: 0; }
+
+.chart-box.tv { height: clamp(420px, 60vh, 680px); background: var(--panel); }
+.chart-box.tv iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }

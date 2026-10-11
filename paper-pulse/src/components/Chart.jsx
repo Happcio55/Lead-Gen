@@ -1,10 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
 import { createChart, CandlestickSeries, HistogramSeries, createSeriesMarkers, CrosshairMode } from 'lightweight-charts'
-import { loadCandles, cachedCandles } from '../lib/api.js'
+import { loadCandles, cachedCandles, loadTrades } from '../lib/api.js'
 import { fmtTiny, fmtCompact } from '../lib/format.js'
 
 const TF_SEC = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 }
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim()
+
+function candlesFromTrades(trades, step) {
+  const m = new Map()
+  for (const t of [...trades].sort((a, b) => a.t - b.t)) {
+    if (!t.price) continue
+    const time = Math.floor(t.t / 1000 / step) * step
+    const c = m.get(time)
+    if (!c) m.set(time, { time, open: t.price, high: t.price, low: t.price, close: t.price, value: t.usd })
+    else {
+      c.high = Math.max(c.high, t.price)
+      c.low = Math.min(c.low, t.price)
+      c.close = t.price
+      c.value += t.usd
+    }
+  }
+  return [...m.values()]
+}
 
 export default function Chart({ pool, tf, mode, myTrades }) {
   const box = useRef(null)
@@ -110,7 +127,9 @@ export default function Chart({ pool, tf, mode, myTrades }) {
     }
     const load = async (first) => {
       try {
-        const data = (await loadCandles(pool.pool, tf)).map((c) => ({ ...c }))
+        let data = (await loadCandles(pool.pool, tf)).map((c) => ({ ...c }))
+        // brand-new pairs have no candles yet: build them from the live trades
+        if (!data.length) data = candlesFromTrades(await loadTrades(pool.pool).catch(() => []), TF_SEC[tf])
         if (!alive) return
         const hadData = raw.current.length > 0
         raw.current = data

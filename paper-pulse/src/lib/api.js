@@ -331,9 +331,19 @@ async function fetchCandles(pool, tf) {
   const [unit, agg] = { '1m': ['minute', 1], '5m': ['minute', 5], '15m': ['minute', 15], '1h': ['hour', 1], '4h': ['hour', 4] }[tf]
   const j = await gecko(`${P}/pools/${pool}/ohlcv/${unit}?aggregate=${agg}&limit=300&currency=usd&token=base`, { priority: 1 })
   const list = j.data?.attributes?.ohlcv_list || []
-  return list
-    .map(([t, o, h, l, c, v]) => ({ time: t, open: o, high: h, low: l, close: c, value: v }))
-    .sort((a, b) => a.time - b.time)
+  const sorted = list.map(([t, o, h, l, c, v]) => ({ time: t, open: o, high: h, low: l, close: c, value: v })).sort((a, b) => a.time - b.time)
+  // GeckoTerminal can return two candles for the same timestamp; the chart rejects duplicates, so merge them
+  const out = []
+  for (const c of sorted) {
+    const last = out[out.length - 1]
+    if (last && last.time === c.time) {
+      last.high = Math.max(last.high, c.high)
+      last.low = Math.min(last.low, c.low)
+      last.close = c.close
+      last.value += c.value
+    } else out.push({ ...c })
+  }
+  return out
 }
 
 export async function loadTrades(pool) {

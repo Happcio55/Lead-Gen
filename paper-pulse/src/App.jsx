@@ -86,7 +86,7 @@ export default function App() {
       <TopBar route={route} theme={theme} setTheme={setTheme} />
       {route.name === 'pulse' && <Pulse />}
       <Suspense fallback={<Loading />}>
-        {route.name === 'token' && <TokenPage key={route.id} id={route.id} />}
+        {route.name === 'token' && <TokenPage key={route.id} id={route.id} theme={theme} />}
         {route.name === 'portfolio' && <Portfolio />}
         {route.name === 'discover' && <Discover />}
       </Suspense>
