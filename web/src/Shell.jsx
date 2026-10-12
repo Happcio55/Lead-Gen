@@ -98,7 +98,7 @@ function AccountChip() {
   return (
     <div className="account" ref={ref}>
       <button className="account-btn" onClick={() => setOpen((v) => !v)}>
-        <Avatar token={wallet.address} symbol={wallet.label || 'W'} size={22} />
+        <Avatar token={wallet.address} symbol={wallet.label || 'W'} logo={null} size={22} />
         <span className="mono">{bal == null ? '…' : eth(bal, 4)} ETH</span>
       </button>
       {open && (
@@ -140,7 +140,7 @@ export function Rail({ board, now }) {
         {!watch.length && <p className="empty">Star a token (☆) to pin it here.</p>}
         {rows.map((r) => (
           <div key={r.id} className="mini" onClick={() => openDrawer(r.id)}>
-            <Avatar token={r.token} symbol={r.symbol} size={26} />
+            <Avatar token={r.token} symbol={r.symbol} logo={r.logo} size={26} />
             <div>
               <b>{r.symbol}</b>
               <small>{usd(r.mcapUsd)}</small>
@@ -318,7 +318,7 @@ export function Palette({ rows, onClose }) {
         <div className="palette-list">
           {results.map((r, k) => (
             <div key={r.id} className={`palette-item ${k === i ? 'on' : ''}`} onMouseEnter={() => setI(k)} onClick={() => pick(r)}>
-              <Avatar token={r.token} symbol={r.symbol} size={28} />
+              <Avatar token={r.token} symbol={r.symbol} logo={r.logo} size={28} />
               <b>{r.symbol}</b>
               <span className="name">{r.name}</span>
               <span className="mono">{usd(r.mcapUsd)}</span>

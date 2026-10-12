@@ -90,7 +90,7 @@ export function Home({ board, now }) {
         </div>
         {top.map((r) => (
           <div key={r.id} className="catalogue-row" onClick={() => openDrawer(r.id)}>
-            <Avatar token={r.token} symbol={r.symbol} size={38} />
+            <Avatar token={r.token} symbol={r.symbol} logo={r.logo} size={38} />
             <div className="cat-name">
               <b>{r.name}</b>
               <small>
@@ -144,7 +144,7 @@ function QuickBuyCard({ candidates, ethUsd }) {
       <div className="pick-row">
         {candidates.map((c, i) => (
           <button key={c.id} className={`pick ${i === pick ? 'on' : ''}`} onClick={() => setPick(i)}>
-            <Avatar token={c.token} symbol={c.symbol} size={20} />
+            <Avatar token={c.token} symbol={c.symbol} logo={c.logo} size={20} />
             {c.symbol}
           </button>
         ))}

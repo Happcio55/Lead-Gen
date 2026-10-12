@@ -1,14 +1,22 @@
 // Small shared UI pieces.
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { hueOf } from './lib.js';
 import { dismiss, useStore } from './store.js';
 
-export function Avatar({ token, symbol, size = 36 }) {
+// Logos that failed to load, so a broken image is never retried on re-render.
+const brokenLogos = new Set();
+
+// Token avatar: the official launch artwork when the token has one, otherwise a generated badge.
+// `logo` undefined = try /api/logo for this token; null = known to have none.
+export function Avatar({ token, symbol, size = 36, logo }) {
+  const src = logo === undefined && token ? `/api/logo/${token}` : logo;
+  const [failed, setFailed] = useState(() => !src || brokenLogos.has(src));
+  useEffect(() => setFailed(!src || brokenLogos.has(src)), [src]);
   const h = hueOf(token || '0x0');
   const h2 = (h + 70) % 360;
   return (
     <div
-      className="avatar"
+      className={`avatar ${failed ? '' : 'has-img'}`}
       style={{
         width: size,
         height: size,
@@ -16,7 +24,20 @@ export function Avatar({ token, symbol, size = 36 }) {
         background: `radial-gradient(120% 120% at 20% 10%, hsl(${h} 90% 62%), hsl(${h2} 80% 34%) 70%)`,
       }}
     >
-      {(symbol || '?').replace(/[^\p{L}\p{N}]/gu, '').slice(0, 1).toUpperCase() || '?'}
+      {failed ? (
+        (symbol || '?').replace(/[^\p{L}\p{N}]/gu, '').slice(0, 1).toUpperCase() || '?'
+      ) : (
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => {
+            brokenLogos.add(src);
+            setFailed(true);
+          }}
+        />
+      )}
     </div>
   );
 }

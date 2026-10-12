@@ -136,7 +136,7 @@ const Row = memo(function Row({ r, now, onBuy }) {
   const hooked = r.hooks !== '0x0000000000000000000000000000000000000000';
   return (
     <div className={`row ${compact ? 'compact' : ''} ${fresh ? 'fresh' : ''}`} onClick={() => openDrawer(r.id)}>
-      <Avatar token={r.token} symbol={r.symbol} size={compact ? 30 : 40} />
+      <Avatar token={r.token} symbol={r.symbol} logo={r.logo} size={compact ? 30 : 40} />
       <div className="row-main">
         <div className="row-top">
           <b className="sym">{r.symbol}</b>
