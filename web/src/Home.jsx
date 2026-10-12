@@ -4,7 +4,7 @@ import { txUrl } from '../../shared/chain.js';
 import { laneOf } from './Board.jsx';
 import { age, eth, num, pct, short, usd } from './lib.js';
 import { openDrawer, setView, useStore } from './store.js';
-import { useTrader } from './trading.js';
+import { canTrade, useTrader } from './trading.js';
 import { Avatar, Delta, Spark } from './ui.jsx';
 import { Rudy } from './Rudy.jsx';
 import { addressUrl } from '../../shared/chain.js';
@@ -22,7 +22,7 @@ const TIERS = [
 
 export function Home({ board, now }) {
   const rows = board.rows;
-  const tradeable = useMemo(() => rows.filter((r) => r.source !== 'gecko'), [rows]);
+  const tradeable = useMemo(() => rows.filter(canTrade), [rows]);
   const surging = useMemo(
     () => rows.filter((r) => laneOf(r, now) === 'hot').sort((a, b) => b.vol5mUsd - a.vol5mUsd).slice(0, 5),
     // re-rank every few seconds, not every tick

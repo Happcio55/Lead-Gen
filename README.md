@@ -1,6 +1,7 @@
 # Vestas — Robinhood Chain trading terminal
 
-A live trading terminal for new Uniswap v4 launches on **Robinhood Chain** (chain id 4663).
+A live trading terminal for new memecoin launches on **Robinhood Chain** (chain id 4663): Uniswap v4
+pools from our own indexer, plus every Pons and Uniswap v2/v3/v4 launch listed by GeckoTerminal.
 Log in with email, Google, X or a wallet through Privy, fund your wallet with ETH, and trade new
 tokens with one click. Take-profit, stop-loss and trailing stops are built in.
 
@@ -27,10 +28,20 @@ Robinhood Chain RPC ──► server/indexer.js ──/api/board──► web (R
   paired with native ETH. That covers most new launches on the chain. It derives price, market
   cap, liquidity, 5m/1h volume and candles from `Swap` events. ETH/USD comes from
   Coinbase, with CoinGecko and Kraken as fallbacks.
+- **GeckoTerminal** (`server/gecko.js`): new and trending Robinhood Chain pools on every DEX, cached
+  for 30 s, merged into the board for coins the indexer doesn't track.
 - **Trading** (`shared/v4.js`): buys and sells are single `V4_SWAP` calls on the Universal Router
   (`SWAP_EXACT_IN_SINGLE` → `SETTLE_ALL` → `TAKE_ALL`), quoted first with the v4 Quoter and
   protected by a minimum output. Sells use Permit2: the first sell of a token needs two approvals,
   and later sells need none.
+- **Other routes** (`shared/routes.js`), for coins found through GeckoTerminal:
+  - Uniswap v2 and v3 pools (including Pons launches on v3) go through the same Universal Router:
+    `WRAP_ETH` → `V2/V3_SWAP_EXACT_IN` to buy, and swap → `UNWRAP_WETH` to sell. Quotes come from
+    pool reserves (v2) or the current price and liquidity (v3).
+  - Pons bonding curves (`pons-v2`) are bought and sold on the pool itself (`buy`/`sell`). Quotes
+    are simulations of that call, and a sell needs one approval to the pool.
+  - Graduated Pons coins live in Uniswap v4 pools with the Pons hook. Their pool key is read from
+    the pool's `Initialize` event, then they trade like any v4 pool.
 - **Non-custodial**: transactions are built in the browser and signed by the user's wallet. The
   server never sees keys. Its RPC proxy only forwards reads and already-signed transactions.
 - **TP/SL** is checked in the browser on every board update (every 2 seconds) while a Vestas tab is

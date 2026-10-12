@@ -1,6 +1,7 @@
 // Rudy the raccoon, Vestas' mascot: a rendered 3D character in four moods. Tracked Rudys lean
 // toward the pointer.
 import { useEffect } from 'react';
+import { hookName } from '../../shared/chain.js';
 
 const WORD = { neutral: 'calm', happy: 'pleased', cheer: 'thrilled', worried: 'nervous' };
 const MOODS = ['neutral', 'happy', 'cheer', 'worried'];
@@ -58,7 +59,7 @@ export function rudyRead(r, now = Date.now()) {
     return { kind: 'warn', text: `Market cap is ${Math.round(r.mcapUsd / r.liqUsd)}× the liquidity. That price won't hold if you sell.` };
   if (r.fee & 0x800000) return { kind: 'warn', text: 'Dynamic fee pool. The hook can change the fee on every swap, including yours.' };
   if (r.fee >= 50_000) return { kind: 'warn', text: `This pool charges a ${(r.fee / 10_000).toFixed(1)}% swap fee. That eats into every trade.` };
-  if (r.hooks && r.hooks !== NO_HOOK) return { kind: 'warn', text: 'This pool runs a custom hook. Hooks can add rules to buying and selling.' };
+  if (r.hooks && r.hooks !== NO_HOOK && !hookName(r.hooks)) return { kind: 'warn', text: 'This pool runs a custom hook. Hooks can add rules to buying and selling.' };
   if (r.liqUsd > 0 && r.liqUsd < 3000) return { kind: 'warn', text: `Only $${Math.round(r.liqUsd).toLocaleString('en-US')} of liquidity. Bigger trades will move the price a lot.` };
   if (now - r.createdAt < 10 * 60_000) return { kind: '', text: 'Brand new, under ten minutes old. Things move fast here.' };
   const tx = r.buys5m + r.sells5m;

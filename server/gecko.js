@@ -2,6 +2,8 @@
 // (Pons launches, Uniswap v2/v3/v4), so the board shows what is actually being launched, not only
 // the Uniswap v4 pools our own indexer reads. Free API, ~30 calls/min per IP: everything is cached.
 import { getAddress, isAddress } from 'viem';
+import { ADDR, EVENTS } from '../shared/chain.js';
+import { V3_POOL_ABI } from '../shared/routes.js';
 
 const GT = 'https://api.geckoterminal.com/api/v2';
 const NET = 'robinhood';
@@ -19,6 +21,22 @@ const DEX_NAMES = {
   'uniswap-v3-robinhood': 'Uniswap v3',
   'uniswap-v4-robinhood': 'Uniswap v4',
 };
+// How each DEX's pools are traded in-app (see shared/routes.js). Anything else links out.
+const ROUTES = {
+  'pons-v2': 'pons', // bonding curve, bought and sold on the pool itself
+  'pons-v2-dex': 'v4', // graduated Pons coins: Uniswap v4 pools with the Pons hook
+  'pons-dot-family': 'v3', // Pons launches on Uniswap v3
+  'uniswap-v2-robinhood': 'v2',
+  'uniswap-v3-robinhood': 'v3',
+  'uniswap-v4-robinhood': 'v4',
+};
+export function routeOf(dex, poolAddress) {
+  const r = ROUTES[dex];
+  if (!r) return null;
+  // v4 pools are 32-byte ids; the others are contract addresses.
+  return (r === 'v4') === (String(poolAddress).length === 66) ? r : null;
+}
+
 export const dexName = (id) =>
   DEX_NAMES[id] || (id || 'DEX').replace(/-robinhood$/, '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -71,6 +89,7 @@ export function toRow(pool, tokens, ethUsd, now = Date.now()) {
     source: 'gecko',
     dex,
     dexName: dexName(dex),
+    route: routeOf(dex, a.address),
     poolAddress: a.address,
     token: getAddress(tokenAddr),
     logo: img && !/missing/.test(img) ? img : null,
@@ -106,10 +125,49 @@ function tokenMap(body) {
   return new Map((body.included || []).filter((x) => x.type === 'token').map((x) => [x.id, x]));
 }
 
-export function createGecko({ log = console } = {}) {
+export function createGecko({ log = console, client = null } = {}) {
   let board = { at: 0, rows: [] };
   let refreshing = null;
   const details = new Map(); // `${addr}|${agg}` -> { at, data }
+  const keys = new Map(); // v4 pool id -> Promise<pool key | null>
+
+  // A v4 pool's key comes from its Initialize event. The RPC serves up to 10M blocks per query for
+  // one address; most pools are recent, so search newest first and stop at the first hit. Found keys
+  // are kept forever; a pool that doesn't exist resolves to null, an RPC error rejects (not cached).
+  function v4Key(id) {
+    if (!client) return Promise.resolve(null);
+    if (!keys.has(id)) {
+      const job = (async () => {
+        const STEP = 9_000_000n;
+        for (let to = await client.getBlockNumber(); to >= 0n; to -= STEP) {
+          const fromBlock = to >= STEP ? to - STEP + 1n : 0n;
+          const [log] = await client.getLogs({ address: ADDR.POOL_MANAGER, event: EVENTS.initialize, args: { id }, fromBlock, toBlock: to });
+          if (log) {
+            const { currency0, currency1, fee, tickSpacing, hooks } = log.args;
+            return { currency0, currency1, fee, tickSpacing, hooks };
+          }
+        }
+        return null;
+      })();
+      keys.set(id, job);
+      job.catch(() => keys.delete(id));
+    }
+    return keys.get(id);
+  }
+
+  // Adds what the browser needs to trade a row: the pool key for v4 (only native-ETH pools are
+  // tradable; others fall back to the outside link) and the fee tier for v3. Throws on RPC errors.
+  async function tradable(row) {
+    if (row.route === 'v3') {
+      if (!client) return { ...row, route: null };
+      const fee = await client.readContract({ address: row.poolAddress, abi: V3_POOL_ABI, functionName: 'fee' });
+      return { ...row, fee };
+    }
+    if (row.route !== 'v4') return row;
+    const key = await v4Key(row.poolAddress.toLowerCase());
+    if (!key || key.currency0 !== ADDR.ETH || key.currency1.toLowerCase() !== row.token.toLowerCase()) return { ...row, route: null };
+    return { ...row, ...key };
+  }
 
   async function refresh(ethUsd) {
     const inc = 'include=base_token,quote_token,dex';
@@ -150,7 +208,7 @@ export function createGecko({ log = console } = {}) {
     const agg = bucketMs >= 300_000 ? 5 : 1;
     const key = `${addr}|${agg}`;
     const hit = details.get(key);
-    if (hit && Date.now() - hit.at < DETAIL_TTL) return { ...(row || hit.row), ...hit.data };
+    if (hit && Date.now() - hit.at < DETAIL_TTL) return { ...hit.row, ...(row && { priceEth: row.priceEth, priceUsd: row.priceUsd, mcapUsd: row.mcapUsd }), ...hit.data };
     const [ohlcv, trades, pool] = await Promise.allSettled([
       get(`/networks/${NET}/pools/${addr}/ohlcv/minute?aggregate=${agg}&limit=200&currency=usd`),
       get(`/networks/${NET}/pools/${addr}/trades`),
@@ -180,10 +238,30 @@ export function createGecko({ log = console } = {}) {
     const path = base.spark || [];
     const fallback = path.map((p, i) => ({ t: now - (path.length - 1 - i) * 3600_000, o: path[i - 1] ?? p, h: Math.max(p, path[i - 1] ?? p), l: Math.min(p, path[i - 1] ?? p), c: p, n: 1 }));
     const data = { supply: base.priceUsd ? base.mcapUsd / base.priceUsd : 0, candles: candles.length > 1 ? candles : fallback, swaps };
-    details.set(key, { at: Date.now(), row: base, data });
+    // If the trade lookup fails (RPC hiccup), show the page without trading and don't cache it.
+    const full = await tradable(base).catch(() => null);
+    if (!full) return { ...base, route: null, ...data };
+    details.set(key, { at: Date.now(), row: full, data });
     if (details.size > 200) details.delete(details.keys().next().value);
-    return { ...base, ...data };
+    return { ...full, ...data };
   }
 
-  return { rows, detail };
+  // The best pool to trade a token in right now, e.g. after a Pons coin graduates from its curve.
+  const routes = new Map(); // token -> { at, row }
+  async function routeFor(token, { ethUsd }) {
+    const hit = routes.get(token);
+    if (hit && Date.now() - hit.at < BOARD_TTL) return hit.row;
+    const body = await get(`/networks/${NET}/tokens/${token}/pools?include=base_token,quote_token,dex`);
+    const tokens = tokenMap(body);
+    const best = (body.data || [])
+      .map((p) => toRow(p, tokens, ethUsd))
+      .filter((r) => r?.route && r.token.toLowerCase() === token)
+      .sort((a, b) => b.liqUsd - a.liqUsd)[0];
+    const row = best ? await tradable(best) : null;
+    routes.set(token, { at: Date.now(), row });
+    if (routes.size > 500) routes.delete(routes.keys().next().value);
+    return row;
+  }
+
+  return { rows, detail, routeFor };
 }

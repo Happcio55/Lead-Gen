@@ -20,7 +20,7 @@ const RPC_METHODS = new Set([
 ]);
 
 // `defer` keeps a promise running after the response is sent (Vercel's waitUntil).
-export function createApi({ indexer, gecko = createGecko({ log: console }), lazy = false, defer = null, env = process.env, log = console }) {
+export function createApi({ indexer, gecko = createGecko({ log: console, client: indexer?.client }), lazy = false, defer = null, env = process.env, log = console }) {
   const rpcUrl = env.RH_RPC_URL || DEFAULT_RPC;
   const privyAppId = env.PRIVY_APP_ID || DEFAULT_PRIVY_APP_ID;
 
@@ -135,6 +135,11 @@ export function createApi({ indexer, gecko = createGecko({ log: console }), lazy
         const d = await gecko.detail(id, { bucketMs: bucket, ethUsd: indexer.meta().ethUsd });
         if (d) json(res, 200, d, 'public, s-maxage=10, stale-while-revalidate=20');
         else json(res, 404, { error: 'pool not tracked' });
+      } else if (/^\/api\/route\/0x[0-9a-fA-F]{40}$/.test(pathname)) {
+        const token = pathname.slice('/api/route/'.length).toLowerCase();
+        const d = await gecko.routeFor(token, { ethUsd: indexer.meta().ethUsd });
+        if (d?.route) json(res, 200, d, 'public, s-maxage=15, stale-while-revalidate=30');
+        else json(res, 404, { error: 'no tradable pool' });
       } else if (/^\/api\/logo\/0x[0-9a-fA-F]{40}$/.test(pathname)) {
         await serveLogo(res, pathname.slice('/api/logo/'.length));
       } else if (pathname === '/api/pin' && req.method === 'POST') {

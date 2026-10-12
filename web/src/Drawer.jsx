@@ -5,7 +5,7 @@ import { feeLabel } from './Board.jsx';
 import { usePoolDetail, useNow } from './data.js';
 import { age, copy, eth, num, pct, short, usd } from './lib.js';
 import { closeDrawer, toast, toggleWatch, useStore } from './store.js';
-import { setRule, useTrader, valuePosition } from './trading.js';
+import { canTrade, setRule, useTrader, valuePosition } from './trading.js';
 import { Avatar, Delta, NumField } from './ui.jsx';
 import { Rudy, rudyRead } from './Rudy.jsx';
 
@@ -177,7 +177,7 @@ function TradePanel({ row, ethUsd }) {
   const v = pos ? valuePosition(pos, row, ethUsd) : null;
 
   const read = rudyRead(row);
-  if (row.source === 'gecko') return <ExternalTrade row={row} />;
+  if (!canTrade(row)) return <ExternalTrade row={row} />;
   return (
     <div className="trade">
       {read && (
@@ -425,7 +425,7 @@ function CandleChart({ candles, scale }) {
 }
 
 
-// Coins launched on Pons or Uniswap v2/v3: in-app trading covers Uniswap v4 pools only for now.
+// Coins on a DEX the app does not route through yet: trade them on GeckoTerminal.
 function ExternalTrade({ row }) {
   const gt = `https://www.geckoterminal.com/robinhood/pools/${row.poolAddress}`;
   return (
@@ -433,7 +433,7 @@ function ExternalTrade({ row }) {
       <div className="rudy-tip">
         <Rudy mood="neutral" size={44} track />
         <span>
-          ${row.symbol} trades on {row.dexName}. Buying right here works for Uniswap v4 coins so far, so trade this one on GeckoTerminal for now.
+          ${row.symbol} trades on {row.dexName}, which Vestas can't route through yet. Trade it on GeckoTerminal instead.
         </span>
       </div>
       <div className="trade-body">

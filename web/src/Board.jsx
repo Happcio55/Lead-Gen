@@ -1,6 +1,8 @@
 // The three-column live board: dense token rows, per-column search, quick-buy amount and presets.
 import { memo, useMemo, useRef, useState } from 'react';
 import { age, copy, num, pct, short, usd } from './lib.js';
+import { hookName } from '../../shared/chain.js';
+import { canTrade } from './trading.js';
 import { openDrawer, resetFilters, setFilter, setLaneBuy, toast, toggleWatch, useStore } from './store.js';
 import { Avatar, Icon, NumField, Toggle } from './ui.jsx';
 
@@ -214,6 +216,7 @@ const Row = memo(function Row({ r, now, amount, onBuy }) {
   const ext = r.source === 'gecko';
   const fresh = now - r.createdAt < 20_000;
   const hooked = r.hooks !== NO_HOOK;
+  const knownHook = hookName(r.hooks);
   const highFee = !ext && (r.fee & DYNAMIC_FEE || r.fee >= 50_000);
   const handle = xHandle(r.socials?.x);
   const xSearch = `https://x.com/search?q=${encodeURIComponent(r.token)}`;
@@ -287,11 +290,11 @@ const Row = memo(function Row({ r, now, amount, onBuy }) {
           ) : (
             <Pill label="Fee" value={feeLabel(r.fee)} good={!highFee} title="Pool swap fee" />
           )}
-          {hooked && <Pill label="Hook" value="v4" good={false} title={`Pool uses hook ${r.hooks}`} />}
+          {hooked && <Pill label="Hook" value={knownHook || 'v4'} good={!!knownHook} title={`Pool uses hook ${r.hooks}`} />}
         </div>
       </div>
 
-      {ext ? (
+      {!canTrade(r) ? (
         <button className="prow-buy ext" onClick={stop(() => openDrawer(r.id))} title={`Open ${r.symbol}`}>
           Open →
         </button>
