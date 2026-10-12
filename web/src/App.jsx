@@ -8,7 +8,6 @@ import { applyAccent, Holdings, Palette, Rail, Settings, StatusBar, TopBar } fro
 import { getState, set, useStore } from './store.js';
 import { useAutomation, useBalanceSync, useTrader } from './trading.js';
 import { Icon, Toasts } from './ui.jsx';
-import { Rudy, RudyDefs } from './Rudy.jsx';
 
 export default function App() {
   const board = useBoard();
@@ -42,7 +41,6 @@ export default function App() {
 
   return (
     <div className="app">
-      <RudyDefs />
       <div className="backdrop" aria-hidden>
         <span className="blob a" />
         <span className="blob b" />
@@ -80,7 +78,7 @@ export default function App() {
           </div>
           {board.status === 'connecting' || board.status === 'syncing' ? (
             <div className="syncing">
-              <Rudy mood="neutral" size={96} track />
+              <div className="pulse-dot" />
               <b>Syncing with Robinhood Chain…</b>
               <span>Indexing the last hour of v4 pools and swaps. This takes a few seconds the first time.</span>
             </div>
