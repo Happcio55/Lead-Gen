@@ -80,6 +80,7 @@ em { font-family: var(--font-serif); font-style: italic; font-weight: 400; lette
 }
 .header.is-scrolled { background: rgba(8, 8, 11, 0.72); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); border-color: var(--line); }
 .brand { display: inline-flex; align-items: center; gap: 10px; }
+.brand img { border-radius: 8px; box-shadow: 0 0 0 1px rgba(255,255,255,.1); }
 .brand-name { font: 700 19px/1 var(--font-display); letter-spacing: -0.02em; }
 .nav { display: none; gap: 4px; }
 .nav a { padding: 8px 12px; border-radius: 999px; color: var(--text-2); font-size: 14px; transition: color .2s, background .2s; }
