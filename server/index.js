@@ -1,5 +1,5 @@
 // Local / self-hosted server: background indexer + API + the built web app.
-// On Vercel the same API runs as a serverless function instead (see api/[...path].js).
+// On Vercel the same API runs as a serverless function instead (see api/index.js).
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
