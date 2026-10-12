@@ -7,6 +7,8 @@ import { age, copy, eth, num, pct, short, usd } from './lib.js';
 import { closeDrawer, toast, toggleWatch, useStore } from './store.js';
 import { canTrade, setRule, useTrader, valuePosition } from './trading.js';
 import { Avatar, Delta, NumField } from './ui.jsx';
+import { Mascot, NAME } from '@brand';
+import { rudyRead } from './Rudy.jsx';
 
 const FRAMES = [
   { label: '5s', ms: 5_000 },
@@ -175,9 +177,16 @@ function TradePanel({ row, ethUsd }) {
   const [amount, setAmount] = useState(String(settings.quickBuy));
   const v = pos ? valuePosition(pos, row, ethUsd) : null;
 
+  const read = rudyRead(row);
   if (!canTrade(row)) return <ExternalTrade row={row} />;
   return (
     <div className="trade">
+      {read && (
+        <div className={`rudy-tip ${read.kind}`}>
+          <Mascot mood={read.kind === 'warn' ? 'worried' : 'happy'} size={44} track />
+          <span>{read.text}</span>
+        </div>
+      )}
       <div className="trade-tabs">
         <button className={tab === 'buy' ? 'on buy' : ''} onClick={() => setTab('buy')}>
           Buy
@@ -422,9 +431,10 @@ function ExternalTrade({ row }) {
   const gt = `https://www.geckoterminal.com/robinhood/pools/${row.poolAddress}`;
   return (
     <div className="trade ext-trade">
-      <div className="ext-note">
+      <div className="rudy-tip">
+        <Mascot mood="neutral" size={44} track />
         <span>
-          ${row.symbol} trades on {row.dexName}, which Vestas can't route through yet. Trade it on GeckoTerminal instead.
+          ${row.symbol} trades on {row.dexName}, which {NAME} can't route through yet. Trade it on GeckoTerminal instead.
         </span>
       </div>
       <div className="trade-body">

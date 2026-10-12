@@ -7,6 +7,8 @@ import { openDrawer, set, setSettings, setView, toast, toggleWatch, useStore } f
 import { useTrader, valuePosition } from './trading.js';
 import { Avatar, Delta, Icon, Modal, NumField, Spark, Toggle } from './ui.jsx';
 import { useWallet } from './wallet.jsx';
+import { Logo, NAME } from '@brand';
+import { ACCENT } from '@brand-meta';
 
 export function TopBar({ meta, status, onSearch, onSettings }) {
   const wallet = useWallet();
@@ -18,18 +20,8 @@ export function TopBar({ meta, status, onSearch, onSettings }) {
   return (
     <header className="topbar">
       <div className="brand" onClick={() => setView('home')}>
-        <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden>
-          <defs>
-            <radialGradient id="orb" cx="35%" cy="30%" r="75%">
-              <stop offset="0" stopColor="#ffffff" />
-              <stop offset="0.45" stopColor="#e9f9b8" />
-              <stop offset="1" stopColor="#9fc21c" />
-            </radialGradient>
-          </defs>
-          <circle cx="16" cy="16" r="14" fill="url(#orb)" stroke="rgba(20,20,20,.12)" />
-          <path d="M17.6 7 10 17.4h5.2l-1.4 7.6 8-10.6h-5.3z" fill="#141414" />
-        </svg>
-        <span>Vestas</span>
+        <Logo />
+        <span>{NAME}</span>
       </div>
       <nav className="tabs">
         {[
@@ -333,6 +325,7 @@ export function Palette({ rows, onClose }) {
 }
 
 const ACCENTS = {
+  orange: ['#ff6a1f', '#e8590c'],
   lime: ['#c6f432', '#a6d916'],
   mint: ['#7ef0c1', '#2fd39a'],
   sky: ['#8fd8ff', '#3fb3f0'],
@@ -340,7 +333,7 @@ const ACCENTS = {
 };
 
 export function applyAccent(name) {
-  const [a, b] = ACCENTS[name] || ACCENTS.lime;
+  const [a, b] = ACCENTS[name] || ACCENTS[ACCENT];
   document.documentElement.style.setProperty('--accent', a);
   document.documentElement.style.setProperty('--accent-2', b);
 }
@@ -352,7 +345,7 @@ export function Settings({ onClose }) {
     const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'vestas-settings.json';
+    a.download = `${NAME.toLowerCase()}-settings.json`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -362,7 +355,7 @@ export function Settings({ onClose }) {
       set({ settings: (cur) => ({ ...cur, ...parsed, filters: { ...cur.filters, ...(parsed.filters || {}) } }) });
       toast('Settings imported', { kind: 'success' });
     } catch {
-      toast('That file is not a Vestas settings export', { kind: 'error' });
+      toast(`That file is not a ${NAME} settings export`, { kind: 'error' });
     }
   };
   return (

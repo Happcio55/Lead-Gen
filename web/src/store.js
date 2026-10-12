@@ -1,5 +1,6 @@
 // Tiny global store (useSyncExternalStore) for client state that persists in localStorage.
 import { useSyncExternalStore } from 'react';
+import { ACCENT } from '@brand-meta';
 import { load, save } from './lib.js';
 
 const DEFAULT_FILTERS = { minLiq: 0, minMc: 0, maxMc: 0, minTx5m: 0, maxAgeMin: 0, hideHooks: false };
@@ -8,7 +9,7 @@ export const DEFAULT_SETTINGS = {
   quickBuy: 0.005, // ETH per one-click buy
   presets: [0.002, 0.005, 0.01, 0.05],
   slippage: 15, // percent
-  accent: 'lime',
+  accent: ACCENT,
   compact: false,
   pauseOnHover: true,
   sound: false,
@@ -34,10 +35,14 @@ const state = {
   palette: false,
 };
 state.settings.filters = { ...DEFAULT_SETTINGS.filters, ...state.settings.filters };
+// Visitors who saved the other brand's default accent get this brand's default, once.
+const OTHER_DEFAULT = ACCENT === 'orange' ? 'lime' : 'orange';
+if (!load(`look:${ACCENT}`, false)) {
+  if (state.settings.accent === OTHER_DEFAULT) state.settings.accent = ACCENT;
+  save(`look:${ACCENT}`, true);
+}
 state.settings.laneBuy = { ...DEFAULT_SETTINGS.laneBuy, ...state.settings.laneBuy };
 state.settings.laneP = { ...DEFAULT_SETTINGS.laneP, ...state.settings.laneP };
-// Visitors from the short-lived orange look go back to lime.
-if (state.settings.accent === 'orange') state.settings.accent = 'lime';
 
 const listeners = new Set();
 const PERSIST = ['settings', 'watchlist', 'positions', 'rules', 'trades', 'view'];

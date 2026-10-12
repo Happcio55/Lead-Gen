@@ -1,4 +1,4 @@
-/* Vestas — light "stone & lime" theme */
+/* Base theme: light "stone & lime" (the Vestas look). Ruckus layers web/src/brand/ruckus.css on top. */
 :root {
   --bg: #f2f2ee;
   --bg-2: #ebebe6;
@@ -26,6 +26,8 @@
   --sans: 'Geist', 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
   --mono: 'Geist Mono', ui-monospace, Menlo, monospace;
   color-scheme: light;
+  --shadow-lg: 0 2px 4px rgba(20, 20, 20, 0.05), 0 24px 60px rgba(20, 20, 20, 0.12);
+  --on-accent: #141414;
 }
 
 * { box-sizing: border-box; }
@@ -679,6 +681,11 @@ button.sb-item:hover, .sb-item.on { background: #fff; color: var(--text); box-sh
   .sb-item.static:not(.sb-live) { display: none; }
 }
 
+/* ---------- tips on the coin page ---------- */
+.rudy-tip { color: var(--text); font-weight: 500; display: flex; gap: 10px; align-items: center; margin: 12px 12px 0; padding: 10px 12px; border-radius: 14px; background: var(--accent-soft); font-size: 13.5px; }
+.rudy-tip.warn { background: var(--down-bg); }
+.rudy-tip.good { background: var(--up-bg); }
+
 /* ---------- coin page (full page, not a side window) ---------- */
 .drawer.token-page {
   position: static; width: auto; max-width: 1320px; margin: 0 auto; padding: 8px clamp(16px, 3vw, 32px) 48px;
@@ -700,7 +707,6 @@ button.sb-item:hover, .sb-item.on { background: #fff; color: var(--text); box-sh
 .token-page .tape { background: #fff; border-radius: 20px; padding: 14px 16px; box-shadow: var(--shadow); }
 .ext-trade .trade-body { display: grid; gap: 10px; }
 .ext-trade .cta { text-align: center; display: block; }
-.ext-note { margin: 12px 12px 0; padding: 10px 12px; border-radius: 14px; background: var(--accent-soft); font-size: 13.5px; font-weight: 500; }
 .prow-buy.ext { background: var(--text); color: #fff; box-shadow: none; }
 @media (max-width: 980px) {
   .token-page .drawer-scroll { grid-template-columns: minmax(0, 1fr); }
