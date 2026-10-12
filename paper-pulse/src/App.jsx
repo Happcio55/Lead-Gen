@@ -5,6 +5,7 @@ import { fmtEth, fmtSignedEth, fmtUsdC } from './lib/format.js'
 import { TopBar, StatusBar, BottomNav, Onboarding, Ticker, useTheme } from './components/Header.jsx'
 import './lib/wallet.js'
 import { watchPools } from './lib/chain.js'
+import { startPons } from './lib/pons.js'
 import { Toasts, toast } from './components/ui.jsx'
 import Pulse from './pages/Pulse.jsx'
 const TokenPage = lazy(() => import('./pages/TokenPage.jsx'))
@@ -24,6 +25,8 @@ function parseRoute() {
 export default function App() {
   const [route, setRoute] = useState(parseRoute)
   const [theme, setTheme] = useTheme()
+
+  useEffect(() => startPons(), [])
 
   useEffect(() => {
     const on = () => setRoute(parseRoute())

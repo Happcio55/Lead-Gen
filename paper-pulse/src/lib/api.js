@@ -194,6 +194,7 @@ function fromDex(p) {
 }
 
 // Merge: newer numbers win, but never overwrite known values with blanks.
+export const upsertRecords = (records) => upsert(records)
 function upsert(records) {
   if (!records.length) return
   market.set((s) => {
@@ -337,6 +338,8 @@ export async function loadCandles(pool, tf) {
   return data
 }
 async function fetchCandles(pool, tf) {
+  const { isPonsCurve } = await import('./pons.js')
+  if (isPonsCurve(pool)) return [] // curve tokens: the chart builds candles from on-chain trades
   const [unit, agg] = { '1m': ['minute', 1], '5m': ['minute', 5], '15m': ['minute', 15], '1h': ['hour', 1], '4h': ['hour', 4] }[tf]
   const j = await gecko(`${P}/pools/${pool}/ohlcv/${unit}?aggregate=${agg}&limit=300&currency=usd&token=base`, { priority: 1 })
   const list = j.data?.attributes?.ohlcv_list || []
@@ -356,6 +359,9 @@ async function fetchCandles(pool, tf) {
 }
 
 export async function loadTrades(pool) {
+  const { ponsTrades } = await import('./pons.js')
+  const local = ponsTrades(pool)
+  if (local && local.length) return local
   const j = await gecko(`${P}/pools/${pool}/trades`, { priority: 2 })
   return (j.data || []).map((d) => {
     const a = d.attributes

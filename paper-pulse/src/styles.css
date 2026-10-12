@@ -497,3 +497,30 @@ tr.big td { font-weight: 700; }
 
 .chart-box.tv { height: clamp(420px, 60vh, 680px); background: var(--panel); }
 .chart-box.tv iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* ---------------- pulse v3: curve bar, filters, display ---------------- */
+.logo-col { display: flex; flex-direction: column; gap: 6px; align-items: stretch; width: 70px; }
+.curve { height: 4px; border-radius: 2px; background: var(--panel-3); overflow: hidden; display: block; }
+.curve i { display: block; height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--bronze), var(--lime-2)); }
+.card.compact { padding: 7px 12px; gap: 9px; grid-template-columns: 46px minmax(0, 1fr) auto; }
+.card.compact .logo-col { width: 46px; }
+.card.compact .tlogo { width: 46px; height: 46px; }
+.card.compact .mets { display: none; }
+.card.compact .c-main { gap: 3px; }
+.card.compact .c-r { gap: 2px; }
+.icon-sq { position: relative; width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--bg-2); display: grid; place-items: center; color: var(--fg-3); }
+.icon-sq:hover, .icon-sq.on { color: var(--fg); border-color: var(--fg-4); }
+.dot-n { position: absolute; top: -5px; right: -5px; min-width: 15px; height: 15px; border-radius: 8px; background: var(--lime); color: var(--lime-ink); font-size: 9px; font-weight: 800; font-style: normal; display: grid; place-items: center; padding: 0 3px; }
+.filter-pop, .display-pop { width: 300px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.fp-h { display: flex; align-items: baseline; justify-content: space-between; }
+.ff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ff { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--fg-3); font-weight: 600; }
+.ff-in { display: flex; align-items: center; height: 30px; border: 1px solid var(--line-2); border-radius: 7px; background: var(--bg-2); padding: 0 8px; }
+.ff-in input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font-family: var(--f-mono); font-weight: 600; font-size: 12px; }
+.ff-in em { font-style: normal; color: var(--fg-4); font-size: 10.5px; }
+.ff-in:focus-within { border-color: var(--fg-3); }
+.ff-check { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--fg-2); cursor: pointer; }
+.ff-check input { accent-color: var(--lime-2); width: 14px; height: 14px; }
+.metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.pulse-bar .src button { font-weight: 700; }
+.col-head h3 { cursor: help; }

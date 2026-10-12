@@ -5,6 +5,7 @@ import { CHAINS, ACTIVE_CHAIN } from '../lib/chains.js'
 import { paper, account, equityEth, resetAccount, START_OPTIONS, openPositions } from '../lib/paper.js'
 import { fmtEth, fmtSignedEth, fmtPct, fmtCompact, fmtUsdC, fmtAge, shortAddr } from '../lib/format.js'
 import { wallet, availableWallets, connect, disconnect } from '../lib/wallet.js'
+import { pons } from '../lib/pons.js'
 import { storage } from '../lib/store.js'
 import { Icon, EthIcon, toast, useNow } from './ui.jsx'
 
@@ -277,7 +278,9 @@ function ConnectModal({ onClose }) {
 }
 
 export function Ticker() {
-  const ids = useStore(market, (s) => s.lists.new)
+  const geckoIds = useStore(market, (s) => s.lists.new)
+  const ponsIds = useStore(pons, (s) => s.newIds)
+  const ids = ponsIds.length ? ponsIds : geckoIds
   const pools = useStore(market, (s) => s.pools)
   const items = ids.slice(0, 14).map((id) => pools[id]).filter(Boolean)
   const now = useNow(1000)
