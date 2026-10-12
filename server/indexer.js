@@ -42,6 +42,7 @@ export class Indexer {
     this.ready = null;
     this.polling = null;
     this.pricesAt = 0;
+    this.extAt = 0;
   }
 
   on(fn) {
@@ -58,6 +59,8 @@ export class Indexer {
     await this.init({ maxAttempts: Infinity });
     setInterval(() => this.refreshEthUsd(), 60_000).unref();
     setInterval(() => this.refreshGas(), 15_000).unref();
+    setInterval(() => this.refreshExternalMeta(), 60_000).unref();
+    this.refreshExternalMeta();
     this.loop();
   }
 
@@ -103,6 +106,10 @@ export class Indexer {
         })
         .finally(() => (this.polling = null));
       chores.push(this.polling);
+    }
+    if (now - this.extAt > 60_000) {
+      this.extAt = now;
+      chores.push(this.refreshExternalMeta());
     }
     if (now - this.pricesAt > 60_000) {
       this.pricesAt = now;
@@ -341,6 +348,45 @@ export class Indexer {
     if (!this.ethUsd) this.log.warn?.('[indexer] could not fetch ETH/USD; USD values will show as 0');
   }
 
+  // Fallback artwork and links for tokens that carry none on-chain: DexScreener's public token
+  // profiles (set by the projects themselves). Looked up in batches of 30, busiest pools first,
+  // and retried every 10 minutes for tokens that still have nothing.
+  async refreshExternalMeta(limit = 30) {
+    const now = Date.now();
+    const seen = new Set();
+    const due = [];
+    const pools = [...this.pools.values()].sort((a, b) => b.volEth - a.volEth);
+    for (const p of pools) {
+      const t = p.token;
+      if (!t || seen.has(t.address)) continue;
+      seen.add(t.address);
+      if ((t.logo || t.extLogo) && t.socials) continue;
+      if (t.extCheckedAt && now - t.extCheckedAt < 10 * 60_000) continue;
+      due.push(t);
+      if (due.length >= limit) break;
+    }
+    if (!due.length) return;
+    for (const t of due) t.extCheckedAt = now;
+    try {
+      const url = `https://api.dexscreener.com/tokens/v1/robinhood/${due.map((t) => t.address).join(',')}`;
+      const pairs = await getJson(url);
+      for (const pair of Array.isArray(pairs) ? pairs : []) {
+        const info = pair?.info;
+        const addr = pair?.baseToken?.address;
+        if (!info || !addr) continue;
+        const t = this.tokens.get(getAddress(addr));
+        if (!t) continue;
+        if (!t.logo && !t.extLogo && info.imageUrl) t.extLogo = parseLogo(info.imageUrl);
+        if (!t.socials) {
+          const social = (type) => info.socials?.find((s) => s?.type === type)?.url;
+          t.socials = parseSocials([social('twitter'), social('telegram'), info.websites?.[0]?.url]);
+        }
+      }
+    } catch {
+      // DexScreener is optional; try again on the next round
+    }
+  }
+
   async refreshGas() {
     try {
       this.gasGwei = Number(await this.client.getGasPrice()) / 1e9;
@@ -377,7 +423,7 @@ export class Indexer {
     return {
       id: p.id,
       token: p.token.address,
-      logo: p.token.logo ? `/api/logo/${p.token.address}` : null,
+      logo: p.token.logo || p.token.extLogo ? `/api/logo/${p.token.address}` : null,
       socials: p.token.socials,
       meme: p.token.meme,
       symbol: p.token.symbol,

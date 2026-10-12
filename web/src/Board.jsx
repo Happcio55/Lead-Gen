@@ -42,6 +42,8 @@ function passes(r, f, now) {
 // or a swap fee so high it eats the trade.
 function isJunk(r) {
   if (r.liqUsd > 0 && r.mcapUsd > 50_000 && r.mcapUsd / r.liqUsd > 2000) return true;
+  // A seven-figure market cap with no liquidity behind it at all is just the starting price talking.
+  if (r.liqUsd === 0 && r.mcapUsd > 1_000_000) return true;
   return !(r.fee & DYNAMIC_FEE) && r.fee >= 500_000;
 }
 
