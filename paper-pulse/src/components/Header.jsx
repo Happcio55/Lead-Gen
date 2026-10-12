@@ -306,9 +306,9 @@ export function Ticker() {
 export function TopBar({ route, theme, setTheme }) {
   return (
     <header className="top">
-      <a href="#/" className="logo" aria-label="Paper Pulse">
+      <a href="#/" className="logo" aria-label="Paper">
         <img src="/logo-sq-96.png" alt="" width="34" height="34" className="logo-img" />
-        <span className="word">Paper<em>Pulse</em></span>
+        <span className="word">Paper<em>.</em></span>
       </a>
       <nav className="nav">
         <a href="#/discover" className={route.name === 'discover' ? 'on' : ''}>Discover</a>

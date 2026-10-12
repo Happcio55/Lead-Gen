@@ -56,7 +56,7 @@ export async function connect(entry) {
     const [address] = await provider.request({ method: 'eth_requestAccounts' })
     if (!address) throw new Error('No account selected')
     const message = [
-      'Paper Pulse wants you to sign in with your wallet.',
+      'Paper wants you to sign in with your wallet.',
       '',
       'This only proves you own this address. It is free, sends no transaction and gives no access to your funds.',
       '',

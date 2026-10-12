@@ -1,4 +1,4 @@
-# Paper Pulse
+# Paper
 
 Paper trading for new memecoins on Robinhood Chain. Live token data, fake money.
 

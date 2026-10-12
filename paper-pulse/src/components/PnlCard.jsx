@@ -54,8 +54,8 @@ async function draw(cv, d) {
   if (logo) c.drawImage(logo, 54, 42, 62, 62)
   c.fillStyle = '#f4f5f9'
   c.font = `700 30px ${sans}`
-  c.fillText('Paper Pulse', 124, 88)
-  const tagX = 124 + c.measureText('Paper Pulse').width + 16
+  c.fillText('Paper', 124, 88)
+  const tagX = 124 + c.measureText('Paper').width + 16
   c.font = `700 15px ${sans}`
   c.fillStyle = '#c9ff3f'
   c.beginPath()
@@ -113,7 +113,7 @@ export default function PnlCard({ data, onClose }) {
   function download() {
     const a = document.createElement('a')
     a.href = cv.current.toDataURL('image/png')
-    a.download = `paperpulse-${data.symbol}-pnl.png`
+    a.download = `paper-${data.symbol}-pnl.png`
     a.click()
   }
   return (
