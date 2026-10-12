@@ -1,12 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <title>Kairo</title>
+  <title>Kairo — orbit</title>
   <defs>
-    <linearGradient id="surface" x1="8" y1="0" x2="56" y2="64" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#e3efb5"/><stop offset="1" stop-color="#abc878"/>
+    <linearGradient id="orbit" x1="8" y1="52" x2="54" y2="10" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8fa85f"/><stop offset=".5" stop-color="#d7eba3"/><stop offset="1" stop-color="#f3ffd8"/>
+    </linearGradient>
+    <linearGradient id="core" x1="25" y1="19" x2="40" y2="45" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f5ffdf"/><stop offset="1" stop-color="#b8d47f"/>
     </linearGradient>
   </defs>
-  <rect x="1" y="1" width="62" height="62" rx="19" fill="url(#surface)"/>
-  <rect x="1.5" y="1.5" width="61" height="61" rx="18.5" stroke="#f1f7d8" stroke-opacity=".45"/>
-  <path d="M16 15h9v34h-9V15Zm13 17 14-17h11L39 32l15 17H43L29 32Z" fill="#192218"/>
-  <path d="m29 24 7-9h-7v9Z" fill="#192218" fill-opacity=".4"/>
+  <path d="M46 7C32 6 13 19 7 32c-5 11-2 20 7 22-5-5-4-11 0-18C21 24 34 14 46 7Z" fill="url(#orbit)"/>
+  <path d="M18 57c14 1 33-12 39-25 5-11 2-20-7-22 5 5 4 11 0 18-7 12-20 22-32 29Z" fill="url(#orbit)"/>
+  <path d="m32 18 4.5 9.5L46 32l-9.5 4.5L32 46l-4.5-9.5L18 32l9.5-4.5L32 18Z" fill="url(#core)"/>
+  <circle cx="49" cy="9" r="3" fill="#e5f6bb"/>
+  <circle cx="15" cy="55" r="2" fill="#adc779"/>
 </svg>
