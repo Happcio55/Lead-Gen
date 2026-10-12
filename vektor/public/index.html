@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vektor: code-first AI, live in your browser</title>
+<meta name="description" content="Vektor is a code-first assistant powered by Claude. Ask for a snippet, a fix or a smart contract, run it in the browser, and embed it on any site with one line.">
+<meta name="theme-color" content="#08080b">
+<meta property="og:title" content="Vektor: code-first AI, live in your browser">
+<meta property="og:description" content="Ask for code. Get code. Run it right here. Powered by Claude.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@1&display=swap">
+<link rel="stylesheet" href="/styles.css">
+<script src="/config.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script type="module" src="/app.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="header" id="header">
+  <a class="brand" href="#top" aria-label="Vektor home">
+    <img src="/favicon.svg" alt="" width="28" height="28">
+    <span class="brand-name" data-brand>Vektor</span>
+  </a>
+  <nav class="nav" aria-label="Main">
+    <a href="#playground">Playground</a>
+    <a href="#modes">Modes</a>
+    <a href="#live">Live</a>
+    <a href="#embed">Embed</a>
+    <a href="#api">API</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+  <div class="header-end">
+    <span class="status" id="status" title="Checking…"><span class="status-dot"></span><span class="status-text">Connecting</span></span>
+    <a class="btn btn-sm btn-primary" href="#playground">Try it</a>
+    <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" id="top">
+    <canvas class="hero-canvas" id="field" aria-hidden="true"></canvas>
+    <div class="hero-inner">
+      <p class="pill reveal"><span class="pill-dot"></span>Live now · Powered by Claude</p>
+      <h1 class="hero-title reveal">Point it at a problem.<br><span class="grad">Get code back.</span></h1>
+      <p class="hero-sub reveal">Vektor is a code-first AI. Ask for a snippet, a fix or a smart contract and it answers with working code and one line of explanation, streamed live. Run it right here, or put it on your own site with one line.</p>
+      <div class="hero-cta reveal">
+        <a class="btn btn-primary btn-lg" href="#playground">Open the playground <span aria-hidden="true">→</span></a>
+        <a class="btn btn-ghost btn-lg" href="#embed">Embed on your site</a>
+      </div>
+      <div class="hero-meta reveal">
+        <span>No account</span><span>No install</span><span>Runs JS &amp; Python in your browser</span>
+      </div>
+      <div class="ca reveal" id="ca">
+        <span class="ca-ticker" data-ticker>$VEKTOR</span>
+        <span class="ca-label">CA</span>
+        <code class="ca-addr" id="ca-addr">Soon</code>
+        <button class="ca-copy" id="ca-copy" type="button" hidden>Copy</button>
+      </div>
+    </div>
+    <div class="hero-term reveal" aria-hidden="true">
+      <div class="term-bar"><i></i><i></i><i></i><span>vektor · live</span></div>
+      <pre class="term-body" id="term"></pre>
+    </div>
+  </section>
+
+  <section class="band" aria-label="Highlights">
+    <div class="band-track">
+      <span>Code first</span><span>Streams live</span><span>Shows its reasoning</span><span>Runs in the browser</span><span>Five modes</span><span>One-line embed</span><span>Open API</span>
+      <span aria-hidden="true">Code first</span><span aria-hidden="true">Streams live</span><span aria-hidden="true">Shows its reasoning</span><span aria-hidden="true">Runs in the browser</span><span aria-hidden="true">Five modes</span><span aria-hidden="true">One-line embed</span><span aria-hidden="true">Open API</span>
+    </div>
+  </section>
+
+  <section class="section" id="playground">
+    <div class="section-head reveal">
+      <p class="eyebrow">Playground</p>
+      <h2 class="h2">Ask. Read. <em>Run.</em></h2>
+      <p class="lede">This is the real thing, not canned examples. Pick a mode, ask a question, and hit ▶ Run on any JavaScript or Python answer.</p>
+    </div>
+    <div class="play reveal">
+      <div class="play-glow" aria-hidden="true"></div>
+      <div class="play-card" id="chat"></div>
+      <aside class="play-side">
+        <div class="stat"><span class="stat-k">Answers this visit</span><span class="stat-v" id="s-count">0</span></div>
+        <div class="stat"><span class="stat-k">Tokens streamed</span><span class="stat-v" id="s-tokens">0</span></div>
+        <div class="stat"><span class="stat-k">Avg. response</span><span class="stat-v" id="s-ms">–</span></div>
+        <div class="stat"><span class="stat-k">Model</span><span class="stat-v stat-v--sm" id="s-model">–</span></div>
+        <p class="play-note">Answers can be wrong. Read code before you ship it, and get contracts audited before they hold real funds.</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section" id="modes">
+    <div class="section-head reveal">
+      <p class="eyebrow">Modes</p>
+      <h2 class="h2">One model. <em>Five jobs.</em> All live.</h2>
+      <p class="lede">Each mode tunes how Vektor answers. Click one to try it in the playground.</p>
+    </div>
+    <div class="modes">
+      <button class="mode-card reveal" data-try="code" style="--c: var(--violet)">
+        <span class="mode-ico">{ }</span><span class="mode-name">Code</span>
+        <span class="mode-desc">Snippets in any language. Complete and runnable, with one sentence on top.</span><span class="mode-tag">Live</span>
+      </button>
+      <button class="mode-card reveal" data-try="fix" style="--c: var(--rose)">
+        <span class="mode-ico">⌁</span><span class="mode-name">Fix</span>
+        <span class="mode-desc">Paste broken code. Get it back fixed, with the bug named in one line.</span><span class="mode-tag">Live</span>
+      </button>
+      <button class="mode-card reveal" data-try="explain" style="--c: var(--cyan)">
+        <span class="mode-ico">¶</span><span class="mode-name">Explain</span>
+        <span class="mode-desc">Plain-language walkthroughs in five bullets or fewer.</span><span class="mode-tag">Live</span>
+      </button>
+      <button class="mode-card reveal" data-try="solidity" style="--c: var(--amber)">
+        <span class="mode-ico">◆</span><span class="mode-name">Solidity</span>
+        <span class="mode-desc">Contracts on OpenZeppelin v5, with risky patterns flagged.</span><span class="mode-tag">Live</span>
+      </button>
+      <button class="mode-card reveal" data-try="translate" style="--c: var(--lime)">
+        <span class="mode-ico">⇄</span><span class="mode-name">Translate</span>
+        <span class="mode-desc">Port code between languages, same behavior, native idioms.</span><span class="mode-tag">Live</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="section" id="live">
+    <div class="section-head reveal">
+      <p class="eyebrow">Live</p>
+      <h2 class="h2">Everything on this page is <em>live.</em></h2>
+      <p class="lede">Service status comes from our API. Market data comes straight from DEX Screener and refreshes every 15 seconds.</p>
+    </div>
+    <div class="live">
+      <div class="live-card reveal">
+        <p class="live-k">Assistant</p>
+        <p class="live-v" id="l-status">Checking…</p>
+        <p class="live-sub" id="l-model">–</p>
+        <div class="ping" id="l-ping"><span>Latency</span><b id="l-latency">–</b></div>
+        <div class="spark" id="l-spark" aria-hidden="true"></div>
+      </div>
+      <div class="live-card live-card--wide reveal" id="market">
+        <div class="market-head">
+          <div>
+            <p class="live-k"><span data-ticker>$VEKTOR</span> market</p>
+            <p class="live-v" id="m-price">CA soon</p>
+            <p class="live-sub" id="m-sub">Market data appears here as soon as the token address is set.</p>
+          </div>
+          <a class="btn btn-sm btn-ghost" id="m-link" href="#" target="_blank" rel="noopener" hidden>Chart ↗</a>
+        </div>
+        <div class="market-grid">
+          <div><span>Market cap</span><b id="m-mcap">–</b></div>
+          <div><span>Liquidity</span><b id="m-liq">–</b></div>
+          <div><span>24h volume</span><b id="m-vol">–</b></div>
+          <div><span>24h txns</span><b id="m-tx">–</b></div>
+        </div>
+        <div class="changes" id="m-changes">
+          <div><span>5m</span><b>–</b></div><div><span>1h</span><b>–</b></div><div><span>6h</span><b>–</b></div><div><span>24h</span><b>–</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="embed">
+    <div class="split">
+      <div class="section-head reveal">
+        <p class="eyebrow">Embed</p>
+        <h2 class="h2">Put Vektor on <em>any</em> site.</h2>
+        <p class="lede">Paste one script tag. A launcher appears in the corner and opens the same assistant you see here, so your docs, blog or dApp gets a code helper in a minute.</p>
+        <ul class="ticks">
+          <li>Works on any HTML page, Webflow, WordPress, Framer or Notion-style site builders that allow scripts</li>
+          <li>Pick the starting mode and the accent color</li>
+          <li>Or drop it inline into any element with <code>data-target</code></li>
+        </ul>
+        <button class="btn btn-primary" id="embed-try" type="button">Preview it on this page</button>
+      </div>
+      <div class="snippet reveal">
+        <div class="snippet-bar"><span>index.html</span><button class="code-btn" type="button" data-copy="#embed-code">Copy</button></div>
+        <pre><code id="embed-code"></code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="api">
+    <div class="split split--rev">
+      <div class="snippet reveal">
+        <div class="snippet-bar"><span>terminal</span><button class="code-btn" type="button" data-copy="#api-code">Copy</button></div>
+        <pre><code id="api-code"></code></pre>
+      </div>
+      <div class="section-head reveal">
+        <p class="eyebrow">API</p>
+        <h2 class="h2">Prefer <em>raw</em> access?</h2>
+        <p class="lede">The same endpoint the playground uses. Send a mode and a message list, get a stream of server-sent events back: <code>thinking</code>, <code>text</code>, then <code>done</code> with token usage.</p>
+        <ul class="ticks">
+          <li>Modes: <code>code</code>, <code>fix</code>, <code>explain</code>, <code>solidity</code>, <code>translate</code></li>
+          <li>Browser calls from other sites need their origin on the allow list</li>
+          <li>Rate limited per visitor to keep it fair</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="section-head reveal">
+      <p class="eyebrow">FAQ</p>
+      <h2 class="h2">Questions &amp; answers</h2>
+    </div>
+    <div class="faq">
+      <details class="reveal"><summary>What is Vektor?</summary><p>A code-first assistant. It answers with the code first and keeps the talk to a sentence or two. It runs on Claude, Anthropic's model family, through our own API.</p></details>
+      <details class="reveal"><summary>Which model does it use?</summary><p>The current model is shown live in the playground sidebar and the Live section. By default it is Claude Opus 5.5, with Anthropic's server-side fallback switched on.</p></details>
+      <details class="reveal"><summary>Is it free?</summary><p>Yes for visitors, within a per-visitor rate limit. There is no account and no API key to set up.</p></details>
+      <details class="reveal"><summary>Is my code stored?</summary><p>Vektor keeps the conversation in your browser tab only. It is sent to our API and to Anthropic to produce the answer and is not saved by this site. Close the tab and it is gone.</p></details>
+      <details class="reveal"><summary>How does ▶ Run work?</summary><p>JavaScript runs in a Web Worker in your browser and is stopped after 5 seconds. Python runs in Pyodide, which downloads once (about 10 MB) the first time you use it. Nothing runs on our servers.</p></details>
+      <details class="reveal"><summary>Can I trust the Solidity it writes?</summary><p>Treat it as a strong first draft. Compile it, test it, and get an audit before a contract holds real funds.</p></details>
+      <details class="reveal"><summary>Is Vektor affiliated with Anthropic?</summary><p>No. Vektor is an independent project that uses the Claude API.</p></details>
+      <details class="reveal"><summary>Is there a token?</summary><p>The contract address is shown at the top of the page once it is live. Until then it says "Soon". Nothing on this site is financial advice.</p></details>
+    </div>
+  </section>
+
+  <section class="final reveal">
+    <h2 class="final-title">Stop searching. <span class="grad">Start shipping.</span></h2>
+    <a class="btn btn-primary btn-lg" href="#playground">Ask Vektor something</a>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <a class="brand" href="#top"><img src="/favicon.svg" alt="" width="22" height="22"><span class="brand-name" data-brand>Vektor</span></a>
+    <nav aria-label="Footer">
+      <a href="#playground">Playground</a>
+      <a href="#embed">Embed</a>
+      <a href="#api">API</a>
+      <a href="#" id="f-github" target="_blank" rel="noopener" hidden>GitHub</a>
+      <a href="#" id="f-x" target="_blank" rel="noopener" hidden>X</a>
+    </nav>
+    <p class="footer-note">Independent project, built on the Claude API. Not affiliated with Anthropic. AI output can be wrong.</p>
+  </div>
+</footer>
+</body>
+</html>
