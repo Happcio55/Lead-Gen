@@ -10,7 +10,7 @@ import { analyze, analyzeAddress, label } from './scorer.js';
 import { fetchMarkets } from './market.js';
 import { explain, aiEnabled } from './ai.js';
 import * as relay from './relay.js';
-import { buildSwap } from './uniswap.js';
+import { buildRoute } from './route.js';
 import { rpcStats } from './rpc.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -233,15 +233,16 @@ const routes = {
   'POST /api/quote': async (q, body, res) => { const r = await relay.quote(body); send(res, r.status, r.body); },
   'GET /api/relay/status': async (q, body, res) => { const r = await relay.status(q.get('requestId') || ''); send(res, r.status, r.body); },
   'POST /api/relay/step': async (q, body, res) => { const r = await relay.postStep(body.endpoint, body.body); send(res, r.status, r.body); },
-  // Direct Uniswap swap on Robinhood Chain (stock tokens, or when the user already holds ETH there).
-  'POST /api/swap': async (q, body, res) => {
+  // Best way to fill a buy/sell (Relay, launch curve or Uniswap) as a list of steps for the wallet to sign.
+  'POST /api/route': async (q, body, res) => {
     const ok = a => /^0x[0-9a-fA-F]{40}$/.test(a || '');
-    if (!ok(body.user) || !ok(body.token) || !/^\d+$/.test(String(body.amount || ''))) return send(res, 400, { message: 'Invalid request' });
+    if (!ok(body.user) || !ok(body.token) || !/^\d+$/.test(String(body.amount || '')) || BigInt(body.amount) <= 0n) {
+      return send(res, 400, { message: 'Invalid request' });
+    }
     try {
-      const r = await buildSwap(body);
-      send(res, r.error ? 422 : 200, r.error ? { message: r.error } : r);
+      send(res, 200, await buildRoute(body));
     } catch (e) {
-      send(res, 422, { message: /revert|execution/i.test(e.message) ? 'The swap would fail at current prices' : e.message });
+      send(res, 422, { message: /revert|execution reverted/i.test(e.message) ? 'The trade would fail at current prices' : e.message });
     }
   },
   'GET /api/health': () => ({ ok: true, tip: chain.tip, queue: queue.length, scoring: running, rpc: rpcStats, tokens: Object.keys(db.tokens).length })

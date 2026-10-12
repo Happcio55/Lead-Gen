@@ -1,8 +1,8 @@
 // Direct Uniswap V3 swaps on Robinhood Chain (used for stock tokens, which Relay doesn't route).
 // Quotes come from simulating the exact swap with eth_call, so the minimum output is real, not estimated.
 import { encodeFunctionData, decodeFunctionResult, encodePacked, parseAbi } from 'viem';
-import { rpc, client } from './rpc.js';
-import { erc20Abi } from './erc20.js';
+import { client } from './rpc.js';
+import { simulate } from './curve.js';
 import { config, ADDR } from './config.js';
 
 export const ROUTER = '0xcaf681a66d020601342297493863e78c959e5cb2';   // SwapRouter02
@@ -64,50 +64,37 @@ function path(route, token, buy) {
   return encodePacked(types, values);
 }
 
-const hex = n => '0x' + BigInt(n).toString(16);
-
-async function simulate(from, to, data, value, overrideBalance) {
-  const call = { from, to, data, value: hex(value) };
-  const state = overrideBalance ? { [from]: { balance: hex(overrideBalance) } } : undefined;
-  return rpc('eth_call', state ? [call, 'latest', state] : [call, 'latest']);
-}
-
-// Returns either { approve } (sell needs an allowance first) or { tx, amountOut, minOut }.
-export async function buildSwap({ user, token, side, amount, slippageBps = 100 }) {
+// Returns { amountOut, minOut, tx, approve|null } with amounts as BigInt. Sells are simulated together
+// with the approval (eth_simulateV1), so the quote is exact even before the user has approved.
+export async function buildSwap({ user, token, side, amount, slippageBps = 100, recipient }) {
   user = user.toLowerCase(); token = token.toLowerCase();
+  const to = (recipient || user).toLowerCase();
   const amountIn = BigInt(amount);
   const route = await findRoute(token);
-  if (!route) return { error: 'No Uniswap pool found for this token' };
+  if (!route) return null;
   const slip = BigInt(Math.max(10, Math.min(5000, Math.round(Number(slippageBps) || 100))));
-  const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
 
   if (side !== 'sell') {
-    const params = r => [{ path: path(route, token, true), recipient: user, amountIn, amountOutMinimum: r }];
-    const probe = encodeFunctionData({ abi: routerAbi, functionName: 'exactInput', args: params(0n) });
-    const raw = await simulate(user, ROUTER, probe, amountIn, amountIn + 10n ** 17n);
-    const amountOut = decodeFunctionResult({ abi: routerAbi, functionName: 'exactInput', data: raw });
+    const data = minOut => encodeFunctionData({ abi: routerAbi, functionName: 'exactInput', args: [{ path: path(route, token, true), recipient: to, amountIn, amountOutMinimum: minOut }] });
+    const [c] = await simulate(user, [{ to: ROUTER, data: data(0n), value: amountIn }], amountIn + 10n ** 17n);
+    if (c.status !== '0x1') throw new Error('The swap would fail at current prices');
+    const amountOut = decodeFunctionResult({ abi: routerAbi, functionName: 'exactInput', data: c.returnData });
     const minOut = amountOut * (10000n - slip) / 10000n;
-    const data = encodeFunctionData({ abi: routerAbi, functionName: 'exactInput', args: params(minOut) });
-    return { tx: { to: ROUTER, data, value: hex(amountIn), chainId: config.chainId }, amountOut: amountOut.toString(), minOut: minOut.toString() };
+    return { amountOut, minOut, approve: null, tx: { to: ROUTER, data: data(minOut), value: amountIn } };
   }
 
-  const [balance, allowance] = await Promise.all([
-    client.readContract({ address: token, abi: erc20Abi, functionName: 'balanceOf', args: [user] }),
-    client.readContract({ address: token, abi: routerAbi, functionName: 'allowance', args: [user, ROUTER] })
-  ]);
-  if (balance < amountIn) return { error: 'Not enough tokens in this wallet' };
-  if (allowance < amountIn) {
-    return { approve: { to: token, data: encodeFunctionData({ abi: routerAbi, functionName: 'approve', args: [ROUTER, amountIn] }), value: '0x0', chainId: config.chainId } };
-  }
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
   const calls = minOut => [
     encodeFunctionData({ abi: routerAbi, functionName: 'exactInput', args: [{ path: path(route, token, false), recipient: ADDRESS_THIS, amountIn, amountOutMinimum: minOut }] }),
-    encodeFunctionData({ abi: routerAbi, functionName: 'unwrapWETH9', args: [minOut, user] })
+    encodeFunctionData({ abi: routerAbi, functionName: 'unwrapWETH9', args: [minOut, to] })
   ];
-  const probe = encodeFunctionData({ abi: routerAbi, functionName: 'multicall', args: [deadline, calls(0n)] });
-  const raw = await simulate(user, ROUTER, probe, 0n);
-  const [first] = decodeFunctionResult({ abi: routerAbi, functionName: 'multicall', data: raw });
+  const approve = { to: token, data: encodeFunctionData({ abi: routerAbi, functionName: 'approve', args: [ROUTER, amountIn] }), value: 0n };
+  const swapTx = minOut => ({ to: ROUTER, data: encodeFunctionData({ abi: routerAbi, functionName: 'multicall', args: [deadline, calls(minOut)] }), value: 0n });
+  const sim = await simulate(user, [approve, swapTx(0n)]);
+  if (sim[1].status !== '0x1') throw new Error('The swap would fail (check your token balance)');
+  const [first] = decodeFunctionResult({ abi: routerAbi, functionName: 'multicall', data: sim[1].returnData });
   const amountOut = decodeFunctionResult({ abi: routerAbi, functionName: 'exactInput', data: first });
   const minOut = amountOut * (10000n - slip) / 10000n;
-  const data = encodeFunctionData({ abi: routerAbi, functionName: 'multicall', args: [deadline, calls(minOut)] });
-  return { tx: { to: ROUTER, data, value: '0x0', chainId: config.chainId }, amountOut: amountOut.toString(), minOut: minOut.toString() };
+  const allowance = await client.readContract({ address: token, abi: routerAbi, functionName: 'allowance', args: [user, ROUTER] });
+  return { amountOut, minOut, approve: allowance >= amountIn ? null : approve, tx: swapTx(minOut) };
 }

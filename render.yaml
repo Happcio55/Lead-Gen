@@ -1,0 +1,18 @@
+# One-click deploy on Render: New > Blueprint > pick this repo.
+services:
+  - type: web
+    name: kairo
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    disk:
+      name: kairo-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: RPC_URLS
+        sync: false
+      - key: RELAY_API_KEY
+        sync: false

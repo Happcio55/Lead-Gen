@@ -16,7 +16,18 @@ let active = 0;
 let tokens = config.rpcRps;
 let lastRefill = Date.now();
 let reqId = 0;
+let urlIdx = 0;
 const BATCH = 25;
+// Endpoints that just failed sit out for a while so traffic moves to the healthy ones.
+const benched = new Map();
+function pickUrl() {
+  const urls = config.rpcUrls;
+  for (let i = 0; i < urls.length; i++) {
+    const u = urls[(urlIdx + i) % urls.length];
+    if ((benched.get(u) || 0) < Date.now()) { urlIdx = (urlIdx + i + 1) % urls.length; return u; }
+  }
+  return urls[urlIdx++ % urls.length];
+}
 export const rpcStats = { sent: 0, calls: 0, retries: 0, errors: 0 };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -72,8 +83,9 @@ async function sendBatch(batch) {
   const ids = batch.map(() => ++reqId);
   const payload = batch.map((j, i) => ({ jsonrpc: '2.0', id: ids[i], method: j.method, params: j.params }));
   let body;
+  const url = pickUrl();
   try {
-    const res = await fetch(config.rpcUrl, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(batch.length === 1 ? payload[0] : payload),
@@ -82,6 +94,7 @@ async function sendBatch(batch) {
     if (res.status === 429 || res.status >= 500) throw new RpcError('HTTP ' + res.status, res.status);
     body = await res.json();
   } catch {
+    if (config.rpcUrls.length > 1) benched.set(url, Date.now() + 15000);
     batch.forEach(j => retry(j, 500));
     return;
   }

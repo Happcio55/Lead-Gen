@@ -96,7 +96,7 @@
       const p = await api('/pulse');
       pulse.block = p.block; pulse.at = Date.now(); pulse.blockMs = p.blockMs || 100;
       setPulse('flagged', p.flagged24h.toLocaleString('en-US'));
-      setPulse('tokens', p.tokens24h.toLocaleString('en-US'));
+      setPulse('tokens', p.tokens24h.toLocaleString('en-US') + (p.backfill && !p.backfill.done ? ` · indexing ${Math.round(p.backfill.progress * 100)}%` : ''));
       setPulse('blockMs', p.blockMs ? p.blockMs + ' ms' : '—');
       setPulse('stocks', String(p.stocks));
       countTo($('#statScored'), p.scored24h);
@@ -568,8 +568,8 @@
 
   const sel = (av, sym, sub) => `${av}<span>${esc(sym)}${sub ? `<br><span class="chainbadge">${esc(sub)}</span>` : ''}</span><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`;
   const coinAv = c => (safeUrl(c.icon) ? `<img class="tk" src="${esc(c.icon)}" alt="">` : `<span class="tk" style="background:#a8b3ff">${esc(c.symbol)}</span>`);
-  // Stock tokens settle in ETH on Robinhood Chain (they trade on Uniswap there, not through Relay).
-  const payoutChain = () => (swap.target && swap.target.stock ? RH : swap.origin);
+  // Buys are paid from swap.origin; sells pay out on swap.origin (bridged there if needed).
+  const payoutChain = () => swap.origin;
 
   function setOrigin(id) {
     swap.origin = id;
@@ -621,52 +621,27 @@
     quoteTimer = setTimeout(fetchQuote, 450);
   }
 
-  // Builds a plan: an estimate for the UI plus what to execute.
+  // Asks the server for the best route: Relay, the launch curve or Uniswap, as steps to sign.
+  const routeBody = user => ({ user, chainId: swap.origin, token: swap.target.address, side: swap.mode, amount: parseUnits(payInput.value, inDecimals()).toString(), slippageBps: swap.slip });
   async function fetchQuote() {
     const seq = ++swap.seq;
-    const t = swap.target, origin = swap.origin, amount = parseUnits(payInput.value, inDecimals());
-    const user = wallet.address || QUOTE_USER;
-    const slippageBps = swap.slip;
     try {
-      let q;
-      if (swap.mode === 'buy' && t.stock) {
-        if (origin === RH) {
-          const s = await api('/swap', { body: { user, token: t.address, side: 'buy', amount: amount.toString(), slippageBps } });
-          q = { kind: 'uni', out: BigInt(s.amountOut), outDecimals: t.decimals, eta: 1, fees: null, uni: s };
-        } else {
-          // Two steps: bridge native coin to ETH on Robinhood Chain, then swap on Uniswap.
-          const bridge = await api('/quote', { body: { user, chainId: origin, token: NATIVE, amount: amount.toString(), side: 'buy', slippageBps } });
-          const eth = BigInt(bridge.details.currencyOut.minimumAmount || bridge.details.currencyOut.amount);
-          const s = await api('/swap', { body: { user: QUOTE_USER, token: t.address, side: 'buy', amount: eth.toString(), slippageBps } });
-          q = { kind: 'bridge+uni', out: BigInt(s.amountOut), outDecimals: t.decimals, eta: (bridge.details.timeEstimate || 10) + 2, fees: feeUsd(bridge), relay: bridge, inUsd: num(bridge.details.currencyIn.amountUsd) };
-        }
-      } else if (swap.mode === 'sell' && t.stock) {
-        if (!wallet.address) throw new Error('Connect a wallet to sell');
-        const s = await api('/swap', { body: { user, token: t.address, side: 'sell', amount: amount.toString(), slippageBps } });
-        q = { kind: 'uni', out: s.amountOut ? BigInt(s.amountOut) : null, outDecimals: 18, eta: 1, fees: null, uni: s };
-      } else {
-        const r = await api('/quote', { body: { user, chainId: origin, token: t.address, amount: amount.toString(), side: swap.mode, slippageBps } });
-        q = { kind: 'relay', out: BigInt(r.details.currencyOut.amount), outDecimals: r.details.currencyOut.currency.decimals, eta: r.details.timeEstimate, fees: feeUsd(r), relay: r, inUsd: num(r.details.currencyIn.amountUsd), outUsd: num(r.details.currencyOut.amountUsd) };
-      }
+      const plan = await api('/route', { body: routeBody(wallet.address || QUOTE_USER) });
       if (seq !== swap.seq) return;
-      swap.quote = q; swap.eta = q.eta; swap.error = null;
+      swap.quote = { ...plan, out: BigInt(plan.amountOut) };
+      swap.eta = plan.eta; swap.error = null;
     } catch (e) {
       if (seq !== swap.seq) return;
       swap.quote = null;
-      swap.error = /unsupported|no route|no uniswap|not enough liquidity|too small/i.test(e.message)
-        ? (t && !t.stock && t.score != null ? 'Not tradable yet — this token is still on its launch curve or has no liquidity' : e.message)
+      swap.error = /not tradable|no curve|no route|unsupported|no liquidity/i.test(e.message)
+        ? 'Not tradable yet — no liquidity for this token'
         : e.message;
     }
     swap.quoting = false;
     renderSwap();
     renderChains();
   }
-  const num = v => (v == null || v === '' ? null : Number(v));
-  function feeUsd(r) {
-    const f = r.fees || {};
-    const sum = ['gas', 'relayer', 'app'].reduce((s, k) => s + (Number(f[k] && f[k].amountUsd) || 0), 0);
-    return sum || null;
-  }
+  const VENUE = { relay: 'Relay', curve: 'launch curve', uniswap: 'Uniswap', 'uniswap-v4': 'Uniswap v4' };
 
   function renderSwap() {
     const c = chainById(swap.origin) || { name: '…', symbol: 'ETH', decimals: 18 };
@@ -686,6 +661,7 @@
     $('#getAmt').value = swap.quoting ? '…' : q && q.out != null ? fmtNum(unitsToNum(q.out, q.outDecimals)) : '';
     const amt = parseUnits(payInput.value, inDecimals());
     const outUsd = q ? (q.outUsd ?? (swap.mode === 'buy' && t && t.priceUsd && q.out != null ? unitsToNum(q.out, q.outDecimals) * t.priceUsd : null)) : null;
+    const signatures = q ? q.steps.filter(x => x.type !== 'bridge').length + (q.steps.some(x => x.type === 'bridge') ? 1 : 0) : 0;
     const inUsd = q ? (q.inUsd ?? (swap.mode === 'sell' && t && t.priceUsd ? unitsToNum(amt, t.decimals) * t.priceUsd : null)) : null;
     $('#payUsd').textContent = inUsd != null ? '$' + inUsd.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '';
     $('#getUsd').textContent = outUsd != null ? '≈ $' + outUsd.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '';
@@ -696,13 +672,14 @@
     $('#rate').textContent = q && q.out != null && amt > 0n
       ? (swap.mode === 'buy' ? `1 ${c.symbol} ≈ ${fmtNum(unitsToNum(q.out, q.outDecimals) / unitsToNum(amt, payDec))} ${t.symbol}` : `1 ${t.symbol} ≈ ${fmtNum(unitsToNum(q.out, q.outDecimals) / unitsToNum(amt, payDec))} ${payout.symbol}`)
       : '';
+    const via = q ? VENUE[q.venue] || q.venue : null;
     const routeTxt = !t ? '—' : swap.mode === 'buy'
-      ? (t.stock ? (swap.origin === RH ? 'Uniswap on Robinhood' : `${c.name} → Robinhood → Uniswap`) : `${c.name} → Robinhood (Relay)`)
-      : (t.stock ? 'Uniswap → ETH on Robinhood' : `Robinhood → ${c.name} (Relay)`);
-    $('#dRoute').textContent = routeTxt;
+      ? (swap.origin === RH ? `Robinhood${via ? ' · ' + via : ''}` : `${c.name} → Robinhood${via ? ' · ' + via : ''}`)
+      : (swap.origin === RH ? `Robinhood${via ? ' · ' + via : ''}` : `Robinhood${via ? ' · ' + via : ''} → ${c.name}`);
+    $('#dRoute').textContent = routeTxt + (signatures > 1 ? ` · ${signatures} signatures` : '');
     $('#dTime').textContent = q && q.eta != null ? (q.eta <= 1 ? '~1 s' : '~' + q.eta + ' s') : '—';
     $('#dSlip').textContent = (swap.slip / 100).toFixed(1) + '%';
-    $('#dFee').textContent = q && q.fees != null ? '$' + q.fees.toFixed(2) : q ? 'network gas only' : '—';
+    $('#dFee').textContent = q && q.feesUsd != null ? '$' + q.feesUsd.toFixed(2) : q ? 'network gas only' : '—';
 
     const sc = $('#swScore');
     if (!t) sc.innerHTML = '<p>Pick a token to see its Kairo score before you buy.</p>';
@@ -726,7 +703,7 @@
 
   payInput.addEventListener('input', e => { e.target.value = e.target.value.replace(/[^0-9.,]/g, ''); requestQuote(); });
   $('#paySel').addEventListener('click', () => (swap.mode === 'buy' ? openChainPicker() : openTokenPicker()));
-  $('#getSel').addEventListener('click', () => (swap.mode === 'buy' ? openTokenPicker() : (swap.target && swap.target.stock ? toast('Stock sales settle as ETH on Robinhood Chain') : openChainPicker())));
+  $('#getSel').addEventListener('click', () => (swap.mode === 'buy' ? openTokenPicker() : openChainPicker()));
   function openTokenPicker() {
     openPicker({ title: 'Select a token', placeholder: 'Name, ticker or 0x address', search: true, render: tokenListHTML, pick: async a => {
       const k = known.get(a);
@@ -796,54 +773,46 @@
     throw new Error('Still processing — check your wallet in a minute');
   }
 
+  const rhEth = async user => BigInt((await api(`/balance?chainId=${RH}&address=${user}`)).balance);
+
   async function execute() {
     if (!wallet.address) return connect();
-    const t = swap.target, amount = parseUnits(payInput.value, inDecimals());
+    const t = swap.target;
     swap.busy = true; renderSwap(); note('');
     resetSteps();
     stepUI(1, 'now', 'Sign in your wallet');
     try {
-      const user = wallet.address, slippageBps = swap.slip;
-      let receivedText;
-      if (t.stock) {
-        if (swap.mode === 'buy') {
-          let ethIn = amount;
-          if (swap.origin !== RH) {
-            const bridge = await api('/quote', { body: { user, chainId: swap.origin, token: NATIVE, amount: amount.toString(), side: 'buy', slippageBps } });
-            const before = BigInt((await api(`/balance?chainId=${RH}&address=${user}`)).balance);
-            await runRelay(bridge);
-            const after = BigInt((await api(`/balance?chainId=${RH}&address=${user}`)).balance);
-            const got = after - before;
-            const min = BigInt(bridge.details.currencyOut.minimumAmount || bridge.details.currencyOut.amount);
-            ethIn = got > 0n && got < min ? got : min;
-            stepUI(2, 'now', 'Buying on Uniswap — confirm the swap');
+      const user = wallet.address;
+      // Fresh plan for the real wallet right before signing.
+      const plan = await api('/route', { body: routeBody(user) });
+      let ethBefore = null;
+      for (const step of plan.steps) {
+        if (step.type === 'relay') {
+          await runRelay(step.quote);
+        } else if (step.type === 'tx') {
+          if (step.label === 'Sell' && plan.steps.some(x => x.type === 'bridge')) ethBefore = await rhEth(user);
+          $('#swGo').innerHTML = `<span class="spin"></span> ${esc(step.label)} in wallet`;
+          stepUI(1, 'now', step.label === 'Approve' || step.label === 'Approve router' ? 'Approve the token in your wallet' : 'Confirm the trade in your wallet');
+          const hash = await sendTx(step.tx);
+          $('#swGo').innerHTML = '<span class="spin"></span> Confirming';
+          await waitReceipt(hash);
+        } else if (step.type === 'bridge') {
+          // Move the ETH this sell produced to the chain the user picked.
+          stepUI(2, 'now', 'Bridging your ETH — confirm in wallet');
+          const gained = (await rhEth(user)) - (ethBefore ?? 0n);
+          const reserve = 10n ** 14n; // keep a little ETH for gas on Robinhood Chain
+          if (gained > reserve) {
+            const b = await api('/quote', { body: { user, chainId: step.chainId, token: NATIVE, amount: (gained - reserve).toString(), side: 'sell', slippageBps: swap.slip } });
+            await runRelay(b);
           }
-          const s = await api('/swap', { body: { user, token: t.address, side: 'buy', amount: ethIn.toString(), slippageBps } });
-          $('#swGo').innerHTML = '<span class="spin"></span> Confirm in wallet';
-          await waitReceipt(await sendTx(s.tx));
-          receivedText = `${fmtNum(unitsToNum(BigInt(s.amountOut), t.decimals))} ${t.symbol}`;
-        } else {
-          let s = await api('/swap', { body: { user, token: t.address, side: 'sell', amount: amount.toString(), slippageBps } });
-          if (s.approve) {
-            $('#swGo').innerHTML = '<span class="spin"></span> Approve in wallet';
-            await waitReceipt(await sendTx(s.approve));
-            s = await api('/swap', { body: { user, token: t.address, side: 'sell', amount: amount.toString(), slippageBps } });
-          }
-          $('#swGo').innerHTML = '<span class="spin"></span> Confirm in wallet';
-          await waitReceipt(await sendTx(s.tx));
-          receivedText = `${fmtNum(unitsToNum(BigInt(s.amountOut), 18))} ETH`;
         }
-      } else {
-        // Fresh quote for the real wallet right before signing.
-        const r = await api('/quote', { body: { user, chainId: swap.origin, token: t.address, amount: amount.toString(), side: swap.mode, slippageBps } });
-        await runRelay(r);
-        const out = r.details.currencyOut;
-        receivedText = `${fmtNum(Number(out.amountFormatted))} ${out.currency.symbol}`;
       }
+      const outSym = swap.mode === 'buy' ? t.symbol : (chainById(swap.origin) || {}).symbol || 'ETH';
+      const receivedText = `${fmtNum(unitsToNum(BigInt(plan.amountOut), plan.outDecimals))} ${outSym}`;
       stepUI(1, 'done', 'Signed');
       stepUI(2, 'done', 'Settled on-chain');
-      stepUI(3, 'now', `${receivedText} landed in your wallet`);
-      toast(`Done — ${receivedText} in your wallet`, 5000);
+      stepUI(3, 'now', `~${receivedText} landed in your wallet`);
+      toast(`Done — about ${receivedText} in your wallet`, 5000);
       payInput.value = '';
     } catch (e) {
       const msg = e && e.code === 4001 ? 'Transaction rejected in wallet' : (e && e.message) || 'Swap failed';
@@ -899,9 +868,20 @@
   loadPulse(); setInterval(loadPulse, 3000);
   loadChains();
   loadStocks(); setInterval(loadStocks, 60000);
-  loadTrending().then(() => {
-    if (!swap.target && trending.length) setTarget(trending.find(t => t.score >= 7) || trending[0]);
-  });
+  // Preload the swap with the best-scored trending token that can actually be traded right now.
+  async function pickDefaultTarget() {
+    const ranked = trending.slice().sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 6);
+    for (const t of ranked) {
+      if (swap.target) return;
+      try {
+        await api('/route', { body: { user: QUOTE_USER, chainId: swap.origin || 8453, token: t.address, side: 'buy', amount: (10n ** 16n).toString(), slippageBps: swap.slip } });
+        if (!swap.target) setTarget(t);
+        return;
+      } catch { /* try the next one */ }
+    }
+    if (!swap.target && ranked.length) setTarget(ranked[0]);
+  }
+  loadTrending().then(pickDefaultTarget);
   setInterval(loadTrending, 30000);
   loadFeed(); setInterval(loadFeed, 5000);
   loadHighlight();

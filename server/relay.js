@@ -63,6 +63,13 @@ export async function quote(q) {
   };
   const bps = Number(q.slippageBps);
   if (bps > 0 && bps <= 5000) payload.slippageTolerance = String(Math.round(bps));
+  // Calls Relay executes on Robinhood Chain with the bridged ETH (curve or Uniswap buys in one signature).
+  if (Array.isArray(q.txs) && q.txs.length) {
+    payload.txs = q.txs.map(t => ({ to: t.to, value: String(t.value), data: t.data }));
+    if (payload.txs.some(t => !isAddr(t.to) || !/^\d+$/.test(t.value) || !/^0x[0-9a-fA-F]*$/.test(t.data))) {
+      return { status: 400, body: { message: 'Invalid destination call' } };
+    }
+  }
   return relay('/quote', { method: 'POST', body: JSON.stringify(payload) });
 }
 
