@@ -7,6 +7,7 @@ import { age, copy, eth, num, pct, short, usd } from './lib.js';
 import { closeDrawer, toast, toggleWatch, useStore } from './store.js';
 import { setRule, useTrader, valuePosition } from './trading.js';
 import { Avatar, Delta, NumField } from './ui.jsx';
+import { Rudy, rudyRead } from './Rudy.jsx';
 
 const FRAMES = [
   { label: '5s', ms: 5_000 },
@@ -164,8 +165,15 @@ function TradePanel({ row, ethUsd }) {
   const [amount, setAmount] = useState(String(settings.quickBuy));
   const v = pos ? valuePosition(pos, row, ethUsd) : null;
 
+  const read = rudyRead(row);
   return (
     <div className="trade">
+      {read && (
+        <div className={`rudy-tip ${read.kind}`}>
+          <Rudy mood={read.kind === 'warn' ? 'worried' : 'happy'} size={44} track />
+          <span>{read.text}</span>
+        </div>
+      )}
       <div className="trade-tabs">
         <button className={tab === 'buy' ? 'on buy' : ''} onClick={() => setTab('buy')}>
           Buy

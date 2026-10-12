@@ -6,6 +6,7 @@ import { eth, num, pct, short, usd } from './lib.js';
 import { openDrawer, setView, useStore } from './store.js';
 import { useTrader, valuePosition } from './trading.js';
 import { Avatar, Delta } from './ui.jsx';
+import { Rudy } from './Rudy.jsx';
 
 const DAYS = 30;
 
@@ -53,6 +54,7 @@ export function Portfolio({ board }) {
     return (
       <div className="page">
         <div className="card empty-state">
+          <Rudy mood="happy" size={110} track />
           <h2>
             Your portfolio, <mark>live</mark>.
           </h2>
