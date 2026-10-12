@@ -29,7 +29,7 @@ export function TopBar({ meta, status, onSearch, onSettings }) {
           <circle cx="16" cy="16" r="14" fill="url(#orb)" stroke="rgba(20,20,20,.12)" />
           <path d="M17.6 7 10 17.4h5.2l-1.4 7.6 8-10.6h-5.3z" fill="#141414" />
         </svg>
-        <span>Surge</span>
+        <span>Gomo</span>
       </div>
       <nav className="tabs">
         {[
@@ -352,7 +352,7 @@ export function Settings({ onClose }) {
     const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'surge-settings.json';
+    a.download = 'gomo-settings.json';
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -362,7 +362,7 @@ export function Settings({ onClose }) {
       set({ settings: (cur) => ({ ...cur, ...parsed, filters: { ...cur.filters, ...(parsed.filters || {}) } }) });
       toast('Settings imported', { kind: 'success' });
     } catch {
-      toast('That file is not a Surge settings export', { kind: 'error' });
+      toast('That file is not a Gomo settings export', { kind: 'error' });
     }
   };
   return (

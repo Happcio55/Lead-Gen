@@ -40,7 +40,7 @@ export function Home({ board, now }) {
           </h1>
           <p className="lede">Live Uniswap v4 pools on Robinhood Chain. Log in with email, buy in one click, exit on autopilot.</p>
           <a className="underlink" href="#how">
-            How trading on Surge works <span>↗</span>
+            How trading on Gomo works <span>↗</span>
           </a>
           <div className="hero-stats">
             <div>
@@ -68,10 +68,10 @@ export function Home({ board, now }) {
           Every pool and swap is read from Uniswap's PoolManager as it happens. Nothing is delayed, re-priced or filtered behind your back.
         </Pillar>
         <Pillar title="Your keys, your coins">
-          Trades are built in your browser and signed by your own wallet. Surge never holds funds and never sees a private key.
+          Trades are built in your browser and signed by your own wallet. Gomo never holds funds and never sees a private key.
         </Pillar>
         <Pillar title="Exits on autopilot">
-          Set a take-profit, a stop-loss or a trailing stop once. Surge sells for you the moment it triggers.
+          Set a take-profit, a stop-loss or a trailing stop once. Gomo sells for you the moment it triggers.
         </Pillar>
       </section>
 
@@ -111,7 +111,7 @@ export function Home({ board, now }) {
       </section>
 
       <footer className="footer">
-        <span>Surge · Robinhood Chain terminal</span>
+        <span>Gomo · Robinhood Chain terminal</span>
         <span>Not affiliated with Robinhood, Uniswap or Privy. Memecoins are extremely risky, so only trade what you can lose.</span>
       </footer>
     </div>
