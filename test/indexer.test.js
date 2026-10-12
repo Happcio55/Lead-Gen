@@ -66,3 +66,33 @@ test('sample carries the last value forward', () => {
   const s = sample([{ t: 0, p: 1 }, { t: 50, p: 2 }], 3, 0);
   assert.deepEqual(s, [1, 1, 2]);
 });
+
+test('tokens without on-chain metadata get DexScreener logo and socials', async () => {
+  const ix = fresh();
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    assert.match(String(url), /dexscreener\.com\/tokens\/v1\/robinhood\/0x1111/);
+    return new Response(
+      JSON.stringify([
+        {
+          baseToken: { address: TOKEN },
+          info: {
+            imageUrl: 'https://dd.dexscreener.com/ds-data/tokens/robinhood/x.png',
+            socials: [{ type: 'twitter', url: 'https://x.com/test' }],
+            websites: [{ url: 'https://test.example' }],
+          },
+        },
+      ]),
+      { headers: { 'content-type': 'application/json' } }
+    );
+  };
+  try {
+    await ix.refreshExternalMeta();
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+  const t = ix.tokens.get(TOKEN);
+  assert.deepEqual(t.extLogo, { url: 'https://dd.dexscreener.com/ds-data/tokens/robinhood/x.png' });
+  assert.deepEqual(t.socials, { x: 'https://x.com/test', tg: null, web: 'https://test.example' });
+  assert.equal(ix.row(ix.pools.get(ID)).logo, `/api/logo/${TOKEN}`);
+});

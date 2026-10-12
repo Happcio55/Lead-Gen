@@ -65,7 +65,8 @@ export function createApi({ indexer, lazy = false, defer = null, env = process.e
   async function serveLogo(res, raw) {
     if (!isAddress(raw)) return json(res, 400, { error: 'bad address' });
     const address = getAddress(raw);
-    let logo = indexer.tokens.get(address)?.logo;
+    const known = indexer.tokens.get(address);
+    let logo = known ? known.logo || known.extLogo || null : undefined;
     if (logo === undefined) {
       logo = await indexer.client
         .readContract({ address, abi: LOGO_ABI, functionName: 'logo' })
