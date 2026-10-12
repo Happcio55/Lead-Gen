@@ -91,7 +91,8 @@ export default function App() {
               </button>
             </div>
           </div>
-          {board.status === 'connecting' || board.status === 'syncing' ? (
+          {/* Only before the first board: a later 'syncing' reply (a cold server) keeps the last rows on screen. */}
+          {!board.rows.length && (board.status === 'connecting' || board.status === 'syncing') ? (
             <div className="syncing">
               <SyncMark />
               <b>Syncing with Robinhood Chain…</b>
