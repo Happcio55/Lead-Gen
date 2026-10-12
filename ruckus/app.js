@@ -1,4 +1,4 @@
-/* Ruckus — a social trading desk for Solana coins.
+/* Ruckus — a social trading desk for Solana coins, hosted by Rudy the raccoon.
    No build step, no framework, no server of its own.
    Live mode: coin data and charts from Jupiter, swaps through Jupiter Ultra,
    signed in the user's own wallet. Ruckus never holds anyone's funds.
@@ -22,6 +22,7 @@
   const SOL_MINT = 'So11111111111111111111111111111111111111112';
   const JUP = CONFIG.jupBase;
   const DATA = CONFIG.dataBase;
+  const ADDR_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -119,7 +120,7 @@
   const ageOf = (t) => (t.born ? (Date.now() - t.born) / 1000 : NaN);
   const shortAddr = (a) => (a && a.length > 10 ? a.slice(0, 4) + '…' + a.slice(-4) : a || '');
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const PALETTE = ['#f5a524', '#a3adb8', '#7cc4f2', '#e9c58f', '#ffcf6b', '#9ad17a', '#c9b2f0', '#f08a7e', '#8fd3c7', '#f4a3c4', '#b8c27a', '#ffd9a0'];
+  const PALETTE = ['#ffb38a', '#c5ccd6', '#9fd0f5', '#f1d39a', '#ffd76b', '#a8dc8b', '#d4c2f5', '#f5a29a', '#9fe0d3', '#f8b3d0', '#c9d18a', '#ffd9a8'];
   function colorFor(id) {
     let h = 7;
     for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
@@ -135,57 +136,96 @@
   }
 
   // ---------- Rudy the raccoon ----------
+  // Gradients live in one hidden <svg> so every Rudy on the page can share them.
+  function ensureRudyDefs() {
+    if ($('#rudy-defs')) return;
+    const holder = document.createElement('div');
+    holder.innerHTML = `<svg id="rudy-defs" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+      <radialGradient id="rd-fur" cx="38%" cy="28%" r="80%"><stop offset="0" style="stop-color:var(--fur-hi)"></stop><stop offset="0.55" style="stop-color:var(--fur)"></stop><stop offset="1" style="stop-color:var(--fur-lo)"></stop></radialGradient>
+      <linearGradient id="rd-mask" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--mask-hi)"></stop><stop offset="1" style="stop-color:var(--mask)"></stop></linearGradient>
+      <radialGradient id="rd-cheek" cx="50%" cy="30%" r="75%"><stop offset="0" style="stop-color:#ffffff"></stop><stop offset="1" style="stop-color:var(--cheek)"></stop></radialGradient>
+      <radialGradient id="rd-nose" cx="40%" cy="30%" r="70%"><stop offset="0" style="stop-color:#4b525e"></stop><stop offset="1" style="stop-color:#101216"></stop></radialGradient>
+      <radialGradient id="rd-gloss" cx="35%" cy="20%" r="60%"><stop offset="0" style="stop-color:#ffffff;stop-opacity:0.55"></stop><stop offset="1" style="stop-color:#ffffff;stop-opacity:0"></stop></radialGradient>
+    </defs></svg>`;
+    document.body.prepend(holder.firstElementChild);
+  }
   const MOOD_WORD = { neutral: 'calm', happy: 'pleased', cheer: 'thrilled', worried: 'nervous' };
-  function rudy(mood = 'neutral') {
-    return `<svg class="rudy mood-${mood}" viewBox="0 0 120 124" role="img" aria-label="Rudy the raccoon, looking ${MOOD_WORD[mood]}">
-  <g filter="url(#wobble)" stroke="var(--rudy-line)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M30 42 L23 12 L52 29 Z" fill="var(--rudy-fur)"></path>
-    <path d="M90 42 L97 12 L68 29 Z" fill="var(--rudy-fur)"></path>
-    <path d="M31 34 L28 20 L42 28 Z" fill="var(--rudy-dark)" stroke="none"></path>
-    <path d="M89 34 L92 20 L78 28 Z" fill="var(--rudy-dark)" stroke="none"></path>
-    <path d="M19 59 C17 37 37 24 60 24 C84 24 103 37 101 59 C99 79 83 89 60 89 C37 89 21 79 19 59 Z" fill="var(--rudy-fur)"></path>
-    <path d="M60 26 C56 33 56 39 60 46 C64 39 64 33 60 26 Z" fill="var(--rudy-dark)" stroke="none"></path>
-    <path d="M24 55 C29 42 46 42 55 51 L60 56 L65 51 C74 42 91 42 96 55 C98 65 87 71 75 66 L60 62 L45 66 C33 71 22 65 24 55 Z" fill="var(--rudy-dark)"></path>
-    <circle cx="43" cy="55" r="6.5" fill="var(--rudy-cheek)"></circle>
-    <circle cx="77" cy="55" r="6.5" fill="var(--rudy-cheek)"></circle>
-    <circle class="r-pupil" cx="44" cy="56" r="3.2" fill="var(--rudy-line)" stroke="none"></circle>
-    <circle class="r-pupil" cx="78" cy="56" r="3.2" fill="var(--rudy-line)" stroke="none"></circle>
-    <circle cx="45.5" cy="54.3" r="1.1" fill="var(--rudy-cheek)" stroke="none"></circle>
-    <circle cx="79.5" cy="54.3" r="1.1" fill="var(--rudy-cheek)" stroke="none"></circle>
-    <path d="M41 72 C45 63 75 63 79 72 C81 82 72 88 60 88 C48 88 39 82 41 72 Z" fill="var(--rudy-cheek)"></path>
-    <path d="M54 69 C56 65 64 65 66 69 C65 73 55 73 54 69 Z" fill="var(--rudy-line)"></path>
-    <path class="r-mouth r-smile" d="M52 77 Q60 85 68 77" fill="none"></path>
-    <path class="r-mouth r-flat" d="M54 79 Q60 81 66 79" fill="none"></path>
-    <path class="r-mouth r-frown" d="M53 82 Q60 76 67 82" fill="none"></path>
-    <path class="r-sweat" d="M100 38 C95 47 97 52 100.5 52 C104 52 105 47 100 38 Z" fill="var(--rudy-sweat)"></path>
-    <g class="r-spark" fill="none">
-      <path d="M10 30 L4 26"></path><path d="M8 40 L1 40"></path><path d="M110 30 L116 26"></path><path d="M112 40 L119 40"></path>
+  function rudy(mood = 'neutral', { track = false, blink = true } = {}) {
+    return `<svg class="rudy mood-${mood}${blink ? ' blink' : ''}" ${track ? 'data-track="1"' : ''} viewBox="0 0 200 200" role="img" aria-label="Rudy the raccoon, looking ${MOOD_WORD[mood]}">
+  <g class="r-head">
+    <g class="r-spark" stroke="var(--accent)" stroke-width="6" stroke-linecap="round"><path d="M26 44 L12 32"></path><path d="M174 44 L188 32"></path><path d="M100 18 L100 4"></path></g>
+    <path d="M40 74 C30 44 40 18 60 20 C74 22 84 42 86 60 Z" fill="url(#rd-fur)"></path>
+    <path d="M160 74 C170 44 160 18 140 20 C126 22 116 42 114 60 Z" fill="url(#rd-fur)"></path>
+    <path d="M50 62 C46 44 51 32 60 33 C68 35 73 46 74 56 Z" fill="var(--mask)"></path>
+    <path d="M150 62 C154 44 149 32 140 33 C132 35 127 46 126 56 Z" fill="var(--mask)"></path>
+    <path d="M100 38 C152 38 180 66 180 114 C180 160 147 186 100 186 C53 186 20 160 20 114 C20 66 48 38 100 38 Z" fill="url(#rd-fur)"></path>
+    <path d="M100 42 C93 54 92 66 100 78 C108 66 107 54 100 42 Z" fill="var(--fur-lo)" opacity="0.75"></path>
+    <path d="M30 106 C34 82 60 74 82 86 C90 91 96 96 100 100 C104 96 110 91 118 86 C140 74 166 82 170 106 C172 124 156 134 136 128 C122 124 110 120 100 120 C90 120 78 124 64 128 C44 134 28 124 30 106 Z" fill="url(#rd-mask)"></path>
+    <g class="r-brow-worry" stroke="var(--mask)" stroke-width="6" stroke-linecap="round"><path d="M54 74 L82 84"></path><path d="M146 74 L118 84"></path></g>
+    <circle cx="72" cy="105" r="19" fill="#ffffff"></circle>
+    <circle cx="128" cy="105" r="19" fill="#ffffff"></circle>
+    <g class="r-pupils">
+      <circle cx="74" cy="107" r="10.5" fill="#121418"></circle>
+      <circle cx="126" cy="107" r="10.5" fill="#121418"></circle>
+      <circle cx="78.5" cy="102" r="3.6" fill="#ffffff"></circle>
+      <circle cx="130.5" cy="102" r="3.6" fill="#ffffff"></circle>
     </g>
-    <g class="r-paws">
-      <circle cx="60" cy="106" r="13" fill="var(--accent)"></circle>
-      <path d="M56 99.5 L56 112.5 M56 99.5 L61.5 99.5 C66 99.5 66 106 61.5 106 L56 106 M61 106 L65 112.5" fill="none" stroke-width="2.4"></path>
-      <ellipse cx="45" cy="106" rx="7.5" ry="6.5" fill="var(--rudy-dark)"></ellipse>
-      <ellipse cx="75" cy="106" rx="7.5" ry="6.5" fill="var(--rudy-dark)"></ellipse>
+    <circle class="r-lid" cx="72" cy="105" r="20" fill="var(--mask)"></circle>
+    <circle class="r-lid" cx="128" cy="105" r="20" fill="var(--mask)"></circle>
+    <ellipse cx="48" cy="146" rx="12" ry="7" fill="var(--blush)" opacity="0.35"></ellipse>
+    <ellipse cx="152" cy="146" rx="12" ry="7" fill="var(--blush)" opacity="0.35"></ellipse>
+    <path d="M62 146 C62 126 80 120 100 120 C120 120 138 126 138 146 C138 166 120 176 100 176 C80 176 62 166 62 146 Z" fill="url(#rd-cheek)"></path>
+    <path d="M87 132 C87 124 113 124 113 132 C113 140 105 145 100 145 C95 145 87 140 87 132 Z" fill="url(#rd-nose)"></path>
+    <ellipse cx="95" cy="129" rx="5" ry="2.4" fill="#ffffff" opacity="0.55"></ellipse>
+    <g stroke="var(--mask)" stroke-width="4.5" stroke-linecap="round" fill="none">
+      <path class="r-mouth r-m-neutral" d="M90 157 Q100 162 110 157"></path>
+      <path class="r-mouth r-m-happy" d="M84 153 Q100 169 116 153"></path>
+      <path class="r-mouth r-m-worried" d="M88 163 Q100 155 112 163"></path>
     </g>
+    <path class="r-mouth r-m-cheer" d="M82 152 Q100 178 118 152 Z" fill="var(--mask)" stroke="var(--mask)" stroke-width="3" stroke-linejoin="round"></path>
+    <path class="r-tongue" d="M91 162 Q100 175 109 162 Q100 157 91 162 Z" fill="var(--tongue)"></path>
+    <path class="r-sweat" d="M170 70 C163 84 165 91 171 91 C177 91 179 84 170 70 Z" fill="#7cc4f2"></path>
+    <path d="M100 38 C152 38 180 66 180 114 C150 80 60 70 24 100 C30 62 56 38 100 38 Z" fill="url(#rd-gloss)"></path>
   </g>
 </svg>`;
   }
+  // Eyes follow the pointer on the Rudies that ask for it.
+  let eyeFrame = 0;
+  window.addEventListener('pointermove', (e) => {
+    if (reduceMotion || eyeFrame) return;
+    eyeFrame = requestAnimationFrame(() => {
+      eyeFrame = 0;
+      for (const svg of $$('.rudy[data-track]')) {
+        const r = svg.getBoundingClientRect();
+        if (!r.width) continue;
+        const dx = e.clientX - (r.left + r.width / 2);
+        const dy = e.clientY - (r.top + r.height * 0.52);
+        const d = Math.hypot(dx, dy) || 1;
+        const k = Math.min(1, d / 300);
+        const p = svg.querySelector('.r-pupils');
+        if (p) p.style.transform = `translate(${((dx / d) * 6 * k).toFixed(2)}px, ${((dy / d) * 5 * k).toFixed(2)}px)`;
+      }
+    });
+  });
 
   // ---------- state ----------
   const state = {
     mode: 'loading',            // 'loading' | 'live' | 'demo'
-    route: 'trade',
+    route: 'home',
     tok: new Map(),             // mint -> token
     lists: {},                  // tab -> [mint]
-    searchIds: null,
     candles: {},                // mint|tf -> [{t,o,h,l,c,v}]
     trades: {},                 // mint -> [{ts,side,usd,qty,who,sig}]
+    sparks: {},                 // mint -> [closes] (24h hourly)
     selected: store.get('selected2', null),
     marketTab: store.get('marketTab', 'hot'),
-    tokTab: 'hot',
-    tf: store.get('tf', '1m'),
-    search: '',
+    coinSort: 'hot',
+    tf: store.get('tf', '15m'),
+    centerTab: 'trades',
+    listFilter: '',
+    coinFilter: '',
     side: 'buy',
+    unit: 'usd',
     amount: '25',
     sellPct: null,
     maxImpact: store.get('maxImpact', CONFIG.maxImpactDefault),
@@ -203,16 +243,17 @@
     provider: null,
     wallet: null,
     solBal: null,
-    balances: {},               // mint -> {raw: integer string, ui}
-    // demo mode only
+    balances: {},               // own wallet: mint -> {raw, ui}
+    viewWallet: null,           // address shown on the wallet page
+    walletData: {},             // address -> {sol, bal: {mint: {raw, ui}}, at}
     cash: store.get('cash', CONFIG.startingCash),
     positions: store.get('positions', {}),
     mood: null,
     moodUntil: 0,
-    tokSort: { key: 'vol', dir: -1 },
     launchImg: null,
     lastMarketKey: '',
-    last: {},                   // poll timestamps
+    last: {},
+    homeTick: 0,
   };
   if (!state.refCode) {
     const a = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -235,7 +276,7 @@
   }
 
   // Trades made through Ruckus, per wallet, so we can show P&L on coins traded here.
-  const ledgerKey = () => 'ledger:' + state.wallet;
+  const ledgerKey = (w = state.wallet) => 'ledger:' + w;
   function ledgerAdd(mint, side, usd) {
     const l = store.get(ledgerKey(), {});
     const e = l[mint] || { bought: 0, sold: 0 };
@@ -261,12 +302,16 @@
       chg1h: (s1.priceChange || 0) / 100,
       chg5m: (s5.priceChange || 0) / 100,
       vol24: (s24.buyVolume || 0) + (s24.sellVolume || 0),
+      buys24: s24.numBuys || 0,
+      sells24: s24.numSells || 0,
       traders24: s24.numTraders || 0,
+      holderChg24: (s24.holderChange || 0) / 100,
       born: Date.parse(j.firstPool?.createdAt || j.createdAt || '') || null,
       launchpad: j.launchpad || null,
       verified: !!j.isVerified,
       organic: j.organicScoreLabel || null,
       audit: j.audit || {},
+      dev: j.dev || null,
       color: colorFor(j.id),
     };
   }
@@ -297,25 +342,31 @@
     else if (tab === 'watchlist') state.lists.watchlist = await loadMints([...state.watch]);
     else if (tab === 'holding') state.lists.holding = await loadHoldings();
   }
+  async function loadWalletData(addr) {
+    const b = await http(`${JUP}/ultra/v1/balances/${addr}`);
+    const bal = {};
+    for (const [k, v] of Object.entries(b)) if (k !== 'SOL') bal[k] = { raw: String(v.amount), ui: v.uiAmount };
+    const d = { sol: b.SOL ? b.SOL.uiAmount : 0, bal, at: Date.now() };
+    state.walletData[addr] = d;
+    const mints = Object.keys(bal).filter((m) => bal[m].ui > 0);
+    await loadMints(mints.slice(0, 200)).catch(() => {});
+    return d;
+  }
+  async function loadBalances() {
+    if (!state.wallet || !isLive()) return;
+    const d = await loadWalletData(state.wallet);
+    state.solBal = d.sol;
+    state.balances = d.bal;
+    updWalletBtn();
+  }
   async function loadHoldings() {
     if (!state.wallet) return [];
     await loadBalances();
-    const mints = Object.keys(state.balances).filter((m) => state.balances[m].ui > 0);
-    await loadMints(mints);
-    return mints
-      .filter((m) => state.tok.has(m))
+    return Object.keys(state.balances)
+      .filter((m) => state.balances[m].ui > 0 && state.tok.has(m))
       .sort((a, b) => holdingValue(b) - holdingValue(a));
   }
   const holdingValue = (m) => (state.balances[m]?.ui || 0) * (state.tok.get(m)?.price || 0);
-  async function loadBalances() {
-    if (!state.wallet || !isLive()) return;
-    const b = await http(`${JUP}/ultra/v1/balances/${state.wallet}`);
-    state.solBal = b.SOL ? b.SOL.uiAmount : 0;
-    const next = {};
-    for (const [k, v] of Object.entries(b)) if (k !== 'SOL') next[k] = { raw: String(v.amount), ui: v.uiAmount };
-    state.balances = next;
-    updWalletBtn();
-  }
   const TF = { '1m': '1_MINUTE', '5m': '5_MINUTE', '15m': '15_MINUTE', '1h': '1_HOUR' };
   async function loadCandles(id, tf) {
     const d = await http(`${DATA}/v2/charts/${id}?interval=${TF[tf]}&to=${Date.now()}&candles=150&type=price&quote=usd`);
@@ -326,9 +377,9 @@
     state.trades[id] = (d.txs || [])
       .map((x) => ({ ts: Date.parse(x.timestamp), side: x.type, usd: x.usdVolume, qty: x.amount, who: x.traderAddress, sig: x.txHash }))
       .sort((a, b) => b.ts - a.ts)
-      .slice(0, 50);
+      .slice(0, 60);
   }
-  // SOL, BTC and ETH for the ticker, priced by Jupiter (wrapped BTC/ETH on Solana track the real thing).
+  // SOL, BTC and ETH for the status bar, priced by Jupiter (wrapped BTC/ETH on Solana track the real thing).
   const MAJORS = { SOL: SOL_MINT, BTC: 'cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij', ETH: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs' };
   async function loadMajors() {
     try { await loadMints(Object.values(MAJORS)); } catch { /* keep what we have */ }
@@ -336,25 +387,87 @@
       const t = state.tok.get(mint);
       if (t?.price) state.majors[k] = { p: t.price, c: t.chg24 };
     }
-    renderTicker();
+    renderStatus();
   }
+
+  // ----- sparklines: 24 hourly closes per coin, fetched lazily as cards scroll into view -----
+  const sparkQueue = [];
+  let sparkActive = 0;
+  const sparkPending = new Set();
+  function queueSpark(id) {
+    if (state.sparks[id] || sparkPending.has(id)) return;
+    if (!isLive()) { demoSpark(id); return; }
+    sparkPending.add(id);
+    sparkQueue.push(id);
+    pumpSparks();
+  }
+  function pumpSparks() {
+    while (sparkActive < 3 && sparkQueue.length) {
+      const id = sparkQueue.shift();
+      sparkActive++;
+      http(`${DATA}/v2/charts/${id}?interval=1_HOUR&to=${Date.now()}&candles=24&type=price&quote=usd`)
+        .then((d) => { state.sparks[id] = (d.candles || []).map((c) => c.close); })
+        .catch(() => { state.sparks[id] = []; })
+        .finally(() => { sparkActive--; sparkPending.delete(id); paintSparks(id); pumpSparks(); });
+    }
+  }
+  function demoSpark(id) {
+    const cs = state.candles[id + '|1m'] || [];
+    state.sparks[id] = cs.slice(-48).map((k) => k.c);
+    paintSparks(id);
+  }
+  function paintSparks(id) {
+    for (const el of $$(`[data-spark="${CSS.escape(id)}"]`)) el.innerHTML = sparkSvg(state.sparks[id]);
+  }
+  let sparkObserver = null;
+  function hydrateSparks(root = document) {
+    if (!sparkObserver && 'IntersectionObserver' in window) {
+      sparkObserver = new IntersectionObserver((entries) => {
+        for (const en of entries) {
+          if (!en.isIntersecting) continue;
+          sparkObserver.unobserve(en.target);
+          queueSpark(en.target.dataset.spark);
+        }
+      }, { rootMargin: '200px' });
+    }
+    for (const el of $$('[data-spark]', root)) {
+      const id = el.dataset.spark;
+      if (state.sparks[id]) { if (!el.firstChild) el.innerHTML = sparkSvg(state.sparks[id]); continue; }
+      if (sparkObserver) sparkObserver.observe(el); else queueSpark(id);
+    }
+  }
+  function sparkSvg(values) {
+    if (!values || values.length < 2) return '<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path d="M0 15 H100" stroke="var(--line)" stroke-width="2" vector-effect="non-scaling-stroke" fill="none"></path></svg>';
+    let lo = Infinity, hi = -Infinity;
+    for (const v of values) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    const span = hi - lo || hi || 1;
+    const pts = values.map((v, i) => [(i / (values.length - 1)) * 100, 27 - ((v - lo) / span) * 24]);
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(2) + ' ' + p[1].toFixed(2)).join(' ');
+    const color = values[values.length - 1] >= values[0] ? 'var(--up)' : 'var(--down)';
+    const last = pts[pts.length - 1];
+    return `<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="${line} L100 30 L0 30 Z" fill="${color}" opacity="0.1"></path>
+      <path d="${line}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></path>
+      <circle cx="${last[0]}" cy="${last[1]}" r="2.4" fill="${color}" vector-effect="non-scaling-stroke"></circle></svg>`;
+  }
+  const sparkBox = (id, cls = 'spark-box') => `<div class="${cls}" data-spark="${esc(id)}">${state.sparks[id] ? sparkSvg(state.sparks[id]) : ''}</div>`;
 
   // ---------- demo data ----------
   const SUPPLY = 1e9;
-  // sym, name, price, volatility per tick, colour, age (minutes), holders, 24h change
+  // sym, name, price, volatility per tick, age (minutes), holders, 24h change
   const SEEDS = [
-    ['BINLID', 'Bin Lid', 0.00412, 0.012, '#f5a524', 2900, 8412, 0.34],
-    ['MASKED', 'Masked Bandit', 0.0187, 0.008, '#a3adb8', 12400, 21877, 0.081],
-    ['NIGHTSHIFT', 'Night Shift', 0.00093, 0.015, '#7cc4f2', 640, 2215, 1.12],
-    ['CRUMB', 'Crumb', 0.000061, 0.02, '#e9c58f', 95, 611, 2.4],
-    ['SODIUM', 'Streetlight', 0.00248, 0.01, '#ffcf6b', 5100, 9930, -0.12],
-    ['GRUB', 'Grub Club', 0.00731, 0.009, '#9ad17a', 8800, 14002, 0.05],
-    ['PAWS', 'Wet Paws', 0.000284, 0.016, '#c9b2f0', 410, 1840, -0.27],
-    ['ALLEY', 'Alley Cat', 0.0412, 0.006, '#f08a7e', 30100, 40210, 0.018],
-    ['RINSE', 'Rinse Cycle', 0.00119, 0.013, '#8fd3c7', 1700, 3320, -0.06],
-    ['TRASHTV', 'Trash TV', 0.000038, 0.022, '#f4a3c4', 22, 148, 3.8],
-    ['DUMPY', 'Dumpy', 0.00557, 0.011, '#b8c27a', 4300, 6120, 0.21],
-    ['MOONPIE', 'Half Moonpie', 0.000176, 0.017, '#ffd9a0', 260, 990, 0.62],
+    ['BINLID', 'Bin Lid', 0.00412, 0.012, 2900, 8412, 0.34],
+    ['MASKED', 'Masked Bandit', 0.0187, 0.008, 12400, 21877, 0.081],
+    ['NIGHTSHIFT', 'Night Shift', 0.00093, 0.015, 640, 2215, 1.12],
+    ['CRUMB', 'Crumb', 0.000061, 0.02, 95, 611, 2.4],
+    ['SODIUM', 'Streetlight', 0.00248, 0.01, 5100, 9930, -0.12],
+    ['GRUB', 'Grub Club', 0.00731, 0.009, 8800, 14002, 0.05],
+    ['PAWS', 'Wet Paws', 0.000284, 0.016, 410, 1840, -0.27],
+    ['ALLEY', 'Alley Cat', 0.0412, 0.006, 30100, 40210, 0.018],
+    ['RINSE', 'Rinse Cycle', 0.00119, 0.013, 1700, 3320, -0.06],
+    ['TRASHTV', 'Trash TV', 0.000038, 0.022, 22, 148, 3.8],
+    ['DUMPY', 'Dumpy', 0.00557, 0.011, 4300, 6120, 0.21],
+    ['MOONPIE', 'Half Moonpie', 0.000176, 0.017, 260, 990, 0.62],
   ];
   function makeCandles(price, sigma, r) {
     const n = 150, steps = 6, now = Date.now();
@@ -385,14 +498,15 @@
     const usd = Math.exp(Math.log(5) + rand() * Math.log(1200));
     return { ts, side: rand() < 0.53 ? 'buy' : 'sell', usd, qty: usd / t.price, who: pick(DEMO_WALLETS), sig: null };
   }
-  function makeDemoToken([sym, name, price, sigma, color, ageMin, holders, chg24], extra = {}) {
+  function makeDemoToken([sym, name, price, sigma, ageMin, holders, chg24], extra = {}) {
     const r = rng(sym.split('').reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7));
     const t = {
-      id: sym, sym, name, icon: null, decimals: 6, price, sigma, color, holders,
+      id: sym, sym, name, icon: null, decimals: 6, price, sigma, color: colorFor(sym), holders,
       mcap: price * SUPPLY, liq: price * SUPPLY * 0.08,
       born: Date.now() - ageMin * 60000,
       ref24: price / (1 + chg24), chg24, chg1h: 0, chg5m: 0,
       vol24: price * SUPPLY * (0.15 + r() * 0.5),
+      buys24: 0, sells24: 0, traders24: 0, holderChg24: 0,
       verified: false, organic: null, launchpad: 'demo',
       audit: { mintAuthorityDisabled: true, freezeAuthorityDisabled: true, topHoldersPercentage: 18 + r() * 30 },
       ...extra,
@@ -442,12 +556,13 @@
       t.chg5m = t.price / cs[Math.max(0, cs.length - 5)].o - 1;
       t.chg1h = t.price / cs[Math.max(0, cs.length - 60)].o - 1;
       if (rand() < 0.08) t.holders += rand() < 0.75 ? 1 : -1;
-      if (rand() < (t.id === state.selected ? 0.75 : 0.15)) {
+      if (rand() < (t.id === state.selected ? 0.75 : 0.2)) {
         const tr = state.trades[t.id];
         tr.unshift(fakeTrade(t));
         if (tr.length > 40) tr.pop();
       }
     }
+    if (demoTicks % 20 === 0) state.sparks = {};
     computeDemoLists();
   }
 
@@ -456,7 +571,7 @@
     const box = $('#toasts');
     const el = document.createElement('div');
     el.className = 'toast';
-    el.innerHTML = rudy(mood) + `<div>${msg}</div>`;
+    el.innerHTML = rudy(mood, { blink: false }) + `<div>${msg}</div>`;
     box.appendChild(el);
     while (box.children.length > 3) box.firstChild.remove();
     setTimeout(() => el.remove(), 6000);
@@ -467,7 +582,7 @@
     const inner = t.icon
       ? `<img src="${esc(t.icon)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`
       : '';
-    return `<span class="coin ${size}" style="background:${t.color}" aria-hidden="true"><i>${esc(String(t.sym).slice(0, 2))}</i>${inner}</span>`;
+    return `<span class="coin ${size}" style="background:${t.color || '#c5ccd6'}" aria-hidden="true"><i>${esc(String(t.sym).slice(0, 2))}</i>${inner}</span>`;
   }
   const STAR = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg>';
   const STAR_O = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg>';
@@ -476,19 +591,25 @@
     const on = state.watch.has(id);
     return `<button class="star" type="button" data-act="star" data-id="${esc(id)}" aria-pressed="${on}" aria-label="${on ? 'Remove' : 'Add'} ${esc(t?.sym)} ${on ? 'from' : 'to'} watchlist">${on ? STAR : STAR_O}</button>`;
   }
-  function walletAvatar(addr) {
-    return `<span class="avatar" style="background:${colorFor(addr)}" aria-hidden="true">${esc(addr.slice(0, 2))}</span>`;
+  function walletAvatar(addr, round = false) {
+    return `<a class="avatar" href="#w-${esc(addr)}" style="background:${colorFor(addr)}${round ? ';border-radius:50%' : ''}" aria-label="Open wallet ${esc(shortAddr(addr))}">${esc(addr.slice(0, 2))}</a>`;
   }
+  const walletLink = (addr) => `<a href="#w-${esc(addr)}">${esc(shortAddr(addr))}</a>`;
   function followBtn(addr) {
     const on = state.following.has(addr);
     return `<button class="btn btn-sm follow" type="button" data-act="follow" data-h="${esc(addr)}" aria-pressed="${on}">${on ? 'Following' : 'Follow'}</button>`;
   }
   function tickerLinks(text) {
-    const bySym = new Map([...state.tok.values()].map((t) => [t.sym.toUpperCase(), t.id]));
+    const bySym = symIndex();
     return esc(text).replace(/\$([A-Za-z0-9]{2,10})\b/g, (m, sym) => {
       const id = bySym.get(sym.toUpperCase());
       return id ? `<button type="button" class="tag" data-act="open" data-id="${esc(id)}">$${esc(sym)}</button>` : m;
     });
+  }
+  function symIndex() {
+    const m = new Map();
+    for (const t of state.tok.values()) if (!m.has(t.sym.toUpperCase())) m.set(t.sym.toUpperCase(), t.id);
+    return m;
   }
   function crumbsTotal() {
     return TASKS.reduce((s, t) => s + (state.tasksDone[t.id] ? t.crumbs : 0), 0);
@@ -496,95 +617,251 @@
   function loadingBlock(msg = 'Loading markets…') {
     return `<div class="empty">${rudy('neutral')}<b>${msg}</b></div>`;
   }
-
-  // ---------- ticker ----------
-  function renderTicker() {
-    const m = state.majors;
-    const status = {
-      live: '<span class="dot"></span>Live · Solana mainnet',
-      demo: '<span class="dot off"></span>Demo data · live markets unreachable',
-      loading: '<span class="dot off"></span>Connecting…',
-    }[state.mode];
-    $('#ticker').innerHTML = ['SOL', 'BTC', 'ETH'].map((k) =>
-      `<span><b>${k}</b>${isFinite(m[k].p) ? fmtUsd(m[k].p, m[k].p > 1000 ? 0 : 2) : '–'} <span class="${cls(m[k].c)}">${fmtPct(m[k].c)}</span></span>`).join('') +
-      `<span class="status">${status}</span>`;
+  const listTokens = (key) => (state.lists[key] || []).map((id) => state.tok.get(id)).filter(Boolean);
+  function featured() {
+    const hot = listTokens('hot').filter((t) => t.id !== SOL_MINT && !Object.values(MAJORS).includes(t.id));
+    return hot[0] || null;
   }
-  function renderBanner() {
-    const b = $('#mode-banner');
-    if (state.mode === 'demo') {
-      b.innerHTML = '<strong>Demo mode.</strong> Live market data couldn’t be reached, so prices are simulated and trades use a $1,000 paper balance.';
-    } else {
-      b.innerHTML = '<strong>Non-custodial.</strong> Trades route through Jupiter and you sign each one in your own wallet. Memecoins are high risk. Only trade what you can afford to lose.';
+
+  // ---------- status bar ----------
+  function renderStatus() {
+    const m = state.majors;
+    const live = isLive();
+    const mode = { live: 'Live', demo: 'Demo data', loading: 'Connecting' }[state.mode];
+    $('#status').innerHTML = `${rudy('happy', { blink: false })}<b>ruckus</b>
+      <span><span class="dot${live ? '' : ' off'}"></span> ${mode}</span>
+      ${['SOL', 'BTC', 'ETH'].map((k) => `<span class="tk"><em>${k}</em>${isFinite(m[k].p) ? fmtUsd(m[k].p, m[k].p > 1000 ? 0 : 2) : '–'} <span class="${cls(m[k].c)}">${fmtPct(m[k].c)}</span></span>`).join('')}
+      <span class="grow"></span>
+      <span class="muted">Swaps by Jupiter · 0% ruckus fee</span>
+      <span class="health${live ? '' : ' demo'}">${live ? '● Solana mainnet' : '● Paper trading'}</span>`;
+  }
+
+  // ---------- HOME ----------
+  function viewHome() {
+    return `<div class="home">
+  <div class="stage-wrap"><div class="stage">
+    <div class="orbit o1" aria-hidden="true"></div><div class="orbit o2" aria-hidden="true"></div><div class="pedestal" aria-hidden="true"></div>
+    <div class="bubble" id="h-bubble" aria-live="polite">Psst. I sniff out the coins that are moving.</div>
+    <div class="hero-rudy">${rudy('happy', { track: true })}</div>
+    <div class="fc fc-trader floaty"><span class="eyebrow">Wallets</span><div id="h-trader">${skelRows(2)}</div></div>
+    <div class="fc fc-market floaty d1"><span class="eyebrow">Markets</span><div id="h-market">${skelRows(3)}</div></div>
+    <div class="fc fc-buy floaty d2"><span class="eyebrow">Trading</span><div id="h-buy">${skelRows(3)}</div></div>
+    <div class="fc fc-pills" id="h-pills"></div>
+    <div class="fc fc-toast" id="h-toast" hidden></div>
+  </div></div>
+  <div class="hero-copy">
+    <h1>Find it first.<br><em>Trade it loud.</em></h1>
+    <div>
+      <p>Spot Solana coins as they start to move, follow the wallets that keep finding them first, and trade in one tap from your own wallet.</p>
+      <div class="cta-row"><a class="btn btn-primary btn-lg" href="#trade">Open Ruckus</a><a class="btn btn-lg" href="#coins">Browse coins</a></div>
+      <div class="hero-note" id="h-note"></div>
+    </div>
+  </div>
+  <section class="section">
+    <div class="section-head"><div><h2>Moving right now</h2><p>The most-traded Solana coins of the last hour. Tap one to open its chart and trade it.</p></div><a class="btn" href="#coins">All coins →</a></div>
+    <div class="cgrid" id="h-grid">${skelCards(8)}</div>
+  </section>
+  <section class="section">
+    <div class="section-head"><div><h2>How Ruckus works</h2><p>No sign-up, no deposits. Your coins stay in your wallet the whole time.</p></div></div>
+    <div class="how">
+      <div class="card"><div class="n">1</div><h3>Connect your wallet</h3><p>Phantom, Solflare or Backpack. Ruckus only ever asks your wallet to sign the trade you just set up.</p></div>
+      <div class="card"><div class="n">2</div><h3>Find the movers</h3><p>Trending coins, brand-new launches and the wallets buying them, with safety badges on every coin.</p></div>
+      <div class="card"><div class="n">3</div><h3>Trade in one tap</h3><p>Best price across Solana through Jupiter. Ruckus adds no fee, and a price-impact limit guards every trade.</p></div>
+    </div>
+  </section>
+</div>`;
+  }
+  const skelRows = (n) => Array.from({ length: n }, (_, i) => `<div class="skel" style="height:${i ? 14 : 22}px;margin:${i ? 8 : 0}px 0 0;width:${90 - i * 18}%"></div>`).join('');
+  const skelCards = (n) => Array.from({ length: n }, () => '<div class="card ccard"><div class="skel" style="height:44px"></div><div class="skel" style="height:58px"></div><div class="skel" style="height:40px"></div></div>').join('');
+
+  function updHome() {
+    if (state.route !== 'home') return;
+    const t = featured();
+    if (!t) return;
+    const trades = state.trades[t.id] || [];
+    const buys = trades.filter((x) => x.side === 'buy' && x.who && x.who !== 'you');
+    const agg = new Map();
+    for (const x of buys) agg.set(x.who, (agg.get(x.who) || 0) + x.usd);
+    const topBuyer = [...agg.entries()].sort((a, b) => b[1] - a[1])[0];
+
+    $('#h-market').innerHTML = `<div class="fc-row">${coinBadge(t, 'md')}<div style="flex:1;min-width:0"><b>$${esc(t.sym)}</b><span class="sub">${esc(t.name)} · Solana</span></div><span class="badge">24h</span></div>
+      <div class="big" style="margin-top:10px">${fmtCompact(t.mcap)} <span class="num ${cls(t.chg24)}" style="font-size:0.85rem">${fmtPct(t.chg24)}</span></div>
+      ${sparkBox(t.id)}
+      <div class="meta"><span>Vol <b>${fmtCompact(t.vol24)}</b></span><span>Holders <b>${t.holders ? fmtQty(t.holders) : '–'}</b></span><span>Liq <b>${fmtCompact(t.liq)}</b></span></div>`;
+
+    $('#h-trader').innerHTML = topBuyer
+      ? `<div class="fc-row">${walletAvatar(topBuyer[0])}<div style="flex:1;min-width:0"><b>${walletLink(topBuyer[0])}</b><span class="sub">Buying $${esc(t.sym)}</span></div>${followBtn(topBuyer[0])}</div>
+         <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px;display:flex;justify-content:space-between;align-items:end;gap:8px">
+           <div><span class="sub muted" style="font-size:0.78rem">Bought in the last few minutes</span><div class="big up">${fmtUsd(topBuyer[1], 0)}</div></div>
+           <div style="text-align:right"><span class="sub muted" style="font-size:0.78rem">Buys</span><div class="mono" style="font-weight:600">${buys.filter((x) => x.who === topBuyer[0]).length}</div></div>
+         </div>`
+      : `<div class="fc-row">${rudy('neutral')}<span class="sub">Watching for the next big buyer…</span></div>`;
+
+    const usd = 100;
+    $('#h-buy').innerHTML = `<div class="seg" style="margin-bottom:10px"><button type="button" class="buy" aria-pressed="true">Buy</button><button type="button" class="sell" data-act="home-trade" data-id="${esc(t.id)}" data-side="sell">Sell</button></div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><span class="big">$${usd}</span><span class="num muted">≈ ${fmtQty(usd / (t.price || 1))} $${esc(t.sym)}</span></div>
+      <div class="chips four" style="margin:10px 0">${[10, 50, 100, 500].map((v) => `<button type="button" class="chip" data-act="home-trade" data-id="${esc(t.id)}" data-v="${v}" aria-pressed="${v === usd}">$${v}</button>`).join('')}</div>
+      <button class="btn btn-primary btn-block" type="button" data-act="home-trade" data-id="${esc(t.id)}" data-v="${usd}">Buy $${esc(t.sym)}</button>`;
+
+    const recent = buys.slice(0, 3);
+    $('#h-pills').innerHTML = recent.map((x) => `<a class="mini-pill" href="#w-${esc(x.who)}"><span class="avatar" style="background:${colorFor(x.who)}">${esc(x.who.slice(0, 2))}</span>${esc(shortAddr(x.who))} <span class="up">+${fmtCompact(x.usd)}</span></a>`).join('');
+
+    const toastEl = $('#h-toast');
+    const x = trades[state.homeTick % Math.max(1, Math.min(trades.length, 8))];
+    if (x) {
+      toastEl.hidden = false;
+      toastEl.innerHTML = `<span class="check">${x.side === 'buy' ? '✓' : '↘'}</span>${esc(shortAddr(x.who))} ${x.side === 'buy' ? 'bought' : 'sold'} ${fmtUsd(x.usd)} of $${esc(t.sym)} · ${fmtAgo((Date.now() - x.ts) / 1000)} ago`;
+    }
+
+    const hot = listTokens('hot');
+    const up = hot.filter((k) => k.chg1h > 0).length;
+    $('#h-note').innerHTML = hot.length ? `<span class="dot"></span>${up} of ${hot.length} trending coins are up this hour` : '';
+
+    const tips = rudyTips(t);
+    $('#h-bubble').innerHTML = tickerLinks(tips[state.homeTick % tips.length]);
+
+    const grid = $('#h-grid');
+    if (grid && (!grid.dataset.filled || state.homeTick % 6 === 0)) {
+      grid.dataset.filled = '1';
+      grid.innerHTML = hot.filter((k) => k.id !== SOL_MINT).slice(0, 8).map(coinCard).join('');
+    } else if (grid) updCoinCards(grid);
+    hydrateSparks(view);
+  }
+  function rudyTips(t) {
+    const tips = [];
+    if (t.chg1h) tips.push(`$${t.sym} is ${t.chg1h >= 0 ? 'up' : 'down'} ${Math.abs(t.chg1h * 100).toFixed(1)}% this hour. ${t.chg1h > 0.2 ? 'Spicy.' : 'Keep an eye on it.'}`);
+    const fresh = listTokens('new').filter((k) => k.born && Date.now() - k.born < 3600000).length;
+    if (fresh) tips.push(`${fresh} new coins launched in the last hour. Most of them won't last. Check the badges.`);
+    const best = listTokens('hot').slice().sort((a, b) => b.chg1h - a.chg1h)[0];
+    if (best && best.id !== t.id) tips.push(`Biggest mover right now: $${best.sym}, ${fmtPct(best.chg1h)} in an hour.`);
+    tips.push('Psst. Before you buy, check the badges: mint renounced, no freeze, and who holds the supply.');
+    return tips;
+  }
+
+  // ---------- coin cards (home + coins page) ----------
+  function coinCard(t) {
+    const src = t.launchpad && t.launchpad !== 'demo' ? `<span class="src pad">${esc(t.launchpad)}</span>` : t.verified ? '<span class="src">Verified</span>' : `<span class="src" style="color:var(--muted)">Solana</span>`;
+    return `<article class="card ccard" data-act="open" data-id="${esc(t.id)}" data-card="${esc(t.id)}" tabindex="0">
+      <div class="row">${coinBadge(t, 'md')}<div class="who"><b>${esc(t.sym)}</b><span>${esc(t.name)}</span></div>${starBtn(t.id)}</div>
+      ${src}
+      <div class="mid"><div><div class="label" style="text-transform:none;letter-spacing:0">Market cap · 24h</div><div class="mc" data-f="mc">${fmtCompact(t.mcap)}</div><div class="num ${cls(t.chg24)}" data-f="chg">${fmtPct(t.chg24)}</div></div>${sparkBox(t.id)}</div>
+      <div class="figs3"><div><div class="k">Vol 24h</div><div class="v" data-f="vol">${fmtCompact(t.vol24)}</div></div><div><div class="k">Liquidity</div><div class="v">${fmtCompact(t.liq)}</div></div><div><div class="k">Holders</div><div class="v">${t.holders ? fmtQty(t.holders) : '–'}</div></div></div>
+      <div class="foot"><span><span class="dot${t.chg1h >= 0 ? '' : ' off'}" style="width:7px;height:7px"></span> ${fmtAgo(ageOf(t))} old${t.organic ? ' · ' + esc(t.organic) + ' organic' : ''}</span><span class="link-btn">Trade →</span></div>
+    </article>`;
+  }
+  function updCoinCards(root) {
+    for (const el of $$('[data-card]', root)) {
+      const t = state.tok.get(el.dataset.card);
+      if (!t) continue;
+      el.querySelector('[data-f="mc"]').textContent = fmtCompact(t.mcap);
+      const c = el.querySelector('[data-f="chg"]');
+      c.textContent = fmtPct(t.chg24);
+      c.className = 'num ' + cls(t.chg24);
+      el.querySelector('[data-f="vol"]').textContent = fmtCompact(t.vol24);
     }
   }
 
-  // ---------- trade view ----------
-  const MARKET_TABS = [['hot', 'Hot'], ['new', 'New'], ['top', 'Top'], ['watchlist', 'Watchlist'], ['holding', 'Holding']];
+  // ---------- COINS ----------
+  const COIN_SORTS = [['hot', 'Trending'], ['top', 'Most traded'], ['new', 'Newest'], ['mcap', 'Market cap'], ['gainers', 'Top gainers']];
+  function viewCoins() {
+    return `<div class="wrap">
+      <section class="card coins-head">
+        <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:start">
+          <div><h1>Coins</h1><div class="summary" id="coins-summary" style="margin-top:10px"></div></div>
+          <a class="btn btn-primary" href="#launch">Launch a coin</a>
+        </div>
+        <div class="coins-tools">
+          <input class="input" id="coin-filter" type="search" placeholder="Filter by ticker or name" autocomplete="off" value="${esc(state.coinFilter)}" aria-label="Filter coins">
+          <div class="pill-tabs" role="tablist" aria-label="Sort coins">${COIN_SORTS.map(([k, l]) => `<button type="button" role="tab" data-act="csort" data-k="${k}" aria-selected="${state.coinSort === k}">${l}</button>`).join('')}</div>
+        </div>
+      </section>
+      <div class="cgrid" id="coin-grid">${skelCards(12)}</div>
+    </div>`;
+  }
+  function coinIds() {
+    const s = state.coinSort;
+    let toks;
+    if (s === 'mcap' || s === 'gainers') {
+      const seen = new Map();
+      for (const k of ['hot', 'top', 'new']) for (const t of listTokens(k)) seen.set(t.id, t);
+      toks = [...seen.values()].sort((a, b) => (s === 'mcap' ? b.mcap - a.mcap : b.chg24 - a.chg24));
+    } else toks = listTokens(s);
+    const q = state.coinFilter.trim().toLowerCase();
+    return toks.filter((t) => t.id !== SOL_MINT && (!q || t.sym.toLowerCase().includes(q) || t.name.toLowerCase().includes(q)));
+  }
+  function renderCoins() {
+    const grid = $('#coin-grid');
+    if (!grid) return;
+    const need = state.coinSort === 'mcap' || state.coinSort === 'gainers' ? ['hot', 'top', 'new'] : [state.coinSort];
+    if (need.some((k) => !state.lists[k])) { grid.innerHTML = skelCards(12); return; }
+    const toks = coinIds();
+    grid.innerHTML = toks.length ? toks.map(coinCard).join('') : `<div class="card" style="grid-column:1/-1"><div class="empty">${rudy('worried')}<b>No coins match that filter.</b></div></div>`;
+    const all = listTokens('hot');
+    $('#coins-summary').innerHTML = `<span><b>${toks.length}</b> coins</span><span>24h volume <b>${fmtCompact(all.reduce((s, t) => s + t.vol24, 0))}</b> across trending</span><span>${isLive() ? '<span class="dot"></span> Live from Solana' : 'Demo coins'}</span>`;
+    hydrateSparks(grid);
+  }
 
+  // ---------- TRADE ----------
+  const MARKET_TABS = [['hot', 'Hot'], ['new', 'New'], ['top', 'Top'], ['watchlist', 'Watchlist'], ['holding', 'Holding']];
   function viewTrade() {
-    return `<div class="desk">
-  <section class="panel desk-markets" aria-label="Markets">
-    <div class="tabs" role="tablist" aria-label="Market lists">${MARKET_TABS.map(([k, l]) =>
-      `<button class="tab" role="tab" type="button" data-act="mtab" data-k="${k}" aria-selected="${state.marketTab === k}">${l}</button>`).join('')}</div>
-    <div class="market-search"><input class="input" id="mk-search" type="search" placeholder="Search name, ticker or mint" autocomplete="off" value="${esc(state.search)}" aria-label="Search coins"></div>
+    return `<div class="desk fill">
+  <div class="col-left panel-scroll"><section class="card" aria-label="Markets">
+    <div class="mk-top">
+      <div class="pill-tabs" role="tablist" aria-label="Market lists">${MARKET_TABS.map(([k, l]) => `<button type="button" role="tab" data-act="mtab" data-k="${k}" aria-selected="${state.marketTab === k}">${l}</button>`).join('')}</div>
+      <input class="input" id="mk-filter" type="search" placeholder="Filter this list" autocomplete="off" value="${esc(state.listFilter)}" aria-label="Filter coins">
+      <div class="mk-meta"><span id="mk-count"></span><span>MC · 24h</span></div>
+    </div>
     <ul class="market-list" id="mk-list" role="listbox" aria-label="Coins">${loadingBlock()}</ul>
-  </section>
-  <div class="desk-chart">
-    <section class="panel">
-      <div class="token-head" id="tok-head"></div>
-      <div class="token-flags" id="tok-flags"></div>
-      <div class="tabs tf" role="tablist" aria-label="Candle size">${Object.keys(TF).map((k) =>
-        `<button class="tab" role="tab" type="button" data-act="tf" data-k="${k}" aria-selected="${state.tf === k}">${k}</button>`).join('')}</div>
-      <div class="chart-box"><canvas id="chart" role="img" aria-label="Price chart"></canvas><span class="chart-note" id="chart-note"></span></div>
+  </section></div>
+  <div class="col-center stack">
+    <section class="card">
+      <div class="tok-head" id="tok-head"></div>
+      <div class="badges" id="tok-badges"></div>
+      <div class="chart-bar">
+        <div class="pill-tabs" role="tablist" aria-label="Candle size">${Object.keys(TF).map((k) => `<button type="button" role="tab" data-act="tf" data-k="${k}" aria-selected="${state.tf === k}">${k}</button>`).join('')}</div>
+        <span class="num muted" id="chart-note"></span>
+      </div>
+      <div class="chart-box"><canvas id="chart" role="img" aria-label="Price chart"></canvas></div>
       <div class="stat-row" id="tok-stats"></div>
     </section>
-    <section class="panel">
-      <div class="panel-head"><h2>Live trades</h2><span class="label" id="tape-sym"></span></div>
-      <div class="table-scroll"><table class="tape"><thead><tr><th>Age</th><th>Side</th><th class="r">USD</th><th class="r">Coins</th><th>Trader</th><th class="r">Tx</th></tr></thead><tbody id="tape"></tbody></table></div>
+    <section class="card">
+      <div class="subtabs"><div class="pill-tabs" role="tablist" aria-label="Coin details">${[['trades', 'Live trades'], ['buyers', 'Top buyers'], ['about', 'About']].map(([k, l]) => `<button type="button" role="tab" data-act="ctab" data-k="${k}" aria-selected="${state.centerTab === k}">${l}</button>`).join('')}</div><span class="label" id="tape-sym"></span></div>
+      <div id="center-pane"></div>
     </section>
   </div>
-  <div class="desk-side">
-    <section class="panel ticket" aria-label="Trade ticket">
-      <div class="ticket-rudy" id="ticket-rudy"></div>
-      <div class="panel-head"><h2 id="ticket-title">Trade</h2></div>
-      <div class="panel-body stack">
-        <div class="seg" role="group" aria-label="Buy or sell">
-          <button type="button" class="buy" data-act="side" data-side="buy" aria-pressed="${state.side === 'buy'}">Buy</button>
-          <button type="button" class="sell" data-act="side" data-side="sell" aria-pressed="${state.side === 'sell'}">Sell</button>
-        </div>
-        <div class="field">
-          <label class="label" for="amt">Amount in USD</label>
-          <div class="amount-wrap"><span>$</span><input class="input" id="amt" inputmode="decimal" autocomplete="off" value="${esc(state.amount)}"></div>
-          <div class="conv" id="conv"></div>
-        </div>
-        <div class="chips" id="chips"></div>
-        <dl class="quote" id="quote"></dl>
-        <div class="fee-line"><span class="slip"><label for="max-impact">Max price impact</label><input id="max-impact" inputmode="decimal" value="${esc(state.maxImpact)}">%</span><span>Slippage: auto</span></div>
-        <div class="err" id="ticket-err" role="alert"></div>
-        <button class="btn btn-primary btn-block" type="button" id="ticket-go" data-act="go"></button>
+  <div class="col-right panel-scroll stack">
+    <section class="card ticket" aria-label="Trade ticket">
+      <div class="ticket-head"><div><div class="label">Trade</div><b id="ticket-title"></b></div><div class="ticket-rudy" id="ticket-rudy"></div></div>
+      <div class="seg" role="group" aria-label="Buy or sell">
+        <button type="button" class="buy" data-act="side" data-side="buy" aria-pressed="${state.side === 'buy'}">Buy</button>
+        <button type="button" class="sell" data-act="side" data-side="sell" aria-pressed="${state.side === 'sell'}">Sell</button>
       </div>
-      <div class="panel-body stack panel-split">
-        <dl class="balance" id="balance"></dl>
-        <button class="btn btn-sm" type="button" data-act="reset" id="reset-btn" hidden>Reset paper balance</button>
+      <div class="amount-box">
+        <label class="label" for="amt" style="text-transform:none;letter-spacing:0;font-size:0.8rem">Amount</label>
+        <div class="row"><span class="cur" id="amt-cur">$</span><input id="amt" inputmode="decimal" autocomplete="off" value="${esc(state.amount)}"><button type="button" class="unit-btn" data-act="unit" id="unit-btn">USD ⇄</button></div>
+        <div class="conv"><span id="conv"></span><span id="conv2"></span></div>
       </div>
+      <div class="chips" id="chips"></div>
+      <dl class="quote" id="quote"></dl>
+      <div id="rudy-tip"></div>
+      <div class="fee-line"><span class="limit"><label for="max-impact">Max price impact</label><input id="max-impact" inputmode="decimal" value="${esc(state.maxImpact)}">%</span><span>Slippage auto · 0% ruckus fee</span></div>
+      <div class="err" id="ticket-err" role="alert"></div>
+      <button class="btn btn-block btn-lg buy" type="button" id="ticket-go" data-act="go"></button>
     </section>
-    <section class="panel">
-      <div class="panel-head"><h2>Top buyers right now</h2><a href="#den" class="label">Following</a></div>
-      <ul class="people" id="people"></ul>
-    </section>
+    <section class="card"><div class="card-head"><h3>Your position</h3><button class="link-btn" type="button" data-act="reset" id="reset-btn" hidden>Reset paper balance</button></div><div class="card-body"><dl class="balance" id="balance"></dl></div></section>
+    <section class="card"><div class="card-head"><h3>Traders to follow</h3><a class="link-btn" href="#den">See all</a></div><ul class="people" id="people"></ul></section>
   </div>
 </div>`;
   }
 
   function marketIds() {
-    let ids = state.search.trim() && state.searchIds ? state.searchIds : state.lists[state.marketTab];
+    const ids = state.lists[state.marketTab];
     if (!ids) return null;
-    ids = ids.filter((id) => state.tok.has(id));
-    if (state.search.trim() && !state.searchIds) {
-      const q = state.search.trim().toLowerCase();
-      ids = ids.filter((id) => { const t = state.tok.get(id); return t.sym.toLowerCase().includes(q) || t.name.toLowerCase().includes(q); });
-    }
-    return ids;
+    const q = state.listFilter.trim().toLowerCase();
+    return ids.filter((id) => {
+      const t = state.tok.get(id);
+      return t && (!q || t.sym.toLowerCase().includes(q) || t.name.toLowerCase().includes(q));
+    });
   }
   function marketFigs(t) {
     return `<div class="num">${fmtCompact(t.mcap)}</div><div class="num ${cls(t.chg24)}">${fmtPct(t.chg24)}</div>`;
@@ -594,23 +871,27 @@
     if (!list) return;
     const ids = marketIds();
     if (!ids) { list.innerHTML = loadingBlock(); state.lastMarketKey = ''; return; }
+    $('#mk-count').innerHTML = `<b>${ids.length}</b> coins · <span class="live"><span class="dot${isLive() ? '' : ' off'}" style="width:6px;height:6px"></span> ${isLive() ? 'Live' : 'Demo'}</span>`;
     const key = state.marketTab + '|' + ids.join(',') + '|' + state.selected + '|' + [...state.watch].join(',');
     if (force || key !== state.lastMarketKey) {
       state.lastMarketKey = key;
       if (!ids.length) {
-        const msg = state.search.trim() ? '<b>No coins match that search.</b>Try a ticker, a name or paste a mint address.' : {
+        const msg = state.listFilter.trim() ? '<b>No coins match that filter.</b>Use the search at the top to look up any coin.' : {
           watchlist: '<b>No coins on your watchlist.</b>Tap the star next to a coin to keep an eye on it.',
           holding: state.wallet || !isLive() ? '<b>Rudy’s pockets are empty.</b>Buy a coin and it shows up here.' : '<b>Connect your wallet</b>to see the coins you hold.',
         }[state.marketTab] || '<b>Nothing here yet.</b>';
         list.innerHTML = `<li class="empty">${rudy(state.marketTab === 'holding' ? 'neutral' : 'worried')}${msg}</li>`;
         return;
       }
-      list.innerHTML = ids.map((id) => {
+      const cap = window.innerWidth <= 780 && !state.showAllMk ? 15 : Infinity;
+      list.innerHTML = ids.slice(0, cap).map((id) => {
         const t = state.tok.get(id);
         return `<li class="market-row" role="option" tabindex="0" data-act="select" data-id="${esc(id)}" aria-selected="${id === state.selected}">
           ${coinBadge(t)}<div class="who"><b>${esc(t.sym)}</b><span>${esc(t.name)}</span></div>
+          ${sparkBox(id, 'mini-spark')}
           <div class="figs" data-figs="${esc(id)}">${marketFigs(t)}</div>${starBtn(id)}</li>`;
-      }).join('');
+      }).join('') + (ids.length > cap ? `<li style="padding:8px"><button class="btn btn-block" type="button" data-act="mk-all">Show all ${ids.length} coins</button></li>` : '');
+      hydrateSparks(list);
       return;
     }
     for (const id of ids) {
@@ -619,27 +900,29 @@
     }
   }
 
-  function flag(ok, yes, no) {
-    return `<span class="flag ${ok ? 'ok' : 'warn'}">${ok ? '✓' : '!'} ${ok ? yes : no}</span>`;
+  function badge(ok, yes, no) {
+    return `<span class="badge ${ok ? 'ok' : 'warn'}">${ok ? '✓' : '!'} ${ok ? yes : no}</span>`;
   }
   function updToken() {
     const t = sel();
     const head = $('#tok-head');
     if (!head) return;
     if (!t) { head.innerHTML = `<div class="title">${loadingBlock('Picking a coin…')}</div>`; return; }
-    const links = isLive() ? ` · <button type="button" class="linkish" data-act="copy-mint">Copy mint</button> · <a href="${solscanAcct(t.id)}" target="_blank" rel="noopener">Solscan</a>` : '';
+    const links = isLive()
+      ? `<span class="mono">${esc(shortAddr(t.id))}</span><button type="button" class="link-btn" data-act="copy-mint">Copy mint</button><button type="button" class="link-btn" data-act="share">Share</button><a href="${solscanAcct(t.id)}" target="_blank" rel="noopener">Solscan ↗</a><a href="https://dexscreener.com/solana/${esc(t.id)}" target="_blank" rel="noopener">DEX Screener ↗</a>`
+      : '<span>demo coin</span>';
     head.innerHTML = `${coinBadge(t, 'lg')}
-      <div class="title"><h1>${esc(t.name)} <small>$${esc(t.sym)}</small>${t.verified ? '<span class="flag ok">Verified</span>' : ''}</h1>
-      <p class="addr"><span class="mono">${isLive() ? esc(shortAddr(t.id)) : 'demo coin'}</span>${links}</p></div>
-      <div class="token-price"><div class="big">${fmtPrice(t.price)}</div><div class="num"><span class="${cls(t.chg1h)}">${fmtPct(t.chg1h)} 1h</span> · <span class="${cls(t.chg24)}">${fmtPct(t.chg24)} 24h</span></div></div>`;
+      <div class="title"><h1>${esc(t.name)} <small>$${esc(t.sym)}</small> ${starBtn(t.id)}</h1><div class="addr">${links}</div></div>
+      <div class="tok-price"><div class="big">${fmtPrice(t.price)}</div><div class="num"><span class="${cls(t.chg1h)}">${fmtPct(t.chg1h)} 1h</span> · <span class="${cls(t.chg24)}">${fmtPct(t.chg24)} 24h</span></div></div>`;
     const a = t.audit || {};
     const top = a.topHoldersPercentage;
-    $('#tok-flags').innerHTML = [
-      a.mintAuthorityDisabled != null ? flag(a.mintAuthorityDisabled, 'Mint renounced', 'Mint still active') : '',
-      a.freezeAuthorityDisabled != null ? flag(a.freezeAuthorityDisabled, 'No freeze', 'Can freeze wallets') : '',
-      top != null ? flag(top < 30, `Top holders ${top.toFixed(0)}%`, `Top holders own ${top.toFixed(0)}%`) : '',
-      t.organic ? `<span class="flag">${esc(t.organic)} organic activity</span>` : '',
-      t.launchpad && t.launchpad !== 'demo' ? `<span class="flag">${esc(t.launchpad)}</span>` : '',
+    $('#tok-badges').innerHTML = [
+      t.verified ? '<span class="badge ok">✓ Verified</span>' : '',
+      a.mintAuthorityDisabled != null ? badge(a.mintAuthorityDisabled, 'Mint renounced', 'Mint still active') : '',
+      a.freezeAuthorityDisabled != null ? badge(a.freezeAuthorityDisabled, 'No freeze', 'Can freeze wallets') : '',
+      top != null ? badge(top < 30, `Top holders ${top.toFixed(0)}%`, `Top holders own ${top.toFixed(0)}%`) : '',
+      t.organic ? `<span class="badge">${esc(t.organic)} organic activity</span>` : '',
+      t.launchpad && t.launchpad !== 'demo' ? `<span class="badge hot">${esc(t.launchpad)}</span>` : '',
     ].join('');
     $('#tok-stats').innerHTML = [
       ['Market cap', fmtCompact(t.mcap)],
@@ -649,32 +932,45 @@
       ['Age', fmtAgo(ageOf(t))],
     ].map(([k, v]) => `<div><div class="label">${k}</div><div class="val">${v}</div></div>`).join('');
     $('#tape-sym').textContent = '$' + t.sym;
-    $('#chart-note').textContent = `${isLive() ? state.tf : '1m'} candles${isLive() ? '' : ' · simulated'}`;
+    $('#chart-note').textContent = isLive() ? `${state.tf} candles · USD` : '1m candles · simulated';
   }
 
-  function updTape() {
-    const body = $('#tape');
-    if (!body) return;
-    const t = sel();
-    const list = t ? state.trades[t.id] : null;
-    if (!list) { body.innerHTML = '<tr><td colspan="6" class="muted">Loading trades…</td></tr>'; return; }
-    if (!list.length) { body.innerHTML = '<tr><td colspan="6" class="muted">No trades in the last few minutes.</td></tr>'; return; }
-    const now = Date.now();
-    body.innerHTML = list.slice(0, 14).map((x) => {
-      const mine = x.who === 'you' || (state.wallet && x.who === state.wallet);
-      const followed = state.following.has(x.who);
-      const who = mine ? '<b>you</b>' : `${followed ? '★ ' : ''}${isLive() ? `<a href="${solscanAcct(x.who)}" target="_blank" rel="noopener">${esc(shortAddr(x.who))}</a>` : esc(shortAddr(x.who))}`;
-      const tx = x.sig ? `<a href="${solscanTx(x.sig)}" target="_blank" rel="noopener" aria-label="View transaction">↗</a>` : '';
-      return `<tr${followed ? ' class="followed"' : ''}><td>${fmtAgo((now - x.ts) / 1000)}</td><td class="${x.side === 'buy' ? 'up' : 'down'}">${esc(x.side)}</td><td class="r">${fmtUsd(x.usd)}</td><td class="r">${fmtQty(x.qty)}</td><td>${who}</td><td class="r">${tx}</td></tr>`;
-    }).join('');
-  }
-
-  function updPeople() {
-    const box = $('#people');
+  function updCenter() {
+    const box = $('#center-pane');
     if (!box) return;
     const t = sel();
-    const list = t ? state.trades[t.id] : null;
-    if (!list) { box.innerHTML = ''; return; }
+    if (!t) { box.innerHTML = ''; return; }
+    if (state.centerTab === 'about') { box.innerHTML = aboutHtml(t); return; }
+    if (state.centerTab === 'buyers') { box.innerHTML = `<ul class="people">${buyersHtml(t, 10)}</ul>`; return; }
+    const list = state.trades[t.id];
+    if (!list) { box.innerHTML = `<div class="card-body">${skelRows(4)}</div>`; return; }
+    if (!list.length) { box.innerHTML = '<div class="empty">No trades in the last few minutes.</div>'; return; }
+    const now = Date.now();
+    box.innerHTML = `<div class="table-scroll"><table class="tape"><thead><tr><th>Age</th><th>Side</th><th class="r">USD</th><th class="r">Coins</th><th>Trader</th><th class="r">Tx</th></tr></thead><tbody>${list.slice(0, 16).map((x) => {
+      const mine = x.who === 'you' || (state.wallet && x.who === state.wallet);
+      const followed = state.following.has(x.who);
+      const who = mine ? '<b>you</b>' : `${followed ? '★ ' : ''}${walletLink(x.who)}`;
+      const tx = x.sig ? `<a href="${solscanTx(x.sig)}" target="_blank" rel="noopener" aria-label="View transaction">↗</a>` : '';
+      return `<tr${followed ? ' class="followed"' : ''}><td>${fmtAgo((now - x.ts) / 1000)}</td><td><span class="side-pill ${x.side === 'buy' ? 'buy' : 'sell'}">${esc(x.side)}</span></td><td class="r">${fmtUsd(x.usd)}</td><td class="r">${fmtQty(x.qty)}</td><td>${who}</td><td class="r">${tx}</td></tr>`;
+    }).join('')}</tbody></table></div>`;
+  }
+  function aboutHtml(t) {
+    const a = t.audit || {};
+    const rows = [
+      ['Mint address', isLive() ? `<span class="mono">${esc(t.id)}</span>` : 'demo coin'],
+      ['Launched', t.born ? `${new Date(t.born).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })} · ${fmtAgo(ageOf(t))} ago` : '–'],
+      ['Launchpad', t.launchpad && t.launchpad !== 'demo' ? esc(t.launchpad) : '–'],
+      ['Trades 24h', t.buys24 || t.sells24 ? `${t.buys24.toLocaleString('en-US')} buys · ${t.sells24.toLocaleString('en-US')} sells` : '–'],
+      ['Traders 24h', t.traders24 ? t.traders24.toLocaleString('en-US') : '–'],
+      ['Holder change 24h', t.holderChg24 ? `<span class="${cls(t.holderChg24)}">${fmtPct(t.holderChg24)}</span>` : '–'],
+      ['Top holders own', a.topHoldersPercentage != null ? a.topHoldersPercentage.toFixed(1) + '%' : '–'],
+      ['Developer wallet', t.dev ? walletLink(t.dev) : '–'],
+    ];
+    return `<div class="about-grid">${rows.map(([k, v]) => `<div><div class="label">${k}</div><div class="v">${v}</div></div>`).join('')}</div>`;
+  }
+  function buyersHtml(t, n = 4) {
+    const list = state.trades[t.id];
+    if (!list) return `<li class="empty">${rudy('neutral')}Loading buyers…</li>`;
     const agg = new Map();
     for (const x of list) {
       if (x.side !== 'buy' || !x.who || x.who === 'you') continue;
@@ -683,36 +979,72 @@
       a.n++;
       agg.set(x.who, a);
     }
-    const top = [...agg.entries()].sort((a, b) => b[1].usd - a[1].usd).slice(0, 4);
-    box.innerHTML = top.length ? top.map(([addr, a]) => `<li class="person">${walletAvatar(addr)}
-      <div><b>${isLive() ? `<a href="${solscanAcct(addr)}" target="_blank" rel="noopener">${esc(shortAddr(addr))}</a>` : esc(shortAddr(addr))}</b><span>bought ${fmtUsd(a.usd)} of $${esc(t.sym)} · ${a.n} trade${a.n > 1 ? 's' : ''}</span></div>
+    const top = [...agg.entries()].sort((a, b) => b[1].usd - a[1].usd).slice(0, n);
+    return top.length ? top.map(([addr, a]) => `<li class="person">${walletAvatar(addr)}
+      <div><b>${walletLink(addr)}</b><span>bought ${fmtUsd(a.usd)} of $${esc(t.sym)} · ${a.n} trade${a.n > 1 ? 's' : ''}</span></div>
       ${followBtn(addr)}</li>`).join('')
       : `<li class="empty">${rudy('neutral')}No buyers in the latest trades.</li>`;
+  }
+  function updPeople() {
+    const box = $('#people');
+    const t = sel();
+    if (box && t) box.innerHTML = buyersHtml(t, 4);
+  }
+
+  // ----- Rudy's safety read on the selected coin -----
+  function safetyRead(t) {
+    if (!t || !isLive()) return null;
+    const a = t.audit || {};
+    if (a.mintAuthorityDisabled === false) return { kind: 'warn', text: 'The mint is still active. The team can create more coins whenever they like.' };
+    if (a.freezeAuthorityDisabled === false) return { kind: 'warn', text: 'This coin can freeze wallets. You might not be able to sell.' };
+    if (a.topHoldersPercentage > 50) return { kind: 'warn', text: `The top holders own ${a.topHoldersPercentage.toFixed(0)}% of the supply. One big sell can crash it.` };
+    if (t.liq && t.liq < 10000) return { kind: 'warn', text: `Only ${fmtCompact(t.liq)} of liquidity. Bigger trades will move the price a lot.` };
+    if (t.born && Date.now() - t.born < 3600000) return { kind: '', text: 'Brand new, less than an hour old. Things move fast here.' };
+    if (a.mintAuthorityDisabled && a.freezeAuthorityDisabled) return { kind: 'good', text: 'Mint renounced, no freeze, supply spread out. Looks clean to me.' };
+    return null;
+  }
+  function updTip() {
+    const box = $('#rudy-tip');
+    if (!box) return;
+    const r = safetyRead(sel());
+    box.innerHTML = r ? `<div class="tip ${r.kind}">${rudy(r.kind === 'warn' ? 'worried' : 'happy', { blink: false })}<span>${esc(r.text)}</span></div>` : '';
   }
 
   // ----- ticket -----
   function updChips() {
     const box = $('#chips');
     if (!box) return;
-    box.innerHTML = state.side === 'buy'
-      ? [10, 25, 50, 100].map((v) => `<button type="button" class="chip" data-act="chip" data-v="${v}">$${v}</button>`).join('') + '<button type="button" class="chip" data-act="chip" data-v="max">Max</button>'
-      : [25, 50, 75, 100].map((v) => `<button type="button" class="chip" data-act="pct" data-v="${v}">${v}%</button>`).join('');
+    if (state.side === 'sell') {
+      box.className = 'chips four';
+      box.innerHTML = [25, 50, 75, 100].map((v) => `<button type="button" class="chip" data-act="pct" data-v="${v}" aria-pressed="${state.sellPct === v}">${v}%</button>`).join('');
+    } else {
+      box.className = 'chips';
+      const vals = state.unit === 'sol' ? [0.1, 0.25, 0.5, 1] : [10, 25, 50, 100];
+      box.innerHTML = vals.map((v) => `<button type="button" class="chip" data-act="chip" data-v="${v}">${state.unit === 'sol' ? v : '$' + v}</button>`).join('') + '<button type="button" class="chip" data-act="chip" data-v="max">Max</button>';
+    }
   }
   function tokenBalanceUi(id) {
     if (!isLive()) return state.positions[id]?.qty || 0;
     return state.balances[id]?.ui || 0;
+  }
+  // The trade in USD, whatever unit the user typed in.
+  function amountUsd() {
+    const v = parseFloat(state.amount);
+    if (!(v > 0)) return NaN;
+    return state.side === 'buy' && state.unit === 'sol' ? v * solPrice() : v;
   }
   // Works out what the trade spends, in raw on-chain units.
   function swapParams() {
     const t = sel();
     if (!t) return { error: 'Pick a coin first.' };
     if (t.id === SOL_MINT) return { error: 'Pick a coin other than SOL. Trades here are coin ↔ SOL.' };
-    const usd = parseFloat(state.amount);
+    const usd = amountUsd();
     if (state.side === 'buy') {
-      if (!(usd > 0)) return { error: 'Enter an amount above $0.' };
+      if (!(usd > 0)) return { error: 'Enter an amount above zero.' };
       const sp = solPrice();
       if (!(sp > 0)) return { error: 'Waiting for the SOL price. Try again in a moment.' };
-      const lamports = Math.floor((usd / sp) * 1e9);
+      const sol = state.unit === 'sol' ? parseFloat(state.amount) : usd / sp;
+      const lamports = Math.floor(sol * 1e9);
       if (state.wallet && state.solBal != null && lamports / 1e9 > state.solBal - 0.002) {
         return { error: `Not enough SOL. You have ${state.solBal.toFixed(4)} SOL (${fmtUsd(state.solBal * sp)}) and need a little extra for fees.` };
       }
@@ -723,7 +1055,7 @@
     let raw;
     if (state.sellPct) raw = (BigInt(bal.raw) * BigInt(state.sellPct)) / 100n;
     else {
-      if (!(usd > 0)) return { error: 'Enter an amount above $0.' };
+      if (!(usd > 0)) return { error: 'Enter an amount above zero.' };
       const ui = Math.min(usd / t.price, bal.ui);
       raw = BigInt(Math.floor(ui * 10 ** t.decimals));
       if (raw > BigInt(bal.raw)) raw = BigInt(bal.raw);
@@ -772,7 +1104,7 @@
     const q = state.quote;
     if (!isLive() || !t || !q) { box.innerHTML = ''; return; }
     if (q.loading) { box.innerHTML = '<dt>Finding the best route…</dt><dd></dd>'; return; }
-    if (q.failed) { box.innerHTML = '<dt class="down">Couldn’t get a price. Check your connection.</dt><dd></dd>'; return; }
+    if (q.failed) { box.innerHTML = '<dt class="down wide">Couldn’t get a price. Check your connection.</dt>'; return; }
     const { o } = q;
     const outSym = state.side === 'buy' ? t.sym : 'SOL';
     const outDec = state.side === 'buy' ? t.decimals : 9;
@@ -782,7 +1114,7 @@
     const fee = (o.feeBps ?? o.platformFee?.feeBps ?? 0) / 100;
     box.innerHTML = `
       <dt>You get about</dt><dd>${fmtQty(out)} ${esc(outSym)}</dd>
-      <dt>Minimum</dt><dd>${fmtQty(min)} ${esc(outSym)}</dd>
+      <dt>At least</dt><dd>${fmtQty(min)} ${esc(outSym)}</dd>
       <dt>Price impact</dt><dd class="${imp > parseFloat(state.maxImpact) ? 'down' : ''}">${imp.toFixed(2)}%</dd>
       <dt>Fees</dt><dd>Ruckus 0% · Jupiter ${fee.toFixed(2)}%</dd>
       ${o.errorMessage ? `<dt class="down wide">${esc(o.errorMessage)}</dt>` : ''}`;
@@ -791,18 +1123,26 @@
     const t = sel();
     const go = $('#ticket-go');
     if (!go) return;
-    const usd = parseFloat(state.amount);
-    const conv = $('#conv');
+    const sellSide = state.side === 'sell';
+    const unit = sellSide ? 'usd' : state.unit;
+    $('#amt-cur').textContent = unit === 'sol' ? '◎' : '$';
+    const ub = $('#unit-btn');
+    ub.hidden = sellSide;
+    ub.textContent = unit === 'sol' ? 'SOL ⇄' : 'USD ⇄';
+    const usd = amountUsd();
+    const sp = solPrice();
     if (t && usd > 0 && t.price > 0) {
-      conv.textContent = `≈ ${isFinite(solPrice()) ? (usd / solPrice()).toFixed(4) + ' SOL · ' : ''}${fmtQty(usd / t.price)} ${t.sym}`;
-    } else conv.textContent = 'Enter an amount';
-    const verb = state.side === 'buy' ? 'Buy' : 'Sell';
-    $('#ticket-title').textContent = t ? `${verb} $${t.sym}` : 'Trade';
+      $('#conv').textContent = `≈ ${fmtQty(usd / t.price)} ${t.sym}`;
+      $('#conv2').textContent = unit === 'sol' ? fmtUsd(usd) : isFinite(sp) ? `${(usd / sp).toFixed(4)} SOL` : '';
+    } else { $('#conv').textContent = 'Enter an amount'; $('#conv2').textContent = ''; }
+    const verb = sellSide ? 'Sell' : 'Buy';
+    $('#ticket-title').textContent = t ? `$${t.sym}` : 'Pick a coin';
     if (state.busy) go.textContent = state.busy;
     else if (isLive() && !state.wallet) go.textContent = 'Connect wallet to trade';
     else go.textContent = t ? `${verb} $${t.sym}` : verb;
     go.disabled = !!state.busy;
-    go.classList.toggle('sell', state.side === 'sell');
+    go.classList.toggle('sell', sellSide);
+    go.classList.toggle('buy', !sellSide);
     $('#reset-btn').hidden = isLive();
     $('#balance').innerHTML = balanceRows(t).map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
     updMood();
@@ -821,13 +1161,13 @@
       if (pos?.qty > 0) rows.push([`Your $${esc(t.sym)}`, `${fmtQty(pos.qty)} · <span class="${cls(pos.qty * t.price - pos.cost)}">${fmtUsd(pos.qty * t.price)}</span>`]);
       return rows;
     }
-    if (!state.wallet) return [['Wallet', 'not connected']];
+    if (!state.wallet) return [['Wallet', '<button type="button" class="link-btn" data-act="connect">Connect to see it</button>']];
     const sp = solPrice();
-    const rows = [['SOL balance', state.solBal == null ? '…' : `${state.solBal.toFixed(4)} · ${fmtUsd(state.solBal * sp)}`]];
+    const rows = [['SOL', state.solBal == null ? '…' : `${state.solBal.toFixed(4)} · ${fmtUsd(state.solBal * sp)}`]];
     if (t && t.id !== SOL_MINT) {
       const ui = tokenBalanceUi(t.id);
       const val = ui * t.price;
-      rows.push([`Your $${esc(t.sym)}`, ui > 0 ? `${fmtQty(ui)} · ${fmtUsd(val)}` : 'none']);
+      rows.push([`$${esc(t.sym)}`, ui > 0 ? `${fmtQty(ui)} · ${fmtUsd(val)}` : 'none']);
       const led = store.get(ledgerKey(), {})[t.id];
       if (led) {
         const pnl = val + led.sold - led.bought;
@@ -841,6 +1181,8 @@
     if (state.mood && Date.now() < state.moodUntil) return state.mood;
     const t = sel();
     if (!t) return 'neutral';
+    const s = safetyRead(t);
+    if (s?.kind === 'warn') return 'worried';
     const r = t.chg5m || 0;
     return r > 0.01 ? 'happy' : r < -0.03 ? 'worried' : 'neutral';
   }
@@ -850,7 +1192,7 @@
     const mood = currentMood();
     if (box.dataset.mood !== mood) {
       box.dataset.mood = mood;
-      box.innerHTML = rudy(mood);
+      box.innerHTML = rudy(mood, { track: true });
     }
   }
   function setMood(mood, ms = 2600) {
@@ -937,10 +1279,10 @@
     const t = sel();
     const err = $('#ticket-err');
     err.textContent = '';
-    let usd = parseFloat(state.amount);
+    let usd = amountUsd();
     const pos = state.positions[t.id] || { qty: 0, cost: 0 };
     if (state.side === 'sell' && state.sellPct) usd = pos.qty * t.price * (state.sellPct / 100);
-    if (!(usd > 0)) { err.textContent = 'Enter an amount above $0.'; return; }
+    if (!(usd > 0)) { err.textContent = 'Enter an amount above zero.'; return; }
     const impact = usd / (t.mcap * 0.002) / 100;
     if (impact * 100 > parseFloat(state.maxImpact)) {
       err.textContent = `This trade would move the price ${(impact * 100).toFixed(1)}%, above your ${state.maxImpact}% limit.`;
@@ -979,8 +1321,9 @@
   function refreshTrade(forceList = false) {
     updMarkets(forceList);
     updToken();
-    updTape();
+    updCenter();
     updPeople();
+    updTip();
     updTicket();
     drawChart();
   }
@@ -1012,7 +1355,7 @@
       g.textAlign = 'left';
       return;
     }
-    const axisW = 84, padT = 30, padB = 20, volH = 44;
+    const axisW = 86, padT = 16, padB = 22, volH = 48;
     const plotW = W - axisW;
     const plotH = H - padT - padB - volH;
     const n = Math.min(all.length, Math.max(24, Math.floor(plotW / 8)));
@@ -1030,14 +1373,16 @@
       const p = lo + ((hi - lo) * i) / 4;
       const yy = Math.round(y(p)) + 0.5;
       g.strokeStyle = col('--line');
+      g.setLineDash([2, 4]);
       g.beginPath(); g.moveTo(0, yy); g.lineTo(plotW, yy); g.stroke();
+      g.setLineDash([]);
       if (Math.abs(yy - lastY) < 16) continue; // the last-price tag sits here
       g.fillStyle = col('--muted');
-      g.fillText(fmtPrice(p), plotW + 8, yy);
+      g.fillText(fmtPrice(p), plotW + 10, yy);
     }
 
     const step = plotW / n;
-    const bw = Math.max(2, step * 0.62);
+    const bw = Math.max(2, step * 0.6);
     const upC = col('--up'), dnC = col('--down');
     cs.forEach((k, i) => {
       const x = Math.round(i * step + step / 2) + 0.5;
@@ -1046,10 +1391,12 @@
       g.fillStyle = color;
       g.beginPath(); g.moveTo(x, y(k.h)); g.lineTo(x, y(k.l)); g.stroke();
       const top = y(Math.max(k.o, k.c)), bot = y(Math.min(k.o, k.c));
-      g.fillRect(x - bw / 2, top, bw, Math.max(1, bot - top));
+      const h = Math.max(1, bot - top);
+      if (g.roundRect) { g.beginPath(); g.roundRect(x - bw / 2, top, bw, h, Math.min(2, bw / 2)); g.fill(); }
+      else g.fillRect(x - bw / 2, top, bw, h);
       if (vmax > 0) {
-        const vh = (k.v / vmax) * (volH - 8);
-        g.globalAlpha = 0.35;
+        const vh = (k.v / vmax) * (volH - 10);
+        g.globalAlpha = 0.25;
         g.fillRect(x - bw / 2, H - padB - vh, bw, vh);
         g.globalAlpha = 1;
       }
@@ -1061,11 +1408,12 @@
     g.beginPath(); g.moveTo(0, ly); g.lineTo(plotW, ly); g.stroke();
     g.setLineDash([]);
     const label = fmtPrice(last);
-    const tw = g.measureText(label).width + 12;
+    const tw = Math.min(g.measureText(label).width + 14, axisW - 4);
     g.fillStyle = col('--accent');
-    g.fillRect(plotW + 2, ly - 9, Math.min(tw, axisW - 2), 18);
+    if (g.roundRect) { g.beginPath(); g.roundRect(plotW + 3, ly - 10, tw, 20, 6); g.fill(); }
+    else g.fillRect(plotW + 3, ly - 10, tw, 20);
     g.fillStyle = col('--accent-ink');
-    g.fillText(label, plotW + 8, ly);
+    g.fillText(label, plotW + 10, ly);
 
     const fmt = timeFmt || ((t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
     g.fillStyle = col('--muted');
@@ -1090,66 +1438,9 @@
     });
   }
 
-  // ---------- tokens view ----------
-  const TOK_COLS = [
-    ['sym', 'Coin'], ['price', 'Price'], ['chg1h', '1h'], ['chg24', '24h'], ['mcap', 'Market cap'], ['liq', 'Liquidity'], ['vol', 'Volume 24h'], ['holders', 'Holders'], ['age', 'Age'],
-  ];
-  const tokVal = {
-    sym: (t) => t.sym.toLowerCase(), price: (t) => t.price, chg1h: (t) => t.chg1h, chg24: (t) => t.chg24, mcap: (t) => t.mcap,
-    liq: (t) => t.liq, vol: (t) => t.vol24, holders: (t) => t.holders, age: (t) => -(t.born || 0),
-  };
-  function viewTokens() {
-    return `<div class="page-head"><div><h1>Every coin on the block</h1><p>${isLive() ? 'Live from Solana.' : 'Demo coins.'} Tap a row to open its chart and trade it.</p></div>
-      <input class="input narrow" id="tok-search" type="search" placeholder="Filter this list" autocomplete="off" aria-label="Filter coins" value="${esc(state.search)}"></div>
-      <section class="panel">
-        <div class="tabs" role="tablist" aria-label="Lists">${[['hot', 'Trending'], ['new', 'New'], ['top', 'Top traded']].map(([k, l]) =>
-          `<button class="tab" role="tab" type="button" data-act="ttab" data-k="${k}" aria-selected="${state.tokTab === k}">${l}</button>`).join('')}</div>
-        <div class="table-scroll"><table class="big-table">
-        <thead><tr id="tok-headrow"></tr></thead><tbody id="tok-body"></tbody></table></div></section>`;
-  }
-  function renderTokRows() {
-    const body = $('#tok-body');
-    if (!body) return;
-    const { key, dir } = state.tokSort;
-    const q = state.search.trim().toLowerCase();
-    const ids = state.lists[state.tokTab];
-    $('#tok-headrow').innerHTML = TOK_COLS.map(([k, l]) => {
-      const s = key === k ? ` aria-sort="${dir > 0 ? 'ascending' : 'descending'}"` : '';
-      return `<th${s}><button type="button" data-act="sort" data-k="${k}">${l}${s ? (dir > 0 ? ' ↑' : ' ↓') : ''}</button></th>`;
-    }).join('') + '<th><span class="sr-only">Watch</span></th>';
-    if (!ids) { body.innerHTML = `<tr><td colspan="10">${loadingBlock()}</td></tr>`; return; }
-    const list = ids.map((id) => state.tok.get(id)).filter(Boolean)
-      .filter((t) => !q || t.sym.toLowerCase().includes(q) || t.name.toLowerCase().includes(q))
-      .sort((a, b) => {
-        const A = tokVal[key](a), B = tokVal[key](b);
-        return (A > B ? 1 : A < B ? -1 : 0) * dir;
-      });
-    body.innerHTML = list.length ? list.map((t) => `<tr data-act="open" data-id="${esc(t.id)}">
-      <td><div class="tok-cell">${coinBadge(t)}<div><b>${esc(t.sym)}</b><span>${esc(t.name)}</span></div></div></td>
-      <td data-f="price"></td><td data-f="chg1h"></td><td data-f="chg24"></td><td data-f="mc"></td><td data-f="liq"></td><td data-f="vol"></td><td data-f="holders"></td><td data-f="age"></td>
-      <td>${starBtn(t.id)}</td></tr>`).join('')
-      : `<tr><td colspan="10"><div class="empty">${rudy('worried')}<b>No coins match that filter.</b></div></td></tr>`;
-    updTokCells();
-  }
-  function updTokCells() {
-    for (const tr of $$('#tok-body tr[data-id]')) {
-      const t = state.tok.get(tr.dataset.id);
-      if (!t) continue;
-      const set = (f, html) => { tr.querySelector(`[data-f="${f}"]`).innerHTML = html; };
-      set('price', fmtPrice(t.price));
-      set('chg1h', `<span class="${cls(t.chg1h)}">${fmtPct(t.chg1h)}</span>`);
-      set('chg24', `<span class="${cls(t.chg24)}">${fmtPct(t.chg24)}</span>`);
-      set('mc', fmtCompact(t.mcap));
-      set('liq', fmtCompact(t.liq));
-      set('vol', fmtCompact(t.vol24));
-      set('holders', t.holders ? t.holders.toLocaleString('en-US') : '–');
-      set('age', fmtAgo(ageOf(t)));
-    }
-  }
-
-  // ---------- den (social) ----------
+  // ---------- DEN ----------
   const SEED_POSTS = [
-    { h: 'Rudy', m: 3, text: 'Welcome to The Den. Tag a coin like $SOL and it links straight to its chart.', likes: 12 },
+    { h: 'Rudy', m: 3, text: 'Welcome to The Den. Tag a coin like $SOL and it shows up right in your post.', likes: 12 },
     { h: 'Rudy', m: 40, text: 'Before you buy anything new, check the badges under the coin name: mint renounced, no freeze, and how much the top holders own.', likes: 31 },
   ];
   const startedAt = Date.now();
@@ -1157,79 +1448,189 @@
     const seeded = SEED_POSTS.map((p, i) => ({ ...p, id: 's' + i, ts: startedAt - p.m * 60000 }));
     return [...state.myPosts, ...seeded].sort((a, b) => b.ts - a.ts);
   }
+  function postEmbed(text) {
+    const m = /\$([A-Za-z0-9]{2,10})\b/.exec(text);
+    if (!m) return '';
+    const id = symIndex().get(m[1].toUpperCase());
+    const t = id && state.tok.get(id);
+    if (!t) return '';
+    return `<div class="embed" data-act="open" data-id="${esc(t.id)}">${coinBadge(t)}<div><b>$${esc(t.sym)}</b><span class="sub">${fmtCompact(t.mcap)} · ${fmtPrice(t.price)}</span></div>${sparkBox(t.id)}<span class="num ${cls(t.chg24)}">${fmtPct(t.chg24)}</span></div>`;
+  }
   function postHtml(p) {
     const isRudy = p.h === 'Rudy';
     const liked = state.liked.has(p.id);
     const av = isRudy
-      ? `<span class="avatar rudy-av" aria-hidden="true">${rudy('happy')}</span>`
-      : `<span class="avatar" style="background:${state.wallet ? colorFor(state.wallet) : '#a3adb8'}" aria-hidden="true">ME</span>`;
+      ? `<span class="avatar rudy-av" aria-hidden="true">${rudy('happy', { blink: false })}</span>`
+      : `<span class="avatar" style="background:${state.wallet ? colorFor(state.wallet) : '#c5ccd6'}" aria-hidden="true">ME</span>`;
     const name = isRudy ? 'Rudy' : 'You';
     const handle = isRudy ? '@ruckus' : state.wallet ? shortAddr(state.wallet) : '@you';
     return `<article class="post">${av}<div>
       <div class="post-meta"><b>${esc(name)}</b><span>${esc(handle)}</span><span>· ${fmtAgo((Date.now() - p.ts) / 1000)}</span></div>
-      <p>${tickerLinks(p.text)}</p>
+      <p>${tickerLinks(p.text)}</p>${postEmbed(p.text)}
       <div class="post-actions"><button type="button" data-act="like" data-id="${p.id}" aria-pressed="${liked}">♥ <span>${p.likes + (liked ? 1 : 0)}</span></button></div>
     </div></article>`;
   }
   function viewDen() {
-    const follows = [...state.following];
-    return `<div class="page-head"><div><h1>The Den</h1><p>Where the night shift talks trades. Tag a coin with $TICKER and it links to its chart.</p></div></div>
-    <div class="grid-2">
-      <div class="panel">
-        <form class="panel-body compose" id="compose">
-          <label class="label" for="compose-text">Post to The Den</label>
-          <textarea class="input" id="compose-text" maxlength="280" placeholder="What are you watching tonight?"></textarea>
-          <div class="compose-foot"><span class="hint" id="compose-count">280 characters left</span><button class="btn btn-primary" type="submit">Post</button></div>
-          <p class="hint">Posts stay on this device until The Den server goes live.</p>
-        </form>
-        <div id="feed">${allPosts().map(postHtml).join('')}</div>
+    return `<div class="desk">
+      <div class="col-left stack">
+        <section class="card"><div class="card-head"><h3>Following</h3><span class="label" id="follow-count"></span></div><ul class="people" id="den-follows"></ul></section>
+        <section class="card"><div class="card-head"><h3>Wallets buying now</h3></div><ul class="people" id="den-buyers"></ul></section>
       </div>
-      <div class="stack-col">
-        <section class="panel"><div class="panel-head"><h2>Wallets you follow</h2><span class="label">${follows.length}</span></div>
-          <ul class="people">${follows.length ? follows.map((a) => `<li class="person">${walletAvatar(a)}<div><b>${isLive() ? `<a href="${solscanAcct(a)}" target="_blank" rel="noopener">${esc(shortAddr(a))}</a>` : esc(shortAddr(a))}</b><span>Their trades get a ★ in Live trades</span></div>${followBtn(a)}</li>`).join('')
-            : `<li class="empty">${rudy('neutral')}<b>You’re not following anyone yet.</b>Follow top buyers from the Trade page.</li>`}</ul></section>
-        <section class="panel"><div class="panel-head"><h2>Biggest moves this hour</h2></div><ul class="market-list" id="den-movers"></ul></section>
+      <div class="col-center">
+        <section class="card">
+          <form class="composer" id="compose">
+            <span class="avatar" style="background:${state.wallet ? colorFor(state.wallet) : 'var(--panel-2)'}" aria-hidden="true">ME</span>
+            <div>
+              <label class="sr-only" for="compose-text">Post to The Den</label>
+              <textarea id="compose-text" maxlength="280" placeholder="What are you watching tonight? Tag a coin like $SOL"></textarea>
+              <div class="foot"><span class="hint" id="compose-count">280 left · posts stay on this device for now</span><button class="btn btn-primary btn-sm" type="submit">Post</button></div>
+            </div>
+          </form>
+          <div id="feed">${allPosts().map(postHtml).join('')}</div>
+        </section>
+      </div>
+      <div class="col-right stack">
+        <section class="card"><div class="card-head"><h3>Your positions</h3><a class="link-btn" href="#wallet">Wallet</a></div><div class="card-body" id="den-pos"></div></section>
+        <section class="card"><div class="card-head"><h3>Biggest moves this hour</h3></div><ul class="market-list" id="den-movers"></ul></section>
       </div>
     </div>`;
   }
+  function updDen() {
+    if (state.route !== 'den') return;
+    const follows = [...state.following];
+    $('#follow-count').textContent = follows.length;
+    $('#den-follows').innerHTML = follows.length
+      ? follows.map((a) => `<li class="person">${walletAvatar(a)}<div><b>${walletLink(a)}</b><span>Their trades get a ★ on coin pages</span></div>${followBtn(a)}</li>`).join('')
+      : `<li class="empty">${rudy('neutral')}<b>Your circle is empty.</b>Follow wallets from any coin page.</li>`;
+    const t = featured();
+    $('#den-buyers').innerHTML = t ? buyersHtml(t, 5) : '';
+    $('#den-movers').innerHTML = moversHtml(5);
+    const pos = $('#den-pos');
+    if (!isLive()) {
+      const n = Object.keys(state.positions).length;
+      pos.innerHTML = `<div class="mono" style="font-size:1.6rem;font-weight:600">${fmtUsd(state.cash)}</div><div class="hint">paper cash · ${n} open position${n === 1 ? '' : 's'}</div>`;
+    } else if (!state.wallet) {
+      pos.innerHTML = '<p class="hint" style="margin:0 0 10px">Connect a wallet to see your positions.</p><button class="btn btn-sm btn-primary" type="button" data-act="connect">Connect</button>';
+    } else {
+      const ids = Object.keys(state.balances).filter((m) => state.tok.has(m));
+      const total = (state.solBal || 0) * solPrice() + ids.reduce((s, m) => s + holdingValue(m), 0);
+      pos.innerHTML = `<div class="mono" style="font-size:1.6rem;font-weight:600">${fmtUsd(total)}</div><div class="hint">${ids.length} coins + ${(state.solBal || 0).toFixed(3)} SOL</div>`;
+    }
+    hydrateSparks(view);
+  }
   function moversHtml(n = 5) {
-    const ids = state.lists.hot || [];
-    const movers = ids.map((id) => state.tok.get(id)).filter(Boolean).sort((a, b) => b.chg1h - a.chg1h).slice(0, n);
+    const movers = listTokens('hot').filter((t) => t.id !== SOL_MINT).sort((a, b) => b.chg1h - a.chg1h).slice(0, n);
     if (!movers.length) return loadingBlock();
-    return movers.map((t) => `<li class="market-row" role="button" tabindex="0" data-act="open" data-id="${esc(t.id)}">${coinBadge(t)}<div class="who"><b>${esc(t.sym)}</b><span>${esc(t.name)}</span></div><div class="figs"><div class="num">${fmtCompact(t.mcap)}</div><div class="num ${cls(t.chg1h)}">${fmtPct(t.chg1h)} 1h</div></div><span></span></li>`).join('');
+    return movers.map((t) => `<li class="market-row" role="button" tabindex="0" data-act="open" data-id="${esc(t.id)}">${coinBadge(t)}<div class="who"><b>${esc(t.sym)}</b><span>${esc(t.name)}</span></div>${sparkBox(t.id, 'mini-spark')}<div class="figs"><div class="num">${fmtCompact(t.mcap)}</div><div class="num ${cls(t.chg1h)}">${fmtPct(t.chg1h)}</div></div><span></span></li>`).join('');
   }
 
-  // ---------- launch ----------
+  // ---------- WALLET ----------
+  function viewWallet() {
+    return `<div class="wrap"><div id="wallet-page">${loadingBlock('Opening the wallet…')}</div></div>`;
+  }
+  async function mountWallet() {
+    const addr = state.viewWallet || state.wallet;
+    const box = $('#wallet-page');
+    if (!addr) {
+      box.innerHTML = isLive()
+        ? `<section class="card"><div class="empty" style="padding:48px 16px">${rudy('happy', { track: true })}<b>Connect your wallet to see what you hold.</b><span>Your balances, their value right now, and your P&L on coins traded here.</span><button class="btn btn-primary btn-lg" type="button" data-act="connect" style="margin-top:10px">Connect wallet</button></div></section>${walletLinksHtml()}`
+        : demoWalletHtml();
+      return;
+    }
+    if (!isLive()) { box.innerHTML = demoWalletHtml(); return; }
+    renderWallet(addr);
+    try {
+      if (addr === state.wallet) await loadBalances(); else await loadWalletData(addr);
+    } catch {
+      if ((state.viewWallet || state.wallet) === addr) box.innerHTML = `<section class="card"><div class="empty">${rudy('worried')}<b>Couldn’t load this wallet.</b>Check the address and try again.</div></section>`;
+      return;
+    }
+    if ((state.viewWallet || state.wallet) === addr && state.route === 'wallet') renderWallet(addr);
+  }
+  function renderWallet(addr) {
+    const box = $('#wallet-page');
+    if (!box) return;
+    const own = addr === state.wallet;
+    const d = own ? { sol: state.solBal, bal: state.balances } : state.walletData[addr];
+    const sp = solPrice();
+    const rows = d ? Object.entries(d.bal).filter(([m, b]) => b.ui > 0 && state.tok.has(m)).map(([m, b]) => ({ t: state.tok.get(m), ui: b.ui, val: b.ui * state.tok.get(m).price })).sort((a, b) => b.val - a.val) : [];
+    const total = d ? (d.sol || 0) * sp + rows.reduce((s, r) => s + r.val, 0) : NaN;
+    const led = own ? store.get(ledgerKey(addr), {}) : {};
+    box.innerHTML = `
+      <section class="card wallet-hero">
+        ${rudy(total > 0 ? 'happy' : 'neutral', { track: true })}
+        <div>
+          <div class="label">${own ? 'Your wallet' : 'Wallet'}</div>
+          <h1>${d ? fmtUsd(total) : '…'}</h1>
+          <div class="sub"><span class="mono">${esc(shortAddr(addr))}</span><button class="link-btn" type="button" data-act="copy-addr" data-a="${esc(addr)}">Copy</button><a href="${solscanAcct(addr)}" target="_blank" rel="noopener">Solscan ↗</a>${d ? `<span>${(d.sol || 0).toFixed(4)} SOL · ${rows.length} coins</span>` : ''}</div>
+        </div>
+        <div>${own ? '<button class="btn" type="button" data-act="disconnect">Disconnect</button>' : followBtn(addr)}</div>
+      </section>
+      <section class="card gap-top">
+        <div class="card-head"><h3>Holdings</h3><span class="label">${d ? 'value now' : ''}</span></div>
+        ${!d ? `<div class="card-body">${skelRows(4)}</div>` : rows.length ? `<div class="table-scroll"><table class="hold-table"><thead><tr><th>Coin</th><th>Amount</th><th>Price</th><th>Value</th><th>24h</th>${own ? '<th>P&amp;L on Ruckus</th>' : ''}</tr></thead><tbody>
+          ${rows.map((r) => {
+            const l = led[r.t.id];
+            const pnl = l ? r.val + l.sold - l.bought : null;
+            return `<tr data-act="open" data-id="${esc(r.t.id)}"><td><div class="tok-cell">${coinBadge(r.t)}<div><b>${esc(r.t.sym)}</b><span>${esc(r.t.name)}</span></div></div></td><td>${fmtQty(r.ui)}</td><td>${fmtPrice(r.t.price)}</td><td>${fmtUsd(r.val)}</td><td class="${cls(r.t.chg24)}">${fmtPct(r.t.chg24)}</td>${own ? `<td class="${pnl == null ? '' : cls(pnl)}">${pnl == null ? '–' : fmtUsd(pnl)}</td>` : ''}</tr>`;
+          }).join('')}</tbody></table></div>` : `<div class="empty">${rudy('neutral')}<b>No coins here yet.</b>${own ? 'Buy one on the Trade page.' : ''}</div>`}
+      </section>
+      ${own ? walletLinksHtml() : ''}`;
+  }
+  function walletLinksHtml() {
+    return `<div class="grid-tiles gap-top">
+      <a class="card tile" href="#rewards" style="text-decoration:none;color:inherit"><div class="label">Rewards</div><div class="val">${crumbsTotal().toLocaleString('en-US')}</div><div class="sub">crumbs · invite friends</div></a>
+      <a class="card tile" href="#rewards" style="text-decoration:none;color:inherit"><div class="label">Tasks</div><div class="val">${Object.values(state.tasksDone).filter(Boolean).length} / ${TASKS.length}</div><div class="sub">done</div></a>
+      <a class="card tile" href="#den" style="text-decoration:none;color:inherit"><div class="label">Following</div><div class="val">${state.following.size}</div><div class="sub">wallets</div></a>
+      <a class="card tile" href="#pulse" style="text-decoration:none;color:inherit"><div class="label">Market pulse</div><div class="val">${isFinite(state.majors.SOL.p) ? fmtUsd(state.majors.SOL.p) : '–'}</div><div class="sub">SOL price</div></a>
+    </div>`;
+  }
+  function demoWalletHtml() {
+    let value = 0;
+    const rows = Object.entries(state.positions).map(([id, p]) => { const t = state.tok.get(id); const v = p.qty * t.price; value += v; return { t, p, v }; });
+    return `<section class="card wallet-hero">${rudy('happy', { track: true })}<div><div class="label">Paper wallet</div><h1>${fmtUsd(state.cash + value)}</h1><div class="sub">${fmtUsd(state.cash)} cash · ${rows.length} coins · demo mode</div></div><div></div></section>
+      <section class="card gap-top"><div class="card-head"><h3>Holdings</h3></div>${rows.length ? `<div class="table-scroll"><table class="hold-table"><thead><tr><th>Coin</th><th>Amount</th><th>Value</th><th>P&amp;L</th></tr></thead><tbody>${rows.map((r) => `<tr data-act="open" data-id="${esc(r.t.id)}"><td><div class="tok-cell">${coinBadge(r.t)}<div><b>${esc(r.t.sym)}</b><span>${esc(r.t.name)}</span></div></div></td><td>${fmtQty(r.p.qty)}</td><td>${fmtUsd(r.v)}</td><td class="${cls(r.v - r.p.cost)}">${fmtUsd(r.v - r.p.cost)}</td></tr>`).join('')}</tbody></table></div>` : `<div class="empty">${rudy('neutral')}<b>No coins yet.</b>Buy one on the Trade page.</div>`}</section>${walletLinksHtml()}`;
+  }
+
+  // ---------- LAUNCH ----------
   function viewLaunch() {
     const note = isLive()
-      ? 'Every coin starts on a bonding curve paired with SOL. On-chain launches switch on once the launch server is connected (see README). Until then this page saves your coin as a draft.'
+      ? 'Every coin starts on a bonding curve paired with SOL. On-chain launches switch on once the launch server is connected. Until then, this page saves your coin as a draft.'
       : 'Every coin starts on a bonding curve paired with SOL. In demo mode the coin lives in your browser only.';
-    return `<div class="page-head"><div><h1>Launch a coin</h1><p>${note}</p></div></div>
+    return `<div class="wrap">
+    <div class="page-head"><div><h1>Launch a coin</h1><p>${note}</p></div></div>
     <div class="grid-2">
-      <form class="panel panel-body form-grid" id="launch-form" novalidate>
-        <div class="two">
-          <div class="field"><label for="l-name">Coin name</label><input class="input" id="l-name" maxlength="32" placeholder="Bin Lid" autocomplete="off"><div class="err" id="e-name"></div></div>
-          <div class="field"><label for="l-sym">Ticker</label><input class="input mono" id="l-sym" maxlength="10" placeholder="BINLID" autocomplete="off"><div class="err" id="e-sym"></div></div>
-        </div>
-        <div class="field"><label for="l-desc">Description</label><textarea class="input" id="l-desc" maxlength="280" rows="3" placeholder="One or two lines on why this coin exists."></textarea><div class="hint" id="l-desc-count">280 characters left</div></div>
-        <div class="field"><span class="label">Image</span>
-          <label class="drop" id="l-drop" for="l-img"><span id="l-thumb">${coinBadge({ sym: '??', color: '#a3adb8' }, 'lg')}</span><span><b>Choose an image</b><br><span class="hint">PNG, JPG or GIF up to 2 MB. Square works best.</span></span></label>
-          <input id="l-img" type="file" accept="image/*" hidden><div class="err" id="e-img"></div>
-        </div>
-        <div class="field"><label for="l-buy">Your first buy (SOL, optional)</label><input class="input mono" id="l-buy" inputmode="decimal" placeholder="0.5" autocomplete="off"><div class="hint">Buying first protects you from being front-run at launch.</div><div class="err" id="e-buy"></div></div>
-        <button class="btn btn-primary btn-block" type="submit">${isLive() ? 'Save draft' : 'Launch demo coin'}</button>
-      </form>
-      <div class="stack-col">
-        <section class="panel preview-card" aria-label="Preview">
+      <section class="card">
+        <div class="card-head"><h3>What does your coin trade against?</h3></div>
+        <div class="card-body"><div class="kind-pick">
+          <button class="kind" type="button" aria-pressed="true"><b>Regular coin</b><span>Paired with SOL on a bonding curve</span></button>
+          <button class="kind" type="button" disabled><b>Stock-paired</b><span>Paired with a tokenized stock · coming soon</span></button>
+        </div></div>
+        <form class="form-grid" id="launch-form" novalidate style="padding-top:4px">
+          <div class="two">
+            <div class="field"><label for="l-name">Coin name</label><input class="input" id="l-name" maxlength="32" placeholder="Bin Lid" autocomplete="off"><div class="err" id="e-name"></div></div>
+            <div class="field"><label for="l-sym">Ticker</label><input class="input mono" id="l-sym" maxlength="10" placeholder="BINLID" autocomplete="off"><div class="err" id="e-sym"></div></div>
+          </div>
+          <div class="field"><label for="l-desc">Description</label><textarea class="input" id="l-desc" maxlength="280" rows="3" placeholder="One or two lines on why this coin exists."></textarea><div class="hint" id="l-desc-count">280 characters left</div></div>
+          <div class="field"><span class="lbl">Image</span>
+            <label class="drop" id="l-drop" for="l-img"><span id="l-thumb">${coinBadge({ sym: '??', color: '#c5ccd6' }, 'lg')}</span><span><b>Choose an image</b><br><span class="hint">PNG, JPG or GIF up to 2 MB. Square works best.</span></span></label>
+            <input id="l-img" type="file" accept="image/*" hidden><div class="err" id="e-img"></div>
+          </div>
+          <div class="field"><label for="l-buy">Your first buy (SOL, optional)</label><input class="input mono" id="l-buy" inputmode="decimal" placeholder="0.5" autocomplete="off"><div class="hint">Buying first protects you from being front-run at launch.</div><div class="err" id="e-buy"></div></div>
+          <button class="btn btn-primary btn-lg btn-block" type="submit">${isLive() ? 'Save draft' : 'Launch demo coin'}</button>
+        </form>
+      </section>
+      <div class="stack">
+        <section class="card preview-card" aria-label="Preview">
           <span class="label">Preview</span>
-          <div class="row"><span id="p-badge">${coinBadge({ sym: '??', color: '#f5a524' }, 'lg')}</span><div><h3 id="p-name">Your coin</h3><span class="mono muted" id="p-sym">$TICKER</span></div></div>
+          <div class="row"><span id="p-badge">${coinBadge({ sym: '??', color: '#ffb38a' }, 'lg')}</span><div><h3 id="p-name">Your coin</h3><span class="mono muted" id="p-sym">$TICKER</span></div></div>
           <p id="p-desc">Your description shows up here.</p>
           <div><div class="fee-line"><span>Bonding curve</span><span class="mono" id="p-curve-pct">0%</span></div><div class="curve"><i id="p-curve" style="width:0%"></i></div></div>
           <div class="fee-line"><span>Starting market cap</span><span class="mono" id="p-mc">$4.2K</span></div>
         </section>
-        <section class="panel hero-strip">${rudy('happy')}<div><b>Rudy’s launch checklist</b><p class="muted">Pick a ticker people can say out loud. Write a description a stranger understands. Don’t promise returns.</p></div></section>
+        <section class="card rudy-note">${rudy('happy', { track: true })}<div><b>Rudy’s launch checklist</b><p>Pick a ticker people can say out loud. Write a description a stranger understands. Never promise returns.</p></div></section>
       </div>
-    </div>`;
+    </div></div>`;
   }
   const LAUNCH_MC = 4200;
   const CURVE_SOL = 85;
@@ -1248,7 +1649,7 @@
     $('#p-curve').style.width = (pct * 100).toFixed(1) + '%';
     $('#p-curve-pct').textContent = (pct * 100).toFixed(1) + '%';
     $('#p-mc').textContent = fmtCompact(LAUNCH_MC + buy * (solPrice() || 0));
-    $('#p-badge').innerHTML = coinBadge({ sym: sym || '??', color: '#f5a524', icon: state.launchImg }, 'lg');
+    $('#p-badge').innerHTML = coinBadge({ sym: sym || '??', color: '#ffb38a', icon: state.launchImg }, 'lg');
   }
   function submitLaunch(e) {
     e.preventDefault();
@@ -1274,7 +1675,7 @@
     }
     const usdIn = buy * solPrice();
     const price = (LAUNCH_MC + usdIn) / SUPPLY;
-    const t = makeDemoToken([sym, name, price, 0.018, pick(PALETTE), 0, 1, 0], { icon: state.launchImg });
+    const t = makeDemoToken([sym, name, price, 0.018, 0, 1, 0], { icon: state.launchImg });
     const cs = state.candles[t.id + '|1m'];
     state.candles[t.id + '|1m'] = cs.slice(-3).map((k) => ({ t: k.t, o: price, h: price, l: price, c: price, v: 1 }));
     state.trades[t.id] = [];
@@ -1302,52 +1703,18 @@
     const r = new FileReader();
     r.onload = () => {
       state.launchImg = r.result;
-      $('#l-thumb').innerHTML = coinBadge({ sym: '', color: '#a3adb8', icon: r.result }, 'lg');
+      $('#l-thumb').innerHTML = coinBadge({ sym: '', color: '#c5ccd6', icon: r.result }, 'lg');
       launchPreview();
     };
     r.readAsDataURL(file);
   }
 
-  // ---------- rewards ----------
-  function refLink() {
-    const base = CONFIG.refBase || location.href.split('#')[0];
-    return base + '#ref-' + state.refCode;
-  }
-  function viewRewards() {
-    const crumbs = crumbsTotal();
-    return `<div class="page-head"><div><h1>Rewards</h1><p>Earn crumbs for bringing friends and finishing tasks. Crumbs are points that rank you on the leaderboard. They are not money.</p></div></div>
-    <div class="grid-tiles">
-      <div class="panel tile"><div class="label">Your crumbs</div><div class="val">${crumbs.toLocaleString('en-US')}</div><div class="sub muted">from tasks on this device</div></div>
-      <div class="panel tile"><div class="label">Friends joined</div><div class="val">0</div><div class="sub muted">share your link to start</div></div>
-      <div class="panel tile"><div class="label">Your code</div><div class="val">${state.refCode}</div><div class="sub muted">works on any page</div></div>
-      <div class="panel tile"><div class="label">Tasks done</div><div class="val">${Object.values(state.tasksDone).filter(Boolean).length} / ${TASKS.length}</div><div class="sub"><a href="#tasks">See tasks</a></div></div>
-    </div>
-    <div class="grid-2 gap-top">
-      <div class="stack-col">
-        <section class="panel panel-body stack">
-          <label class="label" for="ref-link">Your invite link</label>
-          <div class="ref-box"><input class="input" id="ref-link" readonly value="${esc(refLink())}"><button class="btn btn-primary" type="button" data-act="copy-ref">Copy link</button></div>
-        </section>
-        <section class="panel panel-body">
-          <ol class="steps">
-            <li><div><b>Share your link</b><span>Send it to a friend or post it on X.</span></div></li>
-            <li><div><b>They make their first trade</b><span>Any trade on Ruckus counts.</span></div></li>
-            <li><div><b>You both get 200 crumbs</b><span>Counted once the rewards server goes live.</span></div></li>
-          </ol>
-        </section>
-      </div>
-      <section class="panel"><div class="panel-head"><h2>Leaderboard</h2><span class="label">This week</span></div>
-        <div class="empty">${rudy('neutral')}<b>The leaderboard opens with the rewards server.</b>Your crumbs so far are saved on this device.</div>
-      </section>
-    </div>`;
-  }
-
-  // ---------- tasks ----------
+  // ---------- REWARDS (+ tasks) ----------
   const TASKS = [
     { id: 'follow', t: 'Follow Ruckus on X', d: 'Open X, follow the account, then mark this done.', crumbs: 50 },
     { id: 'share', t: 'Share a trade', d: 'Post a screenshot of a trade from Ruckus on X.', crumbs: 120 },
     { id: 'trades', t: 'Make 3 trades', d: 'Counted automatically on this device.', crumbs: 80, auto: 'trades', goal: 3 },
-    { id: 'watch', t: 'Watch 5 coins', d: 'Star coins in the market list. Counted automatically.', crumbs: 40, auto: 'watch', goal: 5 },
+    { id: 'watch', t: 'Watch 5 coins', d: 'Star coins anywhere in Ruckus. Counted automatically.', crumbs: 40, auto: 'watch', goal: 5 },
     { id: 'launch', t: 'Draft a coin', d: 'Use the Launch page. Counted automatically.', crumbs: 150, auto: 'launch', goal: 1 },
     { id: 'post', t: 'Post in The Den', d: 'Say hi to the other night owls.', crumbs: 30, auto: 'post', goal: 1 },
   ];
@@ -1367,49 +1734,132 @@
     }
     if (changed) save();
   }
-  function viewTasks() {
+  function refLink() {
+    const base = CONFIG.refBase || location.href.split('#')[0];
+    return base + '#ref-' + state.refCode;
+  }
+  function viewRewards() {
     const done = Object.values(state.tasksDone).filter(Boolean).length;
-    return `<div class="page-head"><div><h1>Tasks</h1><p>Small jobs that earn crumbs. Automatic tasks tick themselves off as you use Ruckus.</p></div>
-      <div class="crumbs">${crumbsTotal().toLocaleString('en-US')} crumbs earned</div></div>
-    <section class="panel">
-      <div class="panel-body stack"><div class="fee-line"><span>${done} of ${TASKS.length} done</span><span class="mono">${Math.round((done / TASKS.length) * 100)}%</span></div><div class="progress"><i style="width:${(done / TASKS.length) * 100}%"></i></div></div>
-      ${TASKS.map((task) => {
-        const isDone = !!state.tasksDone[task.id];
-        let actions;
-        if (isDone) actions = '<span class="done-pill">Done</span>';
-        else if (task.auto) actions = `<span class="mono muted">${taskProgress(task)} / ${task.goal}</span>`;
-        else actions = `<a class="btn btn-sm" href="${CONFIG.xUrl}" target="_blank" rel="noopener">Open X</a><button class="btn btn-sm" type="button" data-act="task-done" data-id="${task.id}">Mark done</button>`;
-        return `<div class="task"><div><b>${esc(task.t)}</b><span>${esc(task.d)}</span></div><div class="task-actions"><span class="crumbs">+${task.crumbs}</span>${actions}</div></div>`;
-      }).join('')}
-    </section>`;
+    return `<div class="wrap">
+    <div class="page-head"><div><h1>Rewards</h1><p>Earn crumbs for bringing friends and finishing tasks. Crumbs rank you on the leaderboard. They are points, not money.</p></div></div>
+    <div class="grid-tiles">
+      <div class="card tile"><div class="label">Your crumbs</div><div class="val">${crumbsTotal().toLocaleString('en-US')}</div><div class="sub">saved on this device</div></div>
+      <div class="card tile"><div class="label">Friends joined</div><div class="val">0</div><div class="sub">share your link to start</div></div>
+      <div class="card tile"><div class="label">Your code</div><div class="val">${state.refCode}</div><div class="sub">works on any page</div></div>
+      <div class="card tile"><div class="label">Tasks done</div><div class="val">${done} / ${TASKS.length}</div><div class="sub">${Math.round((done / TASKS.length) * 100)}% complete</div></div>
+    </div>
+    <div class="grid-2 gap-top">
+      <section class="card">
+        <div class="card-head"><h3>Tasks</h3><span class="crumbs">${crumbsTotal().toLocaleString('en-US')} crumbs</span></div>
+        <div class="card-body"><div class="progress"><i style="width:${(done / TASKS.length) * 100}%"></i></div></div>
+        ${TASKS.map((task) => {
+          const isDone = !!state.tasksDone[task.id];
+          let actions;
+          if (isDone) actions = '<span class="done-pill">Done</span>';
+          else if (task.auto) actions = `<span class="mono muted">${taskProgress(task)} / ${task.goal}</span>`;
+          else actions = `<a class="btn btn-sm" href="${CONFIG.xUrl}" target="_blank" rel="noopener">Open X</a><button class="btn btn-sm btn-soft" type="button" data-act="task-done" data-id="${task.id}">Mark done</button>`;
+          return `<div class="task"><div><b>${esc(task.t)}</b><span>${esc(task.d)}</span></div><div class="task-actions"><span class="crumbs">+${task.crumbs}</span>${actions}</div></div>`;
+        }).join('')}
+      </section>
+      <div class="stack">
+        <section class="card"><div class="card-head"><h3>Your invite link</h3></div><div class="card-body stack">
+          <div class="ref-box"><input class="input" id="ref-link" readonly value="${esc(refLink())}" aria-label="Your invite link"><button class="btn btn-primary" type="button" data-act="copy-ref">Copy</button></div>
+          <ol class="steps">
+            <li><div><b>Share your link</b><span>Send it to a friend or post it on X.</span></div></li>
+            <li><div><b>They make their first trade</b><span>Any trade on Ruckus counts.</span></div></li>
+            <li><div><b>You both get 200 crumbs</b><span>Counted once the rewards server goes live.</span></div></li>
+          </ol>
+        </div></section>
+        <section class="card rudy-note">${rudy('cheer', { track: true })}<div><b>Leaderboard opens soon</b><p>Weekly ranking by crumbs and trading volume. Your crumbs so far are saved on this device.</p></div></section>
+      </div>
+    </div></div>`;
   }
 
-  // ---------- stats ----------
-  function viewStats() {
-    return `<div class="page-head"><div><h1>Market pulse</h1><p>What the Solana memecoin market is doing right now.</p></div></div>
+  // ---------- PULSE ----------
+  function viewPulse() {
+    return `<div class="wrap">
+    <div class="page-head"><div><h1>Market pulse</h1><p>What the Solana coin market is doing right now.</p></div></div>
     <div class="grid-tiles" id="stat-tiles"></div>
     <div class="grid-2 gap-top">
-      <section class="panel"><div class="panel-head"><h2>${isLive() ? 'SOL price' : 'Top coin'}</h2><span class="label">${isLive() ? 'Daily candles' : 'Demo'}</span></div><div class="bars-box"><canvas id="bars" role="img" aria-label="Price candles"></canvas></div></section>
-      <section class="panel"><div class="panel-head"><h2>Biggest moves this hour</h2><span class="label">Trending coins</span></div><ul class="market-list" id="movers"></ul></section>
-    </div>`;
+      <section class="card"><div class="card-head"><h3>${isLive() ? 'SOL price' : 'Top coin'}</h3><span class="label">${isLive() ? 'Daily candles' : 'Demo'}</span></div><div class="bars-box"><canvas id="bars" role="img" aria-label="Price candles"></canvas></div></section>
+      <section class="card"><div class="card-head"><h3>Biggest moves this hour</h3><span class="label">Trending</span></div><ul class="market-list" id="movers"></ul></section>
+    </div></div>`;
   }
   function updStats() {
     const tiles = $('#stat-tiles');
     if (!tiles) return;
-    const hot = (state.lists.hot || []).map((id) => state.tok.get(id)).filter(Boolean);
-    const fresh = (state.lists.new || []).map((id) => state.tok.get(id)).filter((t) => t && t.born && Date.now() - t.born < 3600000);
+    const hot = listTokens('hot');
+    const fresh = listTokens('new').filter((t) => t.born && Date.now() - t.born < 3600000);
     const vol = hot.reduce((s, t) => s + t.vol24, 0);
     const moves = hot.map((t) => t.chg1h).sort((a, b) => a - b);
-    const avg = moves.length ? moves[Math.floor(moves.length / 2)] : 0;
+    const mid = moves.length ? moves[Math.floor(moves.length / 2)] : 0;
     const sol = state.majors.SOL;
     tiles.innerHTML = [
       ['SOL', isFinite(sol.p) ? fmtUsd(sol.p) : '–', `<span class="${cls(sol.c)}">${fmtPct(sol.c)}</span> 24h`],
       ['Trending volume', fmtCompact(vol), `24h, across ${hot.length} trending coins`],
       ['New coins', String(fresh.length), 'launched in the last hour'],
-      ['Trending mood', `<span class="${cls(avg)}">${fmtPct(avg)}</span>`, 'median 1h move'],
-    ].map(([k, v, s]) => `<div class="panel tile"><div class="label">${k}</div><div class="val">${v}</div><div class="sub muted">${s}</div></div>`).join('');
-    $('#movers').innerHTML = moversHtml(6);
+      ['Trending mood', `<span class="${cls(mid)}">${fmtPct(mid)}</span>`, 'median 1h move'],
+    ].map(([k, v, s]) => `<div class="card tile"><div class="label">${k}</div><div class="val">${v}</div><div class="sub">${s}</div></div>`).join('');
+    $('#movers').innerHTML = moversHtml(7);
+    hydrateSparks(view);
   }
+
+  // ---------- global search ----------
+  let gsTimer = null, gsItems = [], gsIndex = -1;
+  function gsRender(q, tokens) {
+    const box = $('#gs-results');
+    gsItems = [];
+    let html = '';
+    if (ADDR_RE.test(q)) {
+      gsItems.push({ kind: 'wallet', id: q });
+      html += `<a class="gs-row" href="#w-${esc(q)}" role="option"><span class="avatar" style="background:${colorFor(q)}" aria-hidden="true">${esc(q.slice(0, 2))}</span><div><b>View wallet</b><span class="sub">${esc(shortAddr(q))}</span></div><span class="label">wallet</span></a>`;
+    }
+    for (const t of tokens.slice(0, 8)) {
+      gsItems.push({ kind: 'coin', id: t.id });
+      html += `<a class="gs-row" href="#c-${esc(t.id)}" role="option">${coinBadge(t)}<div><b>${esc(t.sym)} ${t.verified ? '<span class="badge ok">✓</span>' : ''}</b><span class="sub">${esc(t.name)} · ${fmtCompact(t.mcap)}</span></div><span class="num ${cls(t.chg24)}">${fmtPct(t.chg24)}</span></a>`;
+    }
+    box.innerHTML = html || `<div class="gs-empty">No coins found for “${esc(q)}”. Try a ticker, a name or paste a mint address.</div>`;
+    box.hidden = false;
+    gsIndex = -1;
+  }
+  function gsSearch(q) {
+    clearTimeout(gsTimer);
+    q = q.trim();
+    if (!q) { $('#gs-results').hidden = true; return; }
+    const local = [...state.tok.values()].filter((t) => t.sym.toLowerCase().includes(q.toLowerCase()) || t.name.toLowerCase().includes(q.toLowerCase()) || t.id === q);
+    gsRender(q, local);
+    if (!isLive()) return;
+    gsTimer = setTimeout(async () => {
+      try {
+        const ids = upsert(await http(`${JUP}/tokens/v2/search?query=${encodeURIComponent(q)}`));
+        if ($('#gs-input').value.trim() === q) gsRender(q, ids.map((id) => state.tok.get(id)));
+      } catch { /* keep local results */ }
+    }, 250);
+  }
+  function gsClose() {
+    $('#gs-results').hidden = true;
+    $('#gsearch').classList.remove('open');
+  }
+  $('#gs-input').addEventListener('input', (e) => gsSearch(e.target.value));
+  $('#gs-input').addEventListener('focus', (e) => { if (e.target.value.trim()) gsSearch(e.target.value); });
+  $('#gs-input').addEventListener('keydown', (e) => {
+    const rows = $$('#gs-results .gs-row');
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!rows.length) return;
+      gsIndex = (gsIndex + (e.key === 'ArrowDown' ? 1 : -1) + rows.length) % rows.length;
+      rows.forEach((r, i) => r.setAttribute('aria-selected', String(i === gsIndex)));
+    } else if (e.key === 'Enter') {
+      const r = rows[Math.max(0, gsIndex)];
+      if (r) { location.hash = r.getAttribute('href').slice(1); gsClose(); e.target.blur(); }
+    } else if (e.key === 'Escape') { gsClose(); e.target.blur(); }
+  });
+  $('#gs-results').addEventListener('click', () => { gsClose(); $('#gs-input').value = ''; });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#gsearch') && !e.target.closest('#search-btn')) gsClose(); });
+  $('#search-btn').addEventListener('click', () => { $('#gsearch').classList.add('open'); $('#gs-input').focus(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !e.target.closest('input, textarea')) { e.preventDefault(); $('#gsearch').classList.add('open'); $('#gs-input').focus(); }
+  });
 
   // ---------- polling ----------
   const inflight = new Set();
@@ -1426,7 +1876,7 @@
   async function refreshList(tab = state.marketTab) {
     await once('list:' + tab, () => loadList(tab));
     if (state.route === 'trade') updMarkets();
-    if (state.route === 'tokens') renderTokRows();
+    if (state.route === 'coins') renderCoins();
   }
   async function pollSelected(force = false) {
     const t = sel();
@@ -1438,7 +1888,6 @@
     if (force || due('tx:' + id, 6000)) jobs.push(once('tx:' + id, () => loadTrades(id)));
     if (force || due('c:' + id + tf, tf === '1m' ? 30000 : 60000)) jobs.push(once('c:' + id + tf, () => loadCandles(id, tf)));
     await Promise.all(jobs);
-    // keep the newest candle in step with the latest price
     const cs = state.candles[id + '|' + tf];
     if (cs?.length && t.price) {
       const k = cs[cs.length - 1];
@@ -1448,14 +1897,28 @@
     }
     if (state.route === 'trade' && sel()?.id === id) refreshTrade();
   }
+  async function pollHome(force = false) {
+    if (force || due('hot', 20000)) await once('list:hot', () => loadList('hot'));
+    if (force || due('new', 60000)) once('list:new', () => loadList('new'));
+    const t = featured();
+    if (t && (force || due('htx', 8000))) await once('tx:' + t.id, () => loadTrades(t.id));
+    updHome();
+  }
   async function liveLoop() {
     if (document.hidden || !isLive()) return;
+    if (state.route === 'home') pollHome();
     if (state.route === 'trade' && due('list', 20000)) refreshList();
-    if (state.route === 'tokens' && due('tlist', 20000)) refreshList(state.tokTab);
-    if ((state.route === 'stats' || state.route === 'den') && due('hot', 30000)) {
+    if (state.route === 'coins' && due('clist', 30000)) {
+      const need = state.coinSort === 'mcap' || state.coinSort === 'gainers' ? ['hot', 'top', 'new'] : [state.coinSort];
+      await Promise.all(need.map((k) => once('list:' + k, () => loadList(k))));
+      renderCoins();
+    }
+    if ((state.route === 'pulse' || state.route === 'den') && due('hot2', 30000)) {
       await Promise.all([once('list:hot', () => loadList('hot')), once('list:new', () => loadList('new'))]);
-      if (state.route === 'stats') updStats();
-      if (state.route === 'den') $('#den-movers').innerHTML = moversHtml();
+      const f = featured();
+      if (state.route === 'den' && f) await once('tx:' + f.id, () => loadTrades(f.id));
+      if (state.route === 'pulse') updStats();
+      if (state.route === 'den') updDen();
     }
     if (due('majors', 30000)) once('majors', loadMajors);
     if (state.wallet && due('bal', 30000)) once('bal', loadBalances).then(() => { if (state.route === 'trade') updTicket(); });
@@ -1463,16 +1926,30 @@
   }
 
   // ---------- router ----------
-  const ROUTES = { trade: viewTrade, tokens: viewTokens, den: viewDen, launch: viewLaunch, rewards: viewRewards, tasks: viewTasks, stats: viewStats };
+  const ROUTES = { home: viewHome, trade: viewTrade, coins: viewCoins, den: viewDen, launch: viewLaunch, wallet: viewWallet, rewards: viewRewards, pulse: viewPulse };
   const MOUNT = {
-    trade: () => { updChips(); refreshTrade(true); observe('#chart', drawChart); scheduleQuote(); pollSelected(true); },
-    tokens: () => { renderTokRows(); if (isLive() && !state.lists[state.tokTab]) refreshList(state.tokTab); },
-    den: () => {
-      $('#den-movers').innerHTML = moversHtml();
-      if (isLive() && !state.lists.hot) refreshList('hot').then(() => { const m = $('#den-movers'); if (m) m.innerHTML = moversHtml(); });
+    home: () => { if (isLive()) pollHome(true); else updHome(); },
+    trade: () => { updChips(); refreshTrade(true); observe('#chart', drawChart); scheduleQuote(); pollSelected(true); if (isLive() && !state.lists[state.marketTab]) refreshList(); },
+    coins: () => {
+      renderCoins();
+      if (isLive()) {
+        const need = state.coinSort === 'mcap' || state.coinSort === 'gainers' ? ['hot', 'top', 'new'] : [state.coinSort];
+        Promise.all(need.map((k) => once('list:' + k, () => loadList(k)))).then(renderCoins);
+      }
     },
+    den: () => {
+      updDen();
+      if (isLive()) {
+        Promise.all([once('list:hot', () => loadList('hot'))]).then(async () => {
+          const f = featured();
+          if (f) await once('tx:' + f.id, () => loadTrades(f.id));
+          updDen();
+        });
+      }
+    },
+    wallet: mountWallet,
     launch: launchPreview,
-    stats: () => {
+    pulse: () => {
       updStats();
       drawStatsChart();
       observe('#bars', drawStatsChart);
@@ -1494,25 +1971,40 @@
     const el = $(selector);
     if (el) ro.observe(el);
   }
-  function route() {
+  async function route() {
     let h = location.hash.slice(1);
     if (h.startsWith('ref-')) {
       store.set('referredBy', h.slice(4));
       toast(`Invite code ${esc(h.slice(4))} saved. Welcome to the block.`, 'cheer');
-      h = 'trade';
-      try { history.replaceState(null, '', '#trade'); } catch { /* sandboxed */ }
+      h = 'home';
+      try { history.replaceState(null, '', '#home'); } catch { /* sandboxed */ }
     }
-    if (!ROUTES[h]) h = 'trade';
+    if (h === 'tasks') h = 'rewards';
+    if (h === 'stats') h = 'pulse';
+    if (h === 'tokens') h = 'coins';
+    state.viewWallet = null;
+    if (h.startsWith('c-')) {
+      const id = h.slice(2);
+      if (!state.tok.has(id) && isLive()) await loadMints([id]).catch(() => []);
+      if (state.tok.has(id)) { state.selected = id; store.set('selected2', id); state.sellPct = null; }
+      h = 'trade';
+    } else if (h.startsWith('w-')) {
+      const a = h.slice(2);
+      if (ADDR_RE.test(a)) state.viewWallet = a === state.wallet ? null : a;
+      h = 'wallet';
+    }
+    if (!ROUTES[h]) h = 'home';
     const changed = state.route !== h;
     state.route = h;
     if (ro) { ro.disconnect(); ro = null; }
     view.innerHTML = ROUTES[h]();
     state.lastMarketKey = '';
-    for (const a of $$('#nav a')) {
+    for (const a of $$('#nav a, #tabbar a')) {
       if (a.getAttribute('href') === '#' + h) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
     }
     MOUNT[h]?.();
+    hydrateSparks(view);
     if (changed) window.scrollTo(0, 0);
   }
 
@@ -1524,10 +2016,11 @@
     state.sellPct = null;
     if (state.route === 'trade') {
       $('#ticket-err').textContent = '';
+      try { history.replaceState(null, '', '#c-' + id); } catch { /* sandboxed */ }
       refreshTrade(true);
       scheduleQuote();
       pollSelected(true);
-    } else location.hash = 'trade';
+    } else location.hash = 'c-' + id;
   }
   function setTabSelected(act, value) {
     $$(`[data-act="${act}"]`).forEach((b) => b.setAttribute('aria-selected', String(b.dataset.k === value)));
@@ -1535,23 +2028,40 @@
 
   document.addEventListener('click', async (e) => {
     const el = e.target.closest('[data-act]');
-    if (!el || e.target.closest('a')) return;
+    if (!el || (e.target.closest('a') && !e.target.closest('a').isSameNode(el))) return;
     const act = el.dataset.act;
     if (act === 'star') {
       e.stopPropagation();
       const id = el.dataset.id;
       if (state.watch.has(id)) state.watch.delete(id); else state.watch.add(id);
       save();
-      el.outerHTML = starBtn(id);
+      for (const b of $$(`[data-act="star"][data-id="${CSS.escape(id)}"]`)) b.outerHTML = starBtn(id);
       syncAutoTasks();
       if (!isLive()) computeDemoLists();
       else state.lists.watchlist = [...state.watch].filter((m) => state.tok.has(m));
       if (state.route === 'trade') updMarkets(true);
       return;
     }
+    if (act === 'follow') {
+      e.stopPropagation();
+      const h = el.dataset.h;
+      const on = !state.following.has(h);
+      if (on) state.following.add(h); else state.following.delete(h);
+      save();
+      $$(`[data-act="follow"][data-h="${CSS.escape(h)}"]`).forEach((b) => { b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Following' : 'Follow'; });
+      if (on) toast(`Following ${esc(shortAddr(h))}. Their trades get a ★ on coin pages.`, 'happy');
+      if (state.route === 'trade') updCenter();
+      if (state.route === 'den') updDen();
+      return;
+    }
     switch (act) {
       case 'select':
       case 'open': openToken(el.dataset.id); break;
+      case 'home-trade':
+        state.side = el.dataset.side || 'buy';
+        if (el.dataset.v) { state.amount = el.dataset.v; state.unit = 'usd'; }
+        location.hash = 'c-' + el.dataset.id;
+        break;
       case 'mtab':
         state.marketTab = el.dataset.k;
         store.set('marketTab', state.marketTab);
@@ -1559,11 +2069,16 @@
         updMarkets(true);
         if (isLive()) refreshList();
         break;
-      case 'ttab':
-        state.tokTab = el.dataset.k;
-        setTabSelected('ttab', state.tokTab);
-        renderTokRows();
-        if (isLive()) refreshList(state.tokTab);
+      case 'mk-all': state.showAllMk = true; updMarkets(true); break;
+      case 'csort':
+        state.coinSort = el.dataset.k;
+        setTabSelected('csort', state.coinSort);
+        MOUNT.coins();
+        break;
+      case 'ctab':
+        state.centerTab = el.dataset.k;
+        setTabSelected('ctab', state.centerTab);
+        updCenter();
         break;
       case 'tf':
         state.tf = el.dataset.k;
@@ -1576,18 +2091,27 @@
       case 'side':
         state.side = el.dataset.side;
         state.sellPct = null;
-        $$('.seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.side === state.side)));
+        $$('.seg button[data-act="side"]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.side === state.side)));
         $('#ticket-err').textContent = '';
         updChips();
         updTicket();
         scheduleQuote();
         break;
+      case 'unit': {
+        const usd = amountUsd();
+        state.unit = state.unit === 'usd' ? 'sol' : 'usd';
+        if (usd > 0) state.amount = state.unit === 'sol' ? (usd / solPrice()).toFixed(3) : usd.toFixed(2);
+        $('#amt').value = state.amount;
+        updChips();
+        updTicket();
+        scheduleQuote();
+        break;
+      }
       case 'chip': {
         let v = el.dataset.v;
         if (v === 'max') {
-          v = isLive()
-            ? Math.max(0, Math.floor(((state.solBal || 0) - CONFIG.solReserve) * solPrice() * 100) / 100)
-            : Math.floor(state.cash * 100) / 100;
+          const solAvail = isLive() ? Math.max(0, (state.solBal || 0) - CONFIG.solReserve) : state.cash / solPrice();
+          v = state.unit === 'sol' ? solAvail.toFixed(3) : (Math.floor(solAvail * solPrice() * 100) / 100).toFixed(2);
         }
         state.amount = String(v);
         state.sellPct = null;
@@ -1603,6 +2127,7 @@
         state.sellPct = pct;
         state.amount = (Math.floor(tokenBalanceUi(t.id) * t.price * pct) / 100).toFixed(2);
         $('#amt').value = state.amount;
+        updChips();
         updTicket();
         scheduleQuote();
         break;
@@ -1610,6 +2135,8 @@
       case 'go':
         if (isLive()) executeLive(); else executePaper();
         break;
+      case 'connect': connectWallet(); break;
+      case 'disconnect': disconnectWallet(); toast('Wallet disconnected.', 'neutral'); location.hash = 'home'; break;
       case 'reset':
         if (el.dataset.confirm === '1') {
           state.cash = CONFIG.startingCash;
@@ -1626,15 +2153,6 @@
           setTimeout(() => { if (el.isConnected) { el.dataset.confirm = ''; el.textContent = 'Reset paper balance'; } }, 3000);
         }
         break;
-      case 'follow': {
-        const h = el.dataset.h;
-        const on = !state.following.has(h);
-        if (on) state.following.add(h); else state.following.delete(h);
-        save();
-        $$(`[data-act="follow"][data-h="${CSS.escape(h)}"]`).forEach((b) => { b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Following' : 'Follow'; });
-        updTape();
-        break;
-      }
       case 'like': {
         const id = el.dataset.id;
         const on = !state.liked.has(id);
@@ -1645,24 +2163,16 @@
         n.textContent = String(parseInt(n.textContent, 10) + (on ? 1 : -1));
         break;
       }
-      case 'sort': {
-        const k = el.dataset.k;
-        state.tokSort = state.tokSort.key === k ? { key: k, dir: -state.tokSort.dir } : { key: k, dir: k === 'sym' ? 1 : -1 };
-        renderTokRows();
-        break;
-      }
       case 'task-done':
         state.tasksDone[el.dataset.id] = true;
         save();
         toast(`+${TASKS.find((t) => t.id === el.dataset.id).crumbs} crumbs. Nice.`, 'cheer');
         route();
         break;
-      case 'copy-ref':
-        copyText($('#ref-link').value, 'Invite link copied.', $('#ref-link'));
-        break;
-      case 'copy-mint':
-        copyText(sel()?.id || '', 'Mint address copied.');
-        break;
+      case 'copy-ref': copyText($('#ref-link').value, 'Invite link copied.', $('#ref-link')); break;
+      case 'copy-mint': copyText(sel()?.id || '', 'Mint address copied.'); break;
+      case 'copy-addr': copyText(el.dataset.a, 'Wallet address copied.'); break;
+      case 'share': copyText(location.href.split('#')[0] + '#c-' + (sel()?.id || ''), 'Link to this coin copied. Paste it anywhere.'); break;
     }
   });
   async function copyText(text, ok, input) {
@@ -1682,25 +2192,10 @@
     }
   });
 
-  let searchTimer = null;
-  function runSearch() {
-    clearTimeout(searchTimer);
-    const q = state.search.trim();
-    state.searchIds = null;
-    updMarkets(true);
-    if (!q || !isLive()) return;
-    searchTimer = setTimeout(async () => {
-      try {
-        const ids = upsert(await http(`${JUP}/tokens/v2/search?query=${encodeURIComponent(q)}`));
-        if (state.search.trim() === q) { state.searchIds = ids; updMarkets(true); }
-      } catch { /* keep local filter */ }
-    }, 300);
-  }
-
   document.addEventListener('input', (e) => {
     const id = e.target.id;
-    if (id === 'mk-search') { state.search = e.target.value; runSearch(); }
-    else if (id === 'tok-search') { state.search = e.target.value; renderTokRows(); }
+    if (id === 'mk-filter') { state.listFilter = e.target.value; updMarkets(true); }
+    else if (id === 'coin-filter') { state.coinFilter = e.target.value; renderCoins(); }
     else if (id === 'amt') {
       const clean = e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
       if (clean !== e.target.value) e.target.value = clean;
@@ -1710,7 +2205,7 @@
       updTicket();
       scheduleQuote();
     } else if (id === 'max-impact') { state.maxImpact = e.target.value; save(); renderQuote(); }
-    else if (id === 'compose-text') { $('#compose-count').textContent = `${280 - e.target.value.length} characters left`; }
+    else if (id === 'compose-text') { $('#compose-count').textContent = `${280 - e.target.value.length} left · posts stay on this device for now`; }
     else if (e.target.closest('#launch-form')) launchPreview();
   });
 
@@ -1730,8 +2225,9 @@
       save();
       syncAutoTasks();
       $('#feed').innerHTML = allPosts().map(postHtml).join('');
+      hydrateSparks($('#feed'));
       ta.value = '';
-      $('#compose-count').textContent = '280 characters left';
+      $('#compose-count').textContent = '280 left · posts stay on this device for now';
       toast('Posted to The Den.', 'happy');
     }
   });
@@ -1759,9 +2255,10 @@
   }
   function updWalletBtn() {
     const btn = $('#wallet-btn');
-    if (!state.wallet) { btn.textContent = 'Connect wallet'; return; }
-    const sol = state.solBal != null ? `◎ ${state.solBal.toFixed(state.solBal >= 100 ? 1 : 3)} · ` : '';
-    btn.textContent = sol + shortAddr(state.wallet);
+    if (!state.wallet) { btn.textContent = 'Connect'; btn.classList.add('btn-primary'); return; }
+    btn.classList.remove('btn-primary');
+    const sol = state.solBal != null ? `<span class="wb-sol">◎ ${state.solBal.toFixed(state.solBal >= 100 ? 1 : 3)} · </span>` : '';
+    btn.innerHTML = sol + esc(shortAddr(state.wallet));
   }
   async function onConnected(p, key) {
     state.provider = p;
@@ -1772,12 +2269,14 @@
       await once('bal', loadBalances);
       if (state.marketTab === 'holding') refreshList('holding');
     }
-    if (state.route === 'trade') { updTicket(); scheduleQuote(); updTape(); }
+    if (state.route === 'trade') { updTicket(); scheduleQuote(); updCenter(); }
+    if (state.route === 'wallet') mountWallet();
+    if (state.route === 'den') updDen();
   }
   async function connectWallet() {
     const p = walletProvider();
     if (!p) {
-      toast('No Solana wallet found in this browser. Install Phantom, Solflare or Backpack, then reload the page.', 'worried');
+      toast('No Solana wallet found in this browser. Install <a href="https://phantom.com/download" target="_blank" rel="noopener">Phantom</a>, Solflare or Backpack, then reload the page.', 'worried');
       return;
     }
     try {
@@ -1802,7 +2301,7 @@
     if (state.route === 'trade') { refreshTrade(true); scheduleQuote(); }
   }
   $('#wallet-btn').addEventListener('click', () => {
-    if (state.wallet) { disconnectWallet(); toast('Wallet disconnected.', 'neutral'); }
+    if (state.wallet) location.hash = 'wallet';
     else connectWallet();
   });
   async function silentReconnect() {
@@ -1822,9 +2321,9 @@
   }
 
   // ---------- theme ----------
-  const mq = window.matchMedia('(prefers-color-scheme: light)');
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
   function effectiveTheme() {
-    return document.documentElement.dataset.theme || (mq.matches ? 'light' : 'dark');
+    return document.documentElement.dataset.theme || (mq.matches ? 'dark' : 'light');
   }
   const savedTheme = store.get('theme', null);
   if (savedTheme) document.documentElement.dataset.theme = savedTheme;
@@ -1837,24 +2336,13 @@
   });
   mq.addEventListener?.('change', redraw);
 
-  // Hand-drawn "line boil": cycle the wobble filter's noise so Rudy's ink lines shimmer.
-  if (!reduceMotion) {
-    const noise = document.getElementById('wobble-noise');
-    let seed = 1;
-    setInterval(() => {
-      if (document.hidden) return;
-      seed = (seed % 3) + 1;
-      noise.setAttribute('seed', String(seed));
-    }, 180);
-  }
-
   // ---------- boot ----------
   async function boot() {
-    $('#brand-badge').innerHTML = rudy('happy');
-    renderTicker();
-    renderBanner();
+    ensureRudyDefs();
+    $('#brand-rudy').innerHTML = rudy('happy', { track: true });
+    renderStatus();
     window.addEventListener('hashchange', route);
-    route();
+    await route();
     try {
       const [hot] = await Promise.all([
         http(JUP + LIST_URL.hot, { timeout: 9000 }),
@@ -1863,9 +2351,7 @@
       state.mode = 'live';
       state.lists.hot = upsert(hot);
       if (state.selected && !state.tok.has(state.selected)) await loadMints([state.selected]).catch(() => []);
-      if (!state.tok.has(state.selected) || state.selected === SOL_MINT) {
-        state.selected = state.lists.hot.find((id) => id !== SOL_MINT) || state.lists.hot[0];
-      }
+      if (!state.tok.has(state.selected) || state.selected === SOL_MINT) state.selected = featured()?.id || state.lists.hot[0];
       loadMajors();
       setInterval(liveLoop, 2000);
     } catch {
@@ -1874,13 +2360,13 @@
         demoTick();
         if (document.hidden) return;
         if (state.route === 'trade') refreshTrade();
-        else if (state.route === 'tokens') updTokCells();
-        else if (state.route === 'stats') updStats();
+        else if (state.route === 'coins') updCoinCards(view);
+        else if (state.route === 'pulse') updStats();
       }, 1500);
     }
-    renderTicker();
-    renderBanner();
-    route();
+    setInterval(() => { state.homeTick++; if (state.route === 'home' && !document.hidden) updHome(); }, 3500);
+    renderStatus();
+    await route();
     syncAutoTasks();
     silentReconnect();
   }
