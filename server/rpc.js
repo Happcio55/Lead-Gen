@@ -14,6 +14,9 @@ export const robinhood = defineChain({
 const lanes = { high: [], low: [] };
 let active = 0;
 let tokens = config.rpcRps;
+// Adaptive rate: drops when the RPC rate-limits us, creeps back up while requests succeed.
+let rate = config.rpcRps;
+let lastThrottle = 0;
 let lastRefill = Date.now();
 let reqId = 0;
 let urlIdx = 0;
@@ -28,7 +31,7 @@ function pickUrl() {
   }
   return urls[urlIdx++ % urls.length];
 }
-export const rpcStats = { sent: 0, calls: 0, retries: 0, errors: 0 };
+export const rpcStats = { sent: 0, calls: 0, retries: 0, errors: 0, get rate() { return Math.round(rate * 10) / 10; } };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -38,7 +41,7 @@ export class RpcError extends Error {
 
 function refill() {
   const now = Date.now();
-  tokens = Math.min(config.rpcRps, tokens + ((now - lastRefill) / 1000) * config.rpcRps);
+  tokens = Math.min(Math.max(1, rate), tokens + ((now - lastRefill) / 1000) * rate);
   lastRefill = now;
 }
 
@@ -66,15 +69,26 @@ function pump() {
     sendBatch(batch).finally(() => { active--; pump(); });
   }
   if ((lanes.high.length || lanes.low.length) && !timer) {
-    timer = setTimeout(() => { timer = null; pump(); }, Math.ceil(1000 / config.rpcRps));
+    timer = setTimeout(() => { timer = null; pump(); }, Math.ceil(1000 / rate));
   }
 }
 
+function throttled() {
+  const now = Date.now();
+  if (now - lastThrottle > 1000) rate = Math.max(1, rate * 0.6);
+  lastThrottle = now;
+}
+function recovered() {
+  if (Date.now() - lastThrottle > 5000) rate = Math.min(config.rpcRps, rate + 0.25);
+}
+
+// Live requests give up after a few tries; background backfill work just waits and tries again.
 function retry(job, delay) {
   job.attempt = (job.attempt || 0) + 1;
-  if (job.attempt > 6) { rpcStats.errors++; job.reject(new RpcError('RPC unavailable', 'RETRY')); return; }
+  if (!job.low && job.attempt > 8) { rpcStats.errors++; job.reject(new RpcError('RPC unavailable', 'RETRY')); return; }
   rpcStats.retries++;
-  setTimeout(() => { (job.low ? lanes.low : lanes.high).unshift(job); pump(); }, delay * 2 ** (job.attempt - 1) + Math.random() * 300);
+  const wait = Math.min(job.low ? 30000 : 15000, delay * 2 ** Math.min(job.attempt - 1, 6)) + Math.random() * 500;
+  setTimeout(() => { (job.low ? lanes.low : lanes.high).unshift(job); pump(); }, wait);
 }
 
 async function sendBatch(batch) {
@@ -93,22 +107,25 @@ async function sendBatch(batch) {
     });
     if (res.status === 429 || res.status >= 500) throw new RpcError('HTTP ' + res.status, res.status);
     body = await res.json();
-  } catch {
+  } catch (e) {
+    if (e.code === 429) throttled();
     if (config.rpcUrls.length > 1) benched.set(url, Date.now() + 15000);
     batch.forEach(j => retry(j, 500));
     return;
   }
   const byId = new Map((Array.isArray(body) ? body : [body]).map(r => [r.id, r]));
+  let limited = false;
   batch.forEach((job, i) => {
     const r = byId.get(ids[i]);
     if (!r) return retry(job, 500);
     if (r.error) {
-      if (r.error.code === 429 || /rate|too many requests/i.test(r.error.message || '')) return retry(job, 800);
+      if (r.error.code === 429 || /rate|too many requests/i.test(r.error.message || '')) { limited = true; return retry(job, 800); }
       // Deterministic errors (bad params, ranges, reverts) are not retried.
       return job.reject(new RpcError(r.error.message || 'rpc error', r.error.code));
     }
     job.resolve(r.result);
   });
+  if (limited) throttled(); else recovered();
 }
 
 // low=true for background work (historical backfill) so live scoring is never starved.
