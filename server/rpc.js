@@ -31,7 +31,8 @@ function pickUrl() {
   }
   return urls[urlIdx++ % urls.length];
 }
-export const rpcStats = { sent: 0, calls: 0, retries: 0, errors: 0, get rate() { return Math.round(rate * 10) / 10; } };
+export const rpcStats = { sent: 0, calls: 0, retries: 0, errors: 0, kinds: {}, get rate() { return Math.round(rate * 10) / 10; } };
+const note = kind => { rpcStats.kinds[kind] = (rpcStats.kinds[kind] || 0) + 1; };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -105,10 +106,12 @@ async function sendBatch(batch) {
       body: JSON.stringify(batch.length === 1 ? payload[0] : payload),
       signal: AbortSignal.timeout(25000)
     });
-    if (res.status === 429 || res.status >= 500) throw new RpcError('HTTP ' + res.status, res.status);
+    if (!res.ok) throw new RpcError('HTTP ' + res.status, res.status);
     body = await res.json();
   } catch (e) {
-    if (e.code === 429) throttled();
+    note(e.code ? 'http ' + e.code : e.name === 'TimeoutError' ? 'timeout' : e instanceof SyntaxError ? 'bad json' : 'network: ' + (e.cause?.code || e.message).slice(0, 40));
+    // Any transport-level failure (429, 403, 5xx, timeouts, HTML error pages) means: slow down.
+    throttled();
     if (config.rpcUrls.length > 1) benched.set(url, Date.now() + 15000);
     batch.forEach(j => retry(j, 500));
     return;
@@ -117,9 +120,9 @@ async function sendBatch(batch) {
   let limited = false;
   batch.forEach((job, i) => {
     const r = byId.get(ids[i]);
-    if (!r) return retry(job, 500);
+    if (!r) { note('missing in batch'); limited = true; return retry(job, 500); }
     if (r.error) {
-      if (r.error.code === 429 || /rate|too many requests/i.test(r.error.message || '')) { limited = true; return retry(job, 800); }
+      if (r.error.code === 429 || /rate|too many requests|capacity|limit exceeded/i.test(r.error.message || '')) { note('rpc ' + r.error.code); limited = true; return retry(job, 800); }
       // Deterministic errors (bad params, ranges, reverts) are not retried.
       return job.reject(new RpcError(r.error.message || 'rpc error', r.error.code));
     }
