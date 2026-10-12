@@ -717,6 +717,7 @@
   let quoteTimer = null;
   function requestQuote() {
     clearTimeout(quoteTimer);
+    if (!swap.busy) note('');
     swap.quote = null; swap.error = null;
     renderSwap();
     if (!swap.target || !swap.origin || parseUnits(payInput.value, inDecimals()) === 0n) return;
@@ -737,9 +738,10 @@
     } catch (e) {
       if (seq !== swap.seq) return;
       swap.quote = null;
-      swap.error = /not tradable|no curve|no route|unsupported|no liquidity/i.test(e.message)
-        ? 'Not tradable yet — no liquidity for this token'
+      swap.error = /blocks public trading/i.test(e.message) ? 'Pool blocks public trading'
+        : /not tradable|no curve|no route|unsupported|no liquidity/i.test(e.message) ? 'Not tradable yet — no liquidity for this token'
         : e.message;
+      if (/blocks public trading/i.test(e.message)) note('This token\u2019s pool only lets specific contracts trade it, usually bots. No public app can buy it right now.');
     }
     swap.quoting = false;
     renderSwap();
@@ -803,7 +805,7 @@
     go.textContent = swap.mode === 'sell' ? `Sell ${t.symbol}` : t.score != null && t.score < 4 ? `Buy anyway (score ${t.score})` : `Buy ${t.symbol}`;
   }
   if (!$('#swNote')) $('#swGo').insertAdjacentHTML('afterend', '<p class="swnote" id="swNote" hidden></p>');
-  const note = msg => { const n = $('#swNote'); n.hidden = !msg; n.innerHTML = msg || ''; };
+  function note(msg) { const n = $('#swNote'); if (!n) return; n.hidden = !msg; n.innerHTML = msg || ''; }
 
   payInput.addEventListener('input', e => { e.target.value = e.target.value.replace(/[^0-9.,]/g, ''); requestQuote(); });
   $('#paySel').addEventListener('click', () => (swap.mode === 'buy' ? openChainPicker() : openTokenPicker()));
@@ -878,6 +880,8 @@
   }
 
   const rhEth = async user => BigInt((await api(`/balance?chainId=${RH}&address=${user}`)).balance);
+  const WETH = '0x0bd7d308f8e1639fab988df18a8011f41eacad73';
+  const rhWeth = async user => BigInt((await api(`/balance?chainId=${RH}&address=${user}&token=${WETH}`)).balance);
 
   async function execute() {
     if (!wallet.address) return connect();
@@ -889,17 +893,26 @@
       const user = wallet.address;
       // Fresh plan for the real wallet right before signing.
       const plan = await api('/route', { body: routeBody(user) });
-      let ethBefore = null;
+      let ethBefore = null, wethBefore = null;
       for (const step of plan.steps) {
         if (step.type === 'relay') {
           await runRelay(step.quote);
         } else if (step.type === 'tx') {
           if (step.label === 'Sell' && plan.steps.some(x => x.type === 'bridge')) ethBefore = await rhEth(user);
+          if (step.label === 'Sell' && plan.steps.some(x => x.type === 'unwrap')) wethBefore = await rhWeth(user);
           $('#swGo').innerHTML = `<span class="spin"></span> ${esc(step.label)} in wallet`;
           stepUI(1, 'now', step.label === 'Approve' || step.label === 'Approve router' ? 'Approve the token in your wallet' : 'Confirm the trade in your wallet');
           const hash = await sendTx(step.tx);
           $('#swGo').innerHTML = '<span class="spin"></span> Confirming';
           await waitReceipt(hash);
+        } else if (step.type === 'unwrap') {
+          // Turn the WETH this sale paid out into plain ETH.
+          const gained = (await rhWeth(user)) - (wethBefore ?? 0n);
+          if (gained > 0n) {
+            stepUI(2, 'now', 'Unwrapping WETH to ETH — confirm in wallet');
+            $('#swGo').innerHTML = '<span class="spin"></span> Unwrap in wallet';
+            await waitReceipt(await sendTx({ to: WETH, data: '0x2e1a7d4d' + gained.toString(16).padStart(64, '0'), value: 0, chainId: RH }));
+          }
         } else if (step.type === 'bridge') {
           // Move the ETH this sell produced to the chain the user picked.
           stepUI(2, 'now', 'Bridging your ETH — confirm in wallet');

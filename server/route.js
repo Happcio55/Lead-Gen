@@ -7,7 +7,7 @@
 //       Robinhood Chain (approve + swap), plus a Relay bridge step when the user wants funds elsewhere.
 import * as relay from './relay.js';
 import { buildSwap } from './uniswap.js';
-import { buildV4Trade } from './uniswap4.js';
+import { buildV4Trade, v4Blocked } from './uniswap4.js';
 import { buildCurveTrade, findCurve } from './curve.js';
 import { db } from './store.js';
 import { config } from './config.js';
@@ -69,7 +69,9 @@ export async function buildRoute({ user, chainId, token, side, amount, slippageB
         relayErr = e;
       }
     }
-    const noRoute = () => new Error(relayErr ? relayErr.message : isStock ? 'No liquidity for this stock token right now' : 'Not tradable yet: no curve or pool found');
+    const noRoute = () => new Error(v4Blocked(token)
+      ? 'Pool blocks public trading: its hook only accepts trades from specific contracts (usually bots)'
+      : relayErr ? relayErr.message : isStock ? 'No liquidity for this stock token right now' : 'Not tradable yet: no curve or pool found');
     // 2. Curve or Uniswap, already on Robinhood Chain.
     if (chainId === RH) {
       const t = await onChainTrade(token, { user, side: 'buy', amount: amt, slippageBps }).catch(() => null);
@@ -102,6 +104,8 @@ export async function buildRoute({ user, chainId, token, side, amount, slippageB
   if (t.approve) steps.push({ type: 'tx', label: 'Approve', tx: txJson(t.approve) });
   if (t.approve2) steps.push({ type: 'tx', label: 'Approve router', tx: txJson(t.approve2) });
   steps.push({ type: 'tx', label: 'Sell', tx: txJson(t.tx), ethOut: s(t.minOut) });
+  // Some launchpad routers pay out WETH; turn it back into ETH.
+  if (t.unwrapWeth) steps.push({ type: 'unwrap' });
   let amountOut = s(t.amountOut), extra = {};
   if (chainId !== RH) {
     // The bridge leg is re-quoted with the exact ETH received once the sell has settled.

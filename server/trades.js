@@ -56,7 +56,8 @@ async function discover(token, t) {
       if (info && (info.token0 === ADDR.WETH || info.token1 === ADDR.WETH)) sources.v3.push({ pool: p.pairAddress.toLowerCase(), wethIs0: info.token0 === ADDR.WETH });
     } else if (labels.includes('v4')) {
       const key = await poolKey(p.pairAddress, p.pairCreatedAt).catch(() => null);
-      if (key && key.currency0 === ETH && key.currency1 === token) sources.v4.push({ id: p.pairAddress.toLowerCase() });
+      const quote = key && [ETH, ADDR.WETH].find(q => q === key.currency0 || q === key.currency1);
+      if (key && quote && (key.currency0 === token || key.currency1 === token)) sources.v4.push({ id: p.pairAddress.toLowerCase(), ethIs0: key.currency0 === quote });
     }
   }
   return sources;
@@ -80,8 +81,11 @@ function decodeTrades(logs, sources, dec) {
       const e = s.wethIs0 ? a0 : a1, k = s.wethIs0 ? a1 : a0;
       eth = abs(e); tok = abs(k); buy = e > 0n; trader = topicToAddr(l.topics[2]);
     } else if (l.topics[0] === V4_SWAP) {
+      const pool = sources.v4.find(x => x.id === l.topics[1].toLowerCase());
+      if (!pool) continue;
       const a0 = int(l.data, 0, 128), a1 = int(l.data, 1, 128); // swapper's deltas: negative = paid in
-      eth = abs(a0); tok = abs(a1); buy = a0 < 0n;
+      const e = pool.ethIs0 ? a0 : a1, k = pool.ethIs0 ? a1 : a0;
+      eth = abs(e); tok = abs(k); buy = e < 0n;
     } else continue;
     if (!tok || !eth) continue;
     out.push({ ...base, buy, eth: Number(eth) / 1e18, tokens: Number(tok) / 10 ** dec, price: (Number(eth) / Number(tok)) * scale, trader });
