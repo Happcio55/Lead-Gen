@@ -11,6 +11,13 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="assets/kairo-mark.svg?v=orbit-1">
 <link rel="stylesheet" href="assets/style.css?v=kairo-brand-2">
+<style>
+.contract-bar{position:relative;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--line);font-size:12px;color:var(--mute)}
+.contract-bar code{color:var(--text);font-size:12px;overflow-wrap:anywhere;user-select:all}
+.contract-bar button,.contract-bar a{flex-shrink:0;color:var(--acc);background:transparent;border:1px solid var(--line2);border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
+.contract-bar .contract-value{min-width:0;max-width:100%;display:flex;align-items:center;gap:8px}
+@media(max-width:540px){.contract-bar{gap:8px}.contract-bar .contract-value{flex-basis:100%;justify-content:center}.contract-bar code{font-size:10px}}
+</style>
 </head>
 <body>
 <div class="bgfx" aria-hidden="true">
@@ -56,6 +63,14 @@
 </header>
 
 <main>
+<div class="wrap">
+  <div class="contract-bar" aria-label="Contract address and community">
+    <div class="contract-value"><span>CA</span><code id="officialCA">0xd28a3dc29aedd33bdd6fa2b05ce1ab052ad223e4</code></div>
+    <button type="button" id="copyOfficialCA" aria-label="Copy contract address">Copy CA</button>
+    <a href="https://x.com/Kairodex" target="_blank" rel="noopener noreferrer">X · @Kairodex ↗</a>
+    <span id="caCopyStatus" role="status" aria-live="polite"></span>
+  </div>
+</div>
 <section class="hero" id="hero" aria-label="Check and buy">
   <div class="wrap">
     <div>
@@ -267,7 +282,7 @@
       </div>
       <div>
         <b>Community</b>
-        <a href="#">X / Twitter</a>
+        <a href="https://x.com/Kairodex" target="_blank" rel="noopener noreferrer">X / Twitter ↗</a>
         <a href="#">Telegram</a>
       </div>
     </div>
@@ -309,5 +324,16 @@
 
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <script src="assets/app.js"></script>
+<script>
+document.getElementById('copyOfficialCA').addEventListener('click', async () => {
+  const status = document.getElementById('caCopyStatus');
+  try {
+    await navigator.clipboard.writeText(document.getElementById('officialCA').textContent);
+    status.textContent = 'Copied!';
+  } catch {
+    status.textContent = 'Select the address to copy it.';
+  }
+});
+</script>
 </body>
 </html>
