@@ -4,6 +4,9 @@ export const config = {
   // One or more RPC endpoints (comma-separated in RPC_URLS). Requests rotate across them and fail over on errors.
   rpcUrls: (process.env.RPC_URLS || process.env.RPC_URL || 'https://rpc.mainnet.chain.robinhood.com').split(',').map(s => s.trim()).filter(Boolean),
   get rpcUrl() { return this.rpcUrls[0]; },
+  // Free public endpoints used only while every RPC_URLS endpoint is failing (e.g. the official node 403s
+  // datacenter IPs). They have tighter limits, so the app runs in a slower, reduced mode on them. '' disables.
+  rpcFallbacks: (process.env.RPC_FALLBACKS ?? 'https://robinhood.drpc.org').split(',').map(s => s.trim()).filter(Boolean),
   // HTTP requests per second sent to the RPC (each may carry a batch of up to 25 calls). The public endpoint rate-limits hard; raise this with a paid RPC.
   rpcRps: Number(process.env.RPC_RPS || 10),
   rpcConcurrency: Number(process.env.RPC_CONCURRENCY || 4),

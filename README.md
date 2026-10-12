@@ -40,6 +40,7 @@ On first start the server backfills the last 24 hours of launches in the backgro
 | --- | --- | --- |
 | `PORT` | `8080` | HTTP port |
 | `RPC_URLS` | `https://rpc.mainnet.chain.robinhood.com` | One or more Robinhood Chain RPCs, comma-separated. Requests rotate across them and fail over. Adding a paid RPC (Alchemy, QuickNode, …) scores faster |
+| `RPC_FALLBACKS` | `https://robinhood.drpc.org` | Free public RPCs used only while every `RPC_URLS` endpoint fails (the official node returns 403 to many datacenter IPs). Their limits are tight (3 calls per batch, 100-block log queries), so the app runs slower on them: shorter chart history on first open, no wide history scans. Set to empty to disable |
 | `RPC_RPS` | `10` | HTTP requests per second to the RPC. Each request carries up to 25 batched calls |
 | `BACKFILL_HOURS` | `24` | How far back to look on first start |
 | `ANTHROPIC_API_KEY` | – | Enables Claude-written explanations |

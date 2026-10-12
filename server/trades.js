@@ -101,6 +101,8 @@ async function fetchRange(sources, from, to) {
   return (await Promise.all(jobs)).flat();
 }
 
+const RECENT = 5000n; // ~8 minutes of blocks
+
 export async function getBook(token) {
   token = token.toLowerCase();
   const t = db.tokens[token];
@@ -117,7 +119,14 @@ export async function getBook(token) {
     if (books.size > 300) books.delete(books.keys().next().value);
   }
   if (tip > b.lastBlock) {
-    const logs = await fetchRange(b.sources, b.lastBlock + 1n, tip);
+    let logs;
+    try {
+      logs = await fetchRange(b.sources, b.lastBlock + 1n, tip);
+    } catch (e) {
+      // A short-range fallback RPC can't serve the full history: start from the last few minutes and grow.
+      if (e.code !== 'LIMIT' || tip - b.lastBlock <= RECENT) throw e;
+      logs = await fetchRange(b.sources, tip - RECENT + 1n, tip);
+    }
     const fresh = decodeTrades(logs, b.sources, dec);
     b.trades = b.trades.concat(fresh).sort((x, y) => x.block - y.block || x.idx - y.idx).slice(-MAX_TRADES);
     b.lastBlock = tip;

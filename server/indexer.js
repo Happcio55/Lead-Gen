@@ -35,8 +35,12 @@ async function classify(address, log, low) {
   pending.add(address);
   try {
     const block = BigInt(log.blockNumber);
-    let prior;
-    try {
+    // Cheap first test: a contract that didn't exist ~100 s before its first mint is a fresh launch.
+    // Only older contracts need the (expensive) look back through their Transfer history.
+    const before = block > 1000n ? block - 1000n : 0n;
+    const code = await rpc('eth_getCode', [address, '0x' + before.toString(16)], low).catch(() => null);
+    let prior = code === '0x' ? [] : null;
+    if (!prior) try {
       prior = await getLogs({ address, topics: [TOPIC.TRANSFER] }, block > LOOKBACK ? block - LOOKBACK : 0n, block - 1n, { noSplit: true, low });
     } catch (e) {
       if (e.code === 'LIMIT') { db.oldTokens[address] = 1; return; }
@@ -46,8 +50,8 @@ async function classify(address, log, low) {
     if (db.stocks[address]) return;
 
     const meta = await getMetadata(address).catch(() => null);
-    // Not an ERC-20, or a machine-generated market token (e.g. "PRD-df5052bd" prediction-market legs).
-    if (!meta || /-[0-9a-f]{6,}$/i.test(meta.symbol)) { db.oldTokens[address] = 1; return; }
+    // Not an ERC-20, an LP share, or a machine-generated market token (e.g. "PRD-df5052bd" prediction-market legs).
+    if (!meta || /-[0-9a-f]{6,}$/i.test(meta.symbol) || /^(UNI-V2|UNI-V3-POS|SLP|Cake-LP)$/i.test(meta.symbol)) { db.oldTokens[address] = 1; return; }
     const [tx, createdAt] = await Promise.all([
       rpc('eth_getTransactionByHash', [log.transactionHash], low),
       blockTime(block, low)
@@ -154,7 +158,8 @@ async function stockLoop() {
         if (cursor == null) {
           // First run: look back over the backfill window in large steps.
           const back = BigInt(Math.round(config.backfillHours * 3600 * 1000 / (chain.blockMs || 100)));
-          await scanStocks(tip > back ? tip - back : 0n, tip);
+          // On a short-range fallback RPC this wide scan isn't possible; the seeded list covers it.
+          await scanStocks(tip > back ? tip - back : 0n, tip).catch(e => console.warn('[indexer] stock backscan skipped:', e.message));
         } else if (tip > cursor) {
           await scanStocks(cursor + 1n, tip);
         }

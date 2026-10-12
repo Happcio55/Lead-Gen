@@ -35,10 +35,31 @@ const swapParams = { type: 'tuple', components: [
 const pools = new Map();
 const PROBE = '0x00000000000000000000000000000000000c0ffe';
 
+// Block produced at a unix-ms time: interpolate from the tip, then correct against real block timestamps.
+async function blockAt(ms, tip) {
+  const per = chain.blockMs || 100;
+  let est = tip - BigInt(Math.max(0, Math.round((Date.now() - ms) / per)));
+  for (let i = 0; i < 3; i++) {
+    const b = await client.getBlock({ blockNumber: est > tip ? tip : est });
+    const diff = ms - Number(b.timestamp) * 1000;
+    if (Math.abs(diff) < 2000) break;
+    est += BigInt(Math.round(diff / per));
+  }
+  return est > tip ? tip : est;
+}
+
 export async function poolKey(poolId, createdAt) {
   const tip = BigInt(chain.tip || await client.getBlockNumber());
-  const est = createdAt ? tip - BigInt(Math.max(0, Math.round((Date.now() - createdAt) / (chain.blockMs || 100)))) : tip;
-  const logs = await getLogs({ address: POOL_MANAGER, topics: [INITIALIZE, poolId] }, est - 60000n, est + 60000n < tip ? est + 60000n : tip).catch(() => []);
+  const filter = { address: POOL_MANAGER, topics: [INITIALIZE, poolId] };
+  const around = (est, span) => getLogs(filter, est - span, est + span < tip ? est + span : tip).catch(() => []);
+  let logs = [];
+  // A tight window around the pool's creation time first (cheap everywhere, and the only option on a
+  // short-range fallback RPC), then a wide one in case the timestamp was off.
+  if (createdAt) logs = await around(await blockAt(createdAt, tip).catch(() => tip), 2500n);
+  if (!logs.length) {
+    const est = createdAt ? tip - BigInt(Math.max(0, Math.round((Date.now() - createdAt) / (chain.blockMs || 100)))) : tip;
+    logs = await around(est, 60000n);
+  }
   if (!logs.length) return null;
   const [fee, tickSpacing, hooks] = decodeAbiParameters([{ type: 'uint24' }, { type: 'int24' }, { type: 'address' }], logs[0].data);
   const key = { currency0: topicToAddr(logs[0].topics[2]), currency1: topicToAddr(logs[0].topics[3]), fee, tickSpacing, hooks: hooks.toLowerCase() };
