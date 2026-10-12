@@ -2,6 +2,8 @@
 import { ADDR, CHAIN_ID, DEFAULT_RPC, EXPLORER } from '../shared/chain.js';
 
 const BOARD_LIMIT = 400;
+// Surge's Privy app (a public client id, safe to ship). PRIVY_APP_ID overrides it.
+const DEFAULT_PRIVY_APP_ID = 'cmv527g7j03lv0fjyt8xsqzqs';
 
 // Reads the browser may make through the proxy. Writes are limited to broadcasting
 // already-signed transactions; keys never touch this server.
@@ -14,7 +16,7 @@ const RPC_METHODS = new Set([
 // `defer` keeps a promise running after the response is sent (Vercel's waitUntil).
 export function createApi({ indexer, lazy = false, defer = null, env = process.env, log = console }) {
   const rpcUrl = env.RH_RPC_URL || DEFAULT_RPC;
-  const privyAppId = env.PRIVY_APP_ID || '';
+  const privyAppId = env.PRIVY_APP_ID || DEFAULT_PRIVY_APP_ID;
 
   // In serverless mode every data request brings the index up to date first. A cold instance's
   // backfill takes ~10-20s: answer "syncing" after a few seconds and let it finish in the background.

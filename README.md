@@ -62,7 +62,7 @@ second, so all viewers share the same work.
 2. **Vercel**: open [vercel.com/new](https://vercel.com/new), import this GitHub repo and keep the
    detected settings (they come from `vercel.json`).
 3. Under **Environment Variables**, add:
-   - `PRIVY_APP_ID`: the App ID from step 1. Required for email login.
+   - `PRIVY_APP_ID` *(optional)*: the App ID from step 1. Surge's own app id is built in as the default, so only set this to use a different Privy app.
    - `RH_RPC_URL` *(optional)*: your own Robinhood Chain RPC, if you have one.
 
    Then click **Deploy**.
@@ -97,7 +97,7 @@ To run the API the way Vercel does (lazy, per-request indexing), build first and
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `PRIVY_APP_ID` | *(empty)* | Turns on Privy login (email/social plus embedded wallet). Without it, the app falls back to browser wallets (MetaMask, Rabby, …). |
+| `PRIVY_APP_ID` | Surge's app id | Privy app used for login (email/social plus embedded wallet). |
 | `RH_RPC_URL` | `https://rpc.mainnet.chain.robinhood.com` | Robinhood Chain RPC. It must allow `eth_getLogs` over ranges of a few thousand blocks. |
 | `BACKFILL_BLOCKS` | `36000` (~1 hour) | How much history to index on startup. |
 | `PORT` | `8787` | HTTP port (local server only). |
