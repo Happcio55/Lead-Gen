@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="vk-bg" cx="50%" cy="50%" r="75%"><stop offset="0" stop-color="#1a1530"/><stop offset=".6" stop-color="#0c0b14"/><stop offset="1" stop-color="#07070a"/></radialGradient>
+    <filter id="vk-grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0"/></filter>
+    <filter id="vk-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9" result="b"/><feColorMatrix in="b" values="0 0 0 0 .62  0 0 0 0 .55  0 0 0 0 1  0 0 0 .9 0"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#vk-bg)"/>
+  <rect width="512" height="512" filter="url(#vk-grain)" opacity=".07"/>
+  <g fill="#ffffff" filter="url(#vk-glow)"><path d="M165.9 254.5 L278.9 233.1 L257.5 346.1 Z"/><path d="M233.1 187.3 L346.1 165.9 L324.7 278.9 Z"/></g>
+</svg>

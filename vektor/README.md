@@ -1,5 +1,7 @@
 # Vektor
 
+**Live:** https://lead-gen-vektor.vercel.app
+
 A code-first AI assistant powered by Claude, built as a landing page you can put live in minutes.
 Ask for a snippet, a fix or a smart contract and it streams back working code with one line of
 explanation. Visitors can run JavaScript and Python answers in the browser, and any other site
