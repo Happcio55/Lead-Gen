@@ -50,7 +50,7 @@ Contract addresses (in `shared/chain.js`) were checked on-chain:
 ## Deploy to Vercel
 
 The repo deploys to Vercel without changes. The web app is built into `dist/`, and every `/api/*`
-route runs as a single serverless function (`api/[...path].js`). A warm instance keeps its index in
+route runs as a single serverless function (`api/index.js`, reached through a rewrite in `vercel.json`). A warm instance keeps its index in
 memory and fetches only new blocks on each request. A cold instance backfills the last hour in the
 background (about 10–20 s) while the app shows "Syncing…". The CDN caches board responses for one
 second, so all viewers share the same work.
