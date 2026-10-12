@@ -5,7 +5,7 @@ import { feeLabel } from './Board.jsx';
 import { usePoolDetail, useNow } from './data.js';
 import { age, copy, eth, num, pct, short, usd } from './lib.js';
 import { closeDrawer, toast, toggleWatch, useStore } from './store.js';
-import { setRule, useTrader, valuePosition } from './trading.js';
+import { canTrade, setRule, useTrader, valuePosition } from './trading.js';
 import { Avatar, Delta, NumField } from './ui.jsx';
 
 const FRAMES = [
@@ -31,15 +31,21 @@ export function Drawer({ id, board }) {
 
   if (!row) {
     return (
-      <aside className="drawer">
+      <div className="drawer token-page">
+        <button className="back-btn" onClick={() => (history.state?.coin ? history.back() : closeDrawer())}>
+          ← Back
+        </button>
         <div className="drawer-loading">{missing ? 'This pool is no longer tracked.' : 'Loading pool…'}</div>
-      </aside>
+      </div>
     );
   }
 
   const supply = detail?.supply || (row.priceEth ? row.mcapUsd / (row.priceEth * ethUsd || 1) : 0);
   return (
-    <aside className="drawer">
+    <div className="drawer token-page">
+      <button className="back-btn" onClick={() => (history.state?.coin ? history.back() : closeDrawer())}>
+        ← Back
+      </button>
       <header className="drawer-head">
         <Avatar token={row.token} symbol={row.symbol} logo={row.logo} size={48} />
         <div className="drawer-title">
@@ -70,13 +76,11 @@ export function Drawer({ id, board }) {
               </a>
             )}
             <span className="chip dim">{age(now - row.createdAt)} old</span>
+            {row.source === 'gecko' && <span className="chip">{row.dexName}</span>}
           </div>
         </div>
         <button className={`icon-btn star ${watched ? 'on' : ''}`} onClick={() => toggleWatch(id)}>
           {watched ? '★' : '☆'}
-        </button>
-        <button className="icon-btn" onClick={closeDrawer} aria-label="Close">
-          ✕
         </button>
       </header>
 
@@ -94,10 +98,17 @@ export function Drawer({ id, board }) {
             <small>1h</small>
             <Delta v={row.ch1h}>{pct(row.ch1h)}</Delta>
           </div>
-          <div>
-            <small>ATH</small>
-            <span>{usd(row.athUsd)}</span>
-          </div>
+          {row.source === 'gecko' ? (
+            <div>
+              <small>Liquidity</small>
+              <span>{usd(row.liqUsd)}</span>
+            </div>
+          ) : (
+            <div>
+              <small>ATH</small>
+              <span>{usd(row.athUsd)}</span>
+            </div>
+          )}
         </div>
 
         <div className="chart-card">
@@ -142,7 +153,7 @@ export function Drawer({ id, board }) {
           {detail && !detail.swaps.length && <div className="empty">No trades yet.</div>}
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
 
@@ -164,6 +175,7 @@ function TradePanel({ row, ethUsd }) {
   const [amount, setAmount] = useState(String(settings.quickBuy));
   const v = pos ? valuePosition(pos, row, ethUsd) : null;
 
+  if (!canTrade(row)) return <ExternalTrade row={row} />;
   return (
     <div className="trade">
       <div className="trade-tabs">
@@ -404,3 +416,23 @@ function CandleChart({ candles, scale }) {
   );
 }
 
+
+// Coins on a DEX the app does not route through yet: trade them on GeckoTerminal.
+function ExternalTrade({ row }) {
+  const gt = `https://www.geckoterminal.com/robinhood/pools/${row.poolAddress}`;
+  return (
+    <div className="trade ext-trade">
+      <div className="ext-note">
+        <span>
+          ${row.symbol} trades on {row.dexName}, which Vestas can't route through yet. Trade it on GeckoTerminal instead.
+        </span>
+      </div>
+      <div className="trade-body">
+        <a className="cta big" href={gt} target="_blank" rel="noreferrer">
+          Trade ${row.symbol} on GeckoTerminal ↗
+        </a>
+        <div className="trade-hint">Price, chart and trades on this page come from GeckoTerminal.</div>
+      </div>
+    </div>
+  );
+}

@@ -1,6 +1,8 @@
 // The three-column live board: dense token rows, per-column search, quick-buy amount and presets.
 import { memo, useMemo, useRef, useState } from 'react';
 import { age, copy, num, pct, short, usd } from './lib.js';
+import { hookName } from '../../shared/chain.js';
+import { canTrade } from './trading.js';
 import { openDrawer, resetFilters, setFilter, setLaneBuy, toast, toggleWatch, useStore } from './store.js';
 import { Avatar, Icon, NumField, Toggle } from './ui.jsx';
 
@@ -44,7 +46,7 @@ function isJunk(r) {
   if (r.liqUsd > 0 && r.mcapUsd > 50_000 && r.mcapUsd / r.liqUsd > 2000) return true;
   // A seven-figure market cap with no liquidity behind it at all is just the starting price talking.
   if (r.liqUsd === 0 && r.mcapUsd > 1_000_000) return true;
-  return !(r.fee & DYNAMIC_FEE) && r.fee >= 500_000;
+  return r.fee != null && !(r.fee & DYNAMIC_FEE) && r.fee >= 500_000;
 }
 
 // One row per token: keep its most liquid pool.
@@ -60,6 +62,7 @@ function dedupe(rows) {
 // v4 marks dynamic-fee pools (fee set by the hook per swap) with this flag.
 const DYNAMIC_FEE = 0x800000;
 export function feeLabel(fee) {
+  if (fee == null) return '—';
   if (fee & DYNAMIC_FEE) return 'dyn fee';
   return `${Number((fee / 10_000).toFixed(2))}%`;
 }
@@ -210,9 +213,11 @@ const Row = memo(function Row({ r, now, amount, onBuy }) {
   const tx5 = r.buys5m + r.sells5m;
   const buyShare = tx5 ? Math.round((r.buys5m / tx5) * 100) : null;
   const fromAth = r.athUsd > 0 ? (r.mcapUsd / r.athUsd - 1) * 100 : 0;
+  const ext = r.source === 'gecko';
   const fresh = now - r.createdAt < 20_000;
   const hooked = r.hooks !== NO_HOOK;
-  const highFee = r.fee & DYNAMIC_FEE || r.fee >= 50_000;
+  const knownHook = hookName(r.hooks);
+  const highFee = !ext && (r.fee & DYNAMIC_FEE || r.fee >= 50_000);
   const handle = xHandle(r.socials?.x);
   const xSearch = `https://x.com/search?q=${encodeURIComponent(r.token)}`;
 
@@ -279,15 +284,25 @@ const Row = memo(function Row({ r, now, amount, onBuy }) {
           <Pill label="5m" value={pct(r.ch5m, 0)} good={r.ch5m === 0 ? null : r.ch5m > 0} title="Price change, 5 minutes" />
           <Pill label="1h" value={pct(r.ch1h, 0)} good={r.ch1h === 0 ? null : r.ch1h > 0} title="Price change, 1 hour" />
           <Pill label="Buys" value={buyShare == null ? '—' : `${buyShare}%`} good={buyShare == null ? null : buyShare >= 50} title="Share of buys in the last 5 minutes" />
-          <Pill label="ATH" value={pct(fromAth, 0)} good={fromAth > -25} title="Distance from all-time-high market cap" />
-          <Pill label="Fee" value={feeLabel(r.fee)} good={!highFee} title="Pool swap fee" />
-          {hooked && <Pill label="Hook" value="v4" good={false} title={`Pool uses hook ${r.hooks}`} />}
+          {!ext && <Pill label="ATH" value={pct(fromAth, 0)} good={fromAth > -25} title="Distance from all-time-high market cap" />}
+          {ext ? (
+            <Pill label="DEX" value={r.dexName} title={`Launched on ${r.dexName}`} />
+          ) : (
+            <Pill label="Fee" value={feeLabel(r.fee)} good={!highFee} title="Pool swap fee" />
+          )}
+          {hooked && <Pill label="Hook" value={knownHook || 'v4'} good={!!knownHook} title={`Pool uses hook ${r.hooks}`} />}
         </div>
       </div>
 
-      <button className="prow-buy" onClick={stop(() => onBuy(r))} title={`Buy ${amount} ETH`}>
-        <Icon name="bolt" /> {amount} Ξ
-      </button>
+      {!canTrade(r) ? (
+        <button className="prow-buy ext" onClick={stop(() => openDrawer(r.id))} title={`Open ${r.symbol}`}>
+          Open →
+        </button>
+      ) : (
+        <button className="prow-buy" onClick={stop(() => onBuy(r))} title={`Buy ${amount} ETH`}>
+          <Icon name="bolt" /> {amount} Ξ
+        </button>
+      )}
     </div>
   );
 });

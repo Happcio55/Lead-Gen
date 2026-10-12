@@ -24,6 +24,12 @@ export const ADDR = {
   PERMIT2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
 };
 
+// v4 hooks of known launchpads: their pools are standard launches, not unknown custom logic.
+export const KNOWN_HOOKS = {
+  '0xe5e702641ea86f4ae6cc3cdaed2b886f976be044': 'Pons',
+};
+export const hookName = (hooks) => KNOWN_HOOKS[String(hooks).toLowerCase()] || null;
+
 export const EVENTS = {
   initialize: parseAbiItem(
     'event Initialize(bytes32 indexed id, address indexed currency0, address indexed currency1, uint24 fee, int24 tickSpacing, address hooks, uint160 sqrtPriceX96, int24 tick)'

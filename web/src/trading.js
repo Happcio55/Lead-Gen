@@ -2,21 +2,81 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { formatUnits, parseEther } from 'viem';
 import { ERC20_ABI, txUrl } from '../../shared/chain.js';
-import { buildBuyTx, buildSellTx, quote, sellApprovals, withSlippage } from '../../shared/v4.js';
+import {
+  PONS_ABI,
+  buildPonsBuyTx,
+  buildPonsSellTx,
+  buildRouteBuyTx,
+  buildRouteSellTx,
+  ponsSellApprovals,
+  quotePons,
+  quoteRoute,
+} from '../../shared/routes.js';
+import { buildBuyTx, buildSellTx, isTradable, quote, sellApprovals, withSlippage } from '../../shared/v4.js';
 import { chainClient, eth } from './lib.js';
 import { getState, set, toast, updateToast } from './store.js';
 import { useWallet } from './wallet.jsx';
 
-const POOL_FIELDS = ['id', 'currency0', 'currency1', 'fee', 'tickSpacing', 'hooks'];
+const POOL_FIELDS = ['id', 'route', 'poolAddress', 'token', 'currency0', 'currency1', 'fee', 'tickSpacing', 'hooks'];
 
 function poolOf(row) {
   return Object.fromEntries(POOL_FIELDS.map((k) => [k, row[k]]));
 }
 
+// Pools found through GeckoTerminal carry a route; our own index is Uniswap v4.
+const routeOf = (pool) => pool.route || 'v4';
+
+// Whether the app can trade this row itself.
+export function canTrade(row) {
+  return row.source !== 'gecko' || !!row.route;
+}
+
+// v4 and v3 pools listed by GeckoTerminal arrive without their pool key or fee tier; the coin
+// endpoint looks them up.
+async function withPoolKey(row) {
+  const route = routeOf(row);
+  if (row.source !== 'gecko' || (route === 'v4' && row.currency1) || (route === 'v3' && row.fee != null) || route === 'v2' || route === 'pons') return row;
+  const r = await fetch(`/api/pool/${row.id}`);
+  const d = r.ok ? await r.json() : null;
+  if (!d?.route || (route === 'v4' && !d.currency1) || (route === 'v3' && d.fee == null)) throw new Error('This pool cannot be traded here right now');
+  return { ...row, ...poolOf(d) };
+}
+
+async function quoteFor(pool, { side, amountIn, account }) {
+  const route = routeOf(pool);
+  if (route === 'pons') return quotePons(chainClient, pool, { side, amountIn, account });
+  if (route === 'v2' || route === 'v3') return quoteRoute(chainClient, pool, { side, amountIn });
+  return quote(chainClient, pool, { side, amountIn });
+}
+
+function buildTx(pool, side, { amountIn, minOut, to }) {
+  const route = routeOf(pool);
+  if (route === 'pons') return (side === 'buy' ? buildPonsBuyTx : buildPonsSellTx)(pool, { amountIn, minOut, to });
+  if (route === 'v2' || route === 'v3') return (side === 'buy' ? buildRouteBuyTx : buildRouteSellTx)(pool, { amountIn, minOut });
+  if (!isTradable(pool)) throw new Error('This pool cannot be traded here');
+  return (side === 'buy' ? buildBuyTx : buildSellTx)(pool, { amountIn, minOut });
+}
+
+// A Pons coin that graduated off its bonding curve trades elsewhere now (a Uniswap v4 pool with
+// the Pons hook); positions bought on the curve sell through wherever it lives today.
+async function currentPool(pool) {
+  if (routeOf(pool) !== 'pons') return pool;
+  const done = await chainClient.readContract({ address: pool.poolAddress, abi: PONS_ABI, functionName: 'graduated' });
+  if (!done) return pool;
+  const r = await fetch(`/api/route/${pool.token}`);
+  if (!r.ok) throw new Error('Coin graduated and its new pool was not found yet');
+  return { ...poolOf(await r.json()), token: pool.token };
+}
+
+function approvalsFor(pool, { owner, amount }) {
+  if (routeOf(pool) === 'pons') return ponsSellApprovals(chainClient, { owner, token: pool.token, pool: pool.poolAddress, amount });
+  return sellApprovals(chainClient, { owner, token: pool.token, amount });
+}
+
 function errText(e) {
   const m = e?.shortMessage || e?.details || e?.message || String(e);
   if (/user rejected|denied|rejected the request/i.test(m)) return 'Cancelled in wallet';
-  if (/insufficient funds/i.test(m)) return 'Not enough ETH for amount + gas';
+  if (/insufficient funds|exceeds the balance/i.test(m)) return 'Not enough ETH for amount + gas';
   return m.slice(0, 140);
 }
 
@@ -59,11 +119,12 @@ export function useTrader() {
       busy.current.add(key);
       const t = toast(`Buying ${row.symbol} for ${ethAmount} ETH…`, { kind: 'pending', ttl: 0 });
       try {
-        const pool = poolOf(row);
+        const pool = poolOf(await withPoolKey(row));
         const amountIn = parseEther(String(ethAmount));
-        const out = await quote(chainClient, pool, { side: 'buy', amountIn });
+        const out = await quoteFor(pool, { side: 'buy', amountIn, account: wallet.address });
+        if (!out) throw new Error('No liquidity to buy from');
         const slip = Math.round((slippage ?? getState().settings.slippage) * 100);
-        const hash = await wallet.send(buildBuyTx(pool, { amountIn, minOut: withSlippage(out, slip) }));
+        const hash = await wallet.send(buildTx(pool, 'buy', { amountIn, minOut: withSlippage(out, slip), to: wallet.address }));
         updateToast(t, { msg: `Buying ${row.symbol}… waiting for confirmation`, link: txUrl(hash) }, 0);
         await confirm(hash);
         const bal = await balanceOf(row.token, wallet.address);
@@ -102,14 +163,15 @@ export function useTrader() {
         const bal = await balanceOf(pos.token, wallet.address);
         const amountIn = fraction >= 1 ? bal : (bal * BigInt(Math.round(fraction * 10_000))) / 10_000n;
         if (amountIn === 0n) throw new Error('Nothing to sell');
-        const approvals = await sellApprovals(chainClient, { owner: wallet.address, token: pos.token, amount: amountIn });
+        const pool = await currentPool({ ...poolOf(pos), token: pos.token });
+        const approvals = await approvalsFor(pool, { owner: wallet.address, amount: amountIn });
         for (const a of approvals) {
           updateToast(t, { msg: `${a.label}…` }, 0);
           await confirm(await wallet.send(a));
         }
-        const out = await quote(chainClient, pos, { side: 'sell', amountIn });
+        const out = await quoteFor(pool, { side: 'sell', amountIn, account: wallet.address });
         const slip = Math.round(getState().settings.slippage * 100);
-        const hash = await wallet.send(buildSellTx(pos, { amountIn, minOut: withSlippage(out, slip) }));
+        const hash = await wallet.send(buildTx(pool, 'sell', { amountIn, minOut: withSlippage(out, slip), to: wallet.address }));
         updateToast(t, { msg: `${label} ${pos.symbol}… waiting for confirmation`, link: txUrl(hash) }, 0);
         await confirm(hash);
         const received = Number(formatUnits(out, 18));

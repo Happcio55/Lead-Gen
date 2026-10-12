@@ -4,7 +4,7 @@ import { txUrl } from '../../shared/chain.js';
 import { laneOf } from './Board.jsx';
 import { age, eth, num, pct, short, usd } from './lib.js';
 import { openDrawer, setView, useStore } from './store.js';
-import { useTrader } from './trading.js';
+import { canTrade, useTrader } from './trading.js';
 import { Avatar, Delta, Spark } from './ui.jsx';
 
 const TIERS = [
@@ -20,6 +20,7 @@ const TIERS = [
 
 export function Home({ board, now }) {
   const rows = board.rows;
+  const tradeable = useMemo(() => rows.filter(canTrade), [rows]);
   const surging = useMemo(
     () => rows.filter((r) => laneOf(r, now) === 'hot').sort((a, b) => b.vol5mUsd - a.vol5mUsd).slice(0, 5),
     // re-rank every few seconds, not every tick
@@ -38,7 +39,7 @@ export function Home({ board, now }) {
             <br />
             <mark>before the crowd</mark>.
           </h1>
-          <p className="lede">Live Uniswap v4 pools on Robinhood Chain. Log in with email, buy in one click, exit on autopilot.</p>
+          <p className="lede">Every new memecoin on Robinhood Chain, live from Pons and Uniswap. Log in with email, buy in one click, exit on autopilot.</p>
           <a className="underlink" href="#how">
             How trading on Vestas works <span>↗</span>
           </a>
@@ -60,7 +61,7 @@ export function Home({ board, now }) {
             </div>
           </div>
         </div>
-        <QuickBuyCard candidates={surging.length ? surging : top.slice(0, 5)} ethUsd={board.meta?.ethUsd || 0} />
+        <QuickBuyCard candidates={tradeable.slice().sort((a, b) => b.vol5mUsd - a.vol5mUsd).slice(0, 5)} ethUsd={board.meta?.ethUsd || 0} />
       </section>
 
       <section className="pillars" id="how">
