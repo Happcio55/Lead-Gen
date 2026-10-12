@@ -399,7 +399,7 @@ export default function Pulse() {
           const items = applyFilters(raw, f, prefs.win, c.sort)
           const qb = qbs[c.key] || qbs.new || 0.05
           return (
-            <section key={c.key} className={'col' + (mobileCol === c.key ? ' show' : '')} aria-label={c.title}>
+            <section key={c.key} className={'col col-' + c.key + (mobileCol === c.key ? ' show' : '')} aria-label={c.title}>
               <div className="col-head">
                 <h3 title={c.hint}>{c.title}</h3>
                 <span className="n">{items.length}</span>

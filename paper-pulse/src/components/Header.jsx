@@ -179,10 +179,10 @@ function Search() {
 }
 
 export function useTheme() {
-  const [theme, setTheme] = useState(() => storage.get('paperpulse:theme', 'light'))
+  const [theme, setTheme] = useState(() => storage.get('paper:theme', 'dark'))
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    storage.set('paperpulse:theme', theme)
+    storage.set('paper:theme', theme)
   }, [theme])
   return [theme, setTheme]
 }
@@ -307,7 +307,7 @@ export function TopBar({ route, theme, setTheme }) {
   return (
     <header className="top">
       <a href="#/" className="logo" aria-label="Paper">
-        <img src="/logo-sq-96.png" alt="" width="34" height="34" className="logo-img" />
+        <img src="/paper-p-96.png" alt="" width="34" height="34" className="logo-img" />
         <span className="word">Paper<em>.</em></span>
       </a>
       <nav className="nav">
@@ -366,7 +366,7 @@ export function Onboarding() {
   return (
     <div className="scrim" role="dialog" aria-modal="true" aria-labelledby="ob-h">
       <div className="modal">
-        <img src="/logo-256.png" alt="" width="72" height="72" />
+        <img src="/paper-p-256.png" alt="" width="72" height="72" />
         <h2 id="ob-h">Pick your paper balance</h2>
         <p>Trade real Robinhood Chain memecoins at live prices with paper ETH. Fills include real price impact from each pool's liquidity. Reset any time from your wallet.</p>
         <StartPicker value={pick} onPick={setPick} />

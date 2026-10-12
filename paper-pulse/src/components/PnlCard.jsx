@@ -49,7 +49,7 @@ async function draw(cv, d) {
     const im = new Image()
     im.onload = () => res(im)
     im.onerror = () => res(null)
-    im.src = '/logo-256.png'
+    im.src = '/paper-p-256.png'
   })
   if (logo) c.drawImage(logo, 54, 42, 62, 62)
   c.fillStyle = '#f4f5f9'
