@@ -4,7 +4,7 @@ import { txUrl } from '../../shared/chain.js';
 import { laneOf } from './Board.jsx';
 import { age, eth, num, pct, short, usd } from './lib.js';
 import { openDrawer, setView, useStore } from './store.js';
-import { useTrader } from './trading.js';
+import { canTrade, useTrader } from './trading.js';
 import { Avatar, Delta, Spark } from './ui.jsx';
 import { Rudy } from './Rudy.jsx';
 import { addressUrl } from '../../shared/chain.js';
@@ -22,6 +22,7 @@ const TIERS = [
 
 export function Home({ board, now }) {
   const rows = board.rows;
+  const tradeable = useMemo(() => rows.filter(canTrade), [rows]);
   const surging = useMemo(
     () => rows.filter((r) => laneOf(r, now) === 'hot').sort((a, b) => b.vol5mUsd - a.vol5mUsd).slice(0, 5),
     // re-rank every few seconds, not every tick
@@ -33,7 +34,7 @@ export function Home({ board, now }) {
 
   return (
     <div className="home">
-      <Stage rows={rows} surging={surging} top={top} feed={board.feed} now={now} ethUsd={board.meta?.ethUsd || 0} fresh={fresh} />
+      <Stage rows={rows} tradeable={tradeable} surging={surging} top={top} feed={board.feed} now={now} ethUsd={board.meta?.ethUsd || 0} fresh={fresh} />
 
       <section className="hero-copy">
         <h1>
@@ -42,7 +43,7 @@ export function Home({ board, now }) {
           <em>before the crowd.</em>
         </h1>
         <div>
-          <p className="lede">Live Uniswap v4 pools on Robinhood Chain. Log in with email, buy in one click, exit on autopilot.</p>
+          <p className="lede">Every new memecoin on Robinhood Chain, live from Pons and Uniswap. Log in with email, buy in one click, exit on autopilot.</p>
           <div className="cta-row">
             <button className="cta big-pill" onClick={() => setView('terminal')}>
               Open the terminal
@@ -259,7 +260,7 @@ function BuyFeed({ feed, now, ethUsd }) {
 }
 
 // Front-page stage: Rudy in the middle, live cards from the board orbiting him.
-function Stage({ rows, surging, top, feed, now, ethUsd, fresh }) {
+function Stage({ rows, tradeable, surging, top, feed, now, ethUsd, fresh }) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const iv = setInterval(() => setTick((t) => t + 1), 3500);
@@ -359,7 +360,7 @@ function Stage({ rows, surging, top, feed, now, ethUsd, fresh }) {
 
         <div className="fc fc-buy floaty d2">
           <span className="eyebrow">Quick buy</span>
-          <QuickBuyCard candidates={(surging.length ? surging : top).slice(0, 3)} ethUsd={ethUsd} compact />
+          <QuickBuyCard candidates={tradeable.slice().sort((a, b) => b.vol5mUsd - a.vol5mUsd).slice(0, 3)} ethUsd={ethUsd} compact />
         </div>
 
         <div className="fc-pills">

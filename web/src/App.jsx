@@ -8,7 +8,7 @@ import { applyAccent, Holdings, Palette, Rail, Settings, StatusBar, TopBar } fro
 import { getState, set, useStore } from './store.js';
 import { useAutomation, useBalanceSync, useTrader } from './trading.js';
 import { Icon, Toasts } from './ui.jsx';
-import { Rudy, RudyDefs } from './Rudy.jsx';
+import { Rudy } from './Rudy.jsx';
 
 export default function App() {
   const board = useBoard();
@@ -26,6 +26,16 @@ export default function App() {
 
   useEffect(() => applyAccent(getState().settings.accent), []);
 
+  // A coin page is a real page: the browser's back button returns to the list.
+  useEffect(() => {
+    if (!drawer) return;
+    history.pushState({ coin: drawer }, '');
+    document.querySelector('.scroll')?.scrollTo(0, 0);
+    const onPop = () => set({ drawer: null });
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [drawer]);
+
   useEffect(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -42,24 +52,28 @@ export default function App() {
 
   return (
     <div className="app">
-      <RudyDefs />
       <div className="backdrop" aria-hidden>
         <span className="blob a" />
         <span className="blob b" />
         <span className="blob c" />
       </div>
       <TopBar meta={board.meta} status={board.status} onSearch={() => set({ palette: true })} onSettings={() => setSettingsOpen(true)} />
-      {view === 'home' && (
+      {drawer && (
+        <div className="scroll">
+          <Drawer id={drawer} board={board} />
+        </div>
+      )}
+      {!drawer && view === 'home' && (
         <div className="scroll">
           <Home board={board} now={now} />
         </div>
       )}
-      {view === 'portfolio' && (
+      {!drawer && view === 'portfolio' && (
         <div className="scroll">
           <Portfolio board={board} />
         </div>
       )}
-      {view === 'terminal' && (
+      {!drawer && view === 'terminal' && (
         <main className="pulse">
           <div className="pulse-bar">
             <h1>
@@ -68,7 +82,7 @@ export default function App() {
             <span className="chain-pill">
               <i /> Robinhood Chain
             </span>
-            <span className="pulse-sub">Memecoins on Uniswap v4, updated every 2 seconds</span>
+            <span className="pulse-sub">New memecoins on Pons and Uniswap, updated every 2 seconds</span>
             <div className="pulse-actions">
               <button className={`bar-btn ${panel === 'watch' ? 'on' : ''}`} onClick={() => togglePanel('watch')}>
                 <Icon name="star" /> Watchlist
@@ -89,19 +103,17 @@ export default function App() {
           )}
         </main>
       )}
-      {view === 'terminal' && panel === 'holdings' && (
+      {!drawer && view === 'terminal' && panel === 'holdings' && (
         <div className="float-panel wide">
           <Holdings board={board} />
         </div>
       )}
-      {view === 'terminal' && panel === 'watch' && (
+      {!drawer && view === 'terminal' && panel === 'watch' && (
         <div className="float-panel">
           <Rail board={board} now={now} />
         </div>
       )}
-      {view === 'terminal' && <StatusBar board={board} panel={panel} onToggle={togglePanel} />}
-      {drawer && <Drawer id={drawer} board={board} />}
-      {drawer && <div className="drawer-scrim" onClick={() => set({ drawer: null })} />}
+      {!drawer && view === 'terminal' && <StatusBar board={board} panel={panel} onToggle={togglePanel} />}
       {palette && <Palette rows={board.rows} onClose={() => set({ palette: false })} />}
       {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
       <Toasts />
