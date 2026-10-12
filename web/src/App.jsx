@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react';
 import { Board } from './Board.jsx';
 import { useBoard, useNow } from './data.js';
 import { Drawer } from './Drawer.jsx';
-import { Home } from './Home.jsx';
+import { Home, SyncMark } from '@brand';
 import { Portfolio } from './Portfolio.jsx';
 import { applyAccent, Holdings, Palette, Rail, Settings, StatusBar, TopBar } from './Shell.jsx';
 import { getState, set, useStore } from './store.js';
 import { useAutomation, useBalanceSync, useTrader } from './trading.js';
 import { Icon, Toasts } from './ui.jsx';
-import { Rudy } from './Rudy.jsx';
 
 export default function App() {
   const board = useBoard();
@@ -94,7 +93,7 @@ export default function App() {
           </div>
           {board.status === 'connecting' || board.status === 'syncing' ? (
             <div className="syncing">
-              <Rudy mood="neutral" size={96} track />
+              <SyncMark />
               <b>Syncing with Robinhood Chain…</b>
               <span>Indexing the last hour of v4 pools and swaps. This takes a few seconds the first time.</span>
             </div>

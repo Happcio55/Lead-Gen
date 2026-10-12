@@ -7,7 +7,8 @@ import { age, copy, eth, num, pct, short, usd } from './lib.js';
 import { closeDrawer, toast, toggleWatch, useStore } from './store.js';
 import { canTrade, setRule, useTrader, valuePosition } from './trading.js';
 import { Avatar, Delta, NumField } from './ui.jsx';
-import { Rudy, rudyRead } from './Rudy.jsx';
+import { Mascot, NAME } from '@brand';
+import { rudyRead } from './Rudy.jsx';
 
 const FRAMES = [
   { label: '5s', ms: 5_000 },
@@ -182,7 +183,7 @@ function TradePanel({ row, ethUsd }) {
     <div className="trade">
       {read && (
         <div className={`rudy-tip ${read.kind}`}>
-          <Rudy mood={read.kind === 'warn' ? 'worried' : 'happy'} size={44} track />
+          <Mascot mood={read.kind === 'warn' ? 'worried' : 'happy'} size={44} track />
           <span>{read.text}</span>
         </div>
       )}
@@ -431,9 +432,9 @@ function ExternalTrade({ row }) {
   return (
     <div className="trade ext-trade">
       <div className="rudy-tip">
-        <Rudy mood="neutral" size={44} track />
+        <Mascot mood="neutral" size={44} track />
         <span>
-          ${row.symbol} trades on {row.dexName}, which Vestas can't route through yet. Trade it on GeckoTerminal instead.
+          ${row.symbol} trades on {row.dexName}, which {NAME} can't route through yet. Trade it on GeckoTerminal instead.
         </span>
       </div>
       <div className="trade-body">

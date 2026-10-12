@@ -74,7 +74,7 @@ export function Home({ board, now }) {
 
       <section className="pillars" id="how">
         <Pillar title="Straight from the chain">
-          Every pool and swap is read from Uniswap's PoolManager as it happens. Nothing is delayed, re-priced or filtered behind your back.
+          Uniswap v4 pools are read straight from the chain as they trade, and launches on Pons and other Uniswap pools come in through GeckoTerminal. Every trade goes on-chain from your wallet.
         </Pillar>
         <Pillar title="Your keys, your coins">
           Trades are built in your browser and signed by your own wallet. Vestas never holds funds and never sees a private key.

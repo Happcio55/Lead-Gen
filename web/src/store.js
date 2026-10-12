@@ -1,5 +1,6 @@
 // Tiny global store (useSyncExternalStore) for client state that persists in localStorage.
 import { useSyncExternalStore } from 'react';
+import { ACCENT } from '@brand-meta';
 import { load, save } from './lib.js';
 
 const DEFAULT_FILTERS = { minLiq: 0, minMc: 0, maxMc: 0, minTx5m: 0, maxAgeMin: 0, hideHooks: false };
@@ -8,7 +9,7 @@ export const DEFAULT_SETTINGS = {
   quickBuy: 0.005, // ETH per one-click buy
   presets: [0.002, 0.005, 0.01, 0.05],
   slippage: 15, // percent
-  accent: 'orange',
+  accent: ACCENT,
   compact: false,
   pauseOnHover: true,
   sound: false,
@@ -35,7 +36,7 @@ const state = {
 };
 state.settings.filters = { ...DEFAULT_SETTINGS.filters, ...state.settings.filters };
 // The lime default belonged to the old look; switch it once to the new orange.
-if (!load('lookV2', false)) {
+if (ACCENT === 'orange' && !load('lookV2', false)) {
   if (state.settings.accent === 'lime') state.settings.accent = 'orange';
   save('lookV2', true);
 }

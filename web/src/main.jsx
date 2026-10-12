@@ -1,10 +1,12 @@
+// Base styles first: the brand's own stylesheet (pulled in through App) layers on top.
+import './styles.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { PrivyProvider } from '@privy-io/react-auth';
 import { robinhood } from '../../shared/chain.js';
+import { PRIVY_APPEARANCE } from '@brand-meta';
 import App from './App.jsx';
 import { InjectedWalletProvider, PrivyWalletProvider } from './wallet.jsx';
-import './styles.css';
 
 async function boot() {
   let config = {};
@@ -33,7 +35,7 @@ async function boot() {
         appId={appId}
         config={{
           loginMethods: ['email', 'google', 'twitter', 'wallet'],
-          appearance: { theme: 'light', accentColor: '#ff6a1f', logo: '/favicon.svg', walletChainType: 'ethereum-only' },
+          appearance: { theme: 'light', ...PRIVY_APPEARANCE, walletChainType: 'ethereum-only' },
           embeddedWallets: { ethereum: { createOnLogin: 'users-without-wallets' }, showWalletUIs: false },
           defaultChain: robinhood,
           supportedChains: [robinhood],

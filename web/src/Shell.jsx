@@ -7,7 +7,7 @@ import { openDrawer, set, setSettings, setView, toast, toggleWatch, useStore } f
 import { useTrader, valuePosition } from './trading.js';
 import { Avatar, Delta, Icon, Modal, NumField, Spark, Toggle } from './ui.jsx';
 import { useWallet } from './wallet.jsx';
-import { Rudy } from './Rudy.jsx';
+import { Logo, NAME } from '@brand';
 
 export function TopBar({ meta, status, onSearch, onSettings }) {
   const wallet = useWallet();
@@ -19,8 +19,8 @@ export function TopBar({ meta, status, onSearch, onSettings }) {
   return (
     <header className="topbar">
       <div className="brand" onClick={() => setView('home')}>
-        <Rudy mood="happy" size={40} track />
-        <span>Vestas</span>
+        <Logo />
+        <span>{NAME}</span>
       </div>
       <nav className="tabs">
         {[
@@ -344,7 +344,7 @@ export function Settings({ onClose }) {
     const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'vestas-settings.json';
+    a.download = `${NAME.toLowerCase()}-settings.json`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -354,7 +354,7 @@ export function Settings({ onClose }) {
       set({ settings: (cur) => ({ ...cur, ...parsed, filters: { ...cur.filters, ...(parsed.filters || {}) } }) });
       toast('Settings imported', { kind: 'success' });
     } catch {
-      toast('That file is not a Vestas settings export', { kind: 'error' });
+      toast(`That file is not a ${NAME} settings export`, { kind: 'error' });
     }
   };
   return (
