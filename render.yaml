@@ -1,9 +1,10 @@
-# One-click deploy on Render: New > Blueprint > pick this repo.
+# Deploy on Render: dashboard.render.com/blueprint/new -> pick this repo and branch -> Apply.
 services:
   - type: web
     name: kairo
     runtime: docker
     plan: starter
+    region: frankfurt
     healthCheckPath: /api/health
     disk:
       name: kairo-data
