@@ -8,7 +8,7 @@ export const DEFAULT_SETTINGS = {
   quickBuy: 0.005, // ETH per one-click buy
   presets: [0.002, 0.005, 0.01, 0.05],
   slippage: 15, // percent
-  accent: 'lime',
+  accent: 'orange',
   compact: false,
   pauseOnHover: true,
   sound: false,
@@ -34,6 +34,11 @@ const state = {
   palette: false,
 };
 state.settings.filters = { ...DEFAULT_SETTINGS.filters, ...state.settings.filters };
+// The lime default belonged to the old look; switch it once to the new orange.
+if (!load('lookV2', false)) {
+  if (state.settings.accent === 'lime') state.settings.accent = 'orange';
+  save('lookV2', true);
+}
 state.settings.laneBuy = { ...DEFAULT_SETTINGS.laneBuy, ...state.settings.laneBuy };
 state.settings.laneP = { ...DEFAULT_SETTINGS.laneP, ...state.settings.laneP };
 
