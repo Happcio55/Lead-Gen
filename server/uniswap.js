@@ -23,7 +23,7 @@ const poolAbi = parseAbi([
 
 const routes = new Map();
 
-async function poolInfo(pool) {
+export async function poolInfo(pool) {
   const r = await client.multicall({
     contracts: ['token0', 'token1', 'fee', 'factory'].map(functionName => ({ address: pool, abi: poolAbi, functionName })),
     allowFailure: true

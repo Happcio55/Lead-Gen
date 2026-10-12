@@ -11,6 +11,7 @@ import { fetchMarkets } from './market.js';
 import { explain, aiEnabled } from './ai.js';
 import * as relay from './relay.js';
 import { buildRoute } from './route.js';
+import { chartData } from './trades.js';
 import { rpcStats } from './rpc.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -84,7 +85,7 @@ function brief(t) {
     decimals: t.decimals,
     createdAt: t.createdAt,
     score: t.score?.score ?? null,
-    label: t.score ? label(t.score.score) : null,
+    label: t.score ? t.score.label || label(t.score.score) : null,
     topFlag: t.score?.flags?.[0] || null,
     priceUsd: t.market?.priceUsd ?? null,
     change24: t.market?.change24 ?? null,
@@ -258,6 +259,11 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const key = `${req.method} ${url.pathname}`;
   try {
+    const chartMatch = /^\/api\/chart\/(0x[0-9a-fA-F]{40})$/.exec(url.pathname);
+    if (req.method === 'GET' && chartMatch) {
+      const tf = [1, 15, 60, 300, 900, 3600].includes(Number(url.searchParams.get('tf'))) ? Number(url.searchParams.get('tf')) : 60;
+      return send(res, 200, await chartData(chartMatch[1].toLowerCase(), tf));
+    }
     const tokenMatch = /^\/api\/token\/(0x[0-9a-fA-F]{40})$/.exec(url.pathname);
     if (req.method === 'GET' && tokenMatch) {
       const r = await report(tokenMatch[1].toLowerCase());

@@ -205,14 +205,21 @@ export async function analyze(t) {
 
   const launch = Math.round(clamp(L));
   const marketScore = Math.round(clamp(M));
-  const score = Math.round(clamp(launch * 0.6 + marketScore * 0.4));
+  let score = Math.round(clamp(launch * 0.6 + marketScore * 0.4));
+  // A launch a few minutes old with a handful of holders hasn't shown its hand yet: don't call it healthy.
+  const ageMin = t.createdAt ? (Date.now() - t.createdAt) / 60e3 : null;
+  const tooEarly = t.knownCreation !== false && ageMin != null && ageMin < 15 && (holders ?? 0) < 25;
+  if (tooEarly) {
+    score = Math.min(score, 5);
+    flag('too_early', 'warn', `Only ${Math.max(1, Math.round(ageMin))} min old with ${holders ?? 'few'} holders — too early to judge`, 1);
+  }
   const order = { bad: 0, warn: 1, ok: 2 };
   flags.sort((a, b) => order[a.level] - order[b.level] || b.weight - a.weight);
   const shown = flags.filter(f => f.level !== 'ok').concat(flags.filter(f => f.level === 'ok')).slice(0, 6);
 
   return {
     score: {
-      score, launch, market: marketScore, label: label(score),
+      score, launch, market: marketScore, label: tooEarly ? 'Too early to tell' : label(score),
       flags: shown,
       holders, top10Pct, creatorHoldPct, creatorSoldPct, sniperPct, snipers: snipers.size, lockedPct,
       contract: code, complete,

@@ -35,7 +35,7 @@ const swapParams = { type: 'tuple', components: [
 const pools = new Map();
 const PROBE = '0x00000000000000000000000000000000000c0ffe';
 
-async function poolKey(poolId, createdAt) {
+export async function poolKey(poolId, createdAt) {
   const tip = BigInt(chain.tip || await client.getBlockNumber());
   const est = createdAt ? tip - BigInt(Math.max(0, Math.round((Date.now() - createdAt) / (chain.blockMs || 100)))) : tip;
   const logs = await getLogs({ address: POOL_MANAGER, topics: [INITIALIZE, poolId] }, est - 60000n, est + 60000n < tip ? est + 60000n : tip).catch(() => []);

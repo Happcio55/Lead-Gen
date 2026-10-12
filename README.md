@@ -14,6 +14,7 @@ AI token scanner and cross-chain swap front-end for Robinhood Chain (chain ID 46
   When you pay from another chain, curve and Uniswap buys run as a Relay destination call, so it is still one signature.
 - **Sell to any chain.** Relay when it can route the token. Otherwise curve or Uniswap to ETH on Robinhood Chain, then an automatic Relay bridge to the chain you picked.
 - **Simulated quotes.** Every on-chain trade is simulated with `eth_simulateV1` before it is offered. The minimum output comes from that simulation, and a venue is only used if the tokens are shown to arrive at your address.
+- **Live charts.** Candles, volume and a live trades list are built from on-chain trade events (launch-curve buys and sells, Uniswap V3 and V4 swaps), so fresh launches get a chart too. They are drawn with [TradingView Lightweight Charts](https://github.com/tradingview/lightweight-charts). Timeframes run from 1 s to 1 h, with a price or market-cap view.
 - **Stock tokens.** These are discovered on-chain from their `TransferWithScaledUI` events and priced from DexScreener.
 - **Self-custody.** Any browser wallet (EIP-6963 / `window.ethereum`) works. Every transaction is signed by the user.
 
@@ -53,6 +54,7 @@ Requires Node.js 20 or newer.
 | `GET /api/token/:address` | Full report: score, flags, holders, market and AI explanation. Works for any token, not just tracked ones |
 | `GET /api/search?q=` | Launches and stock tokens by ticker or name |
 | `GET /api/stocks` | Stock tokens with price and 24h change |
+| `GET /api/chart/:address?tf=1\|15\|60\|300\|900\|3600` | On-chain candles (USD), recent trades and supply for market-cap view |
 | `GET /api/chains` | Chains you can pay from, via Relay |
 | `POST /api/route` | Best route for a buy/sell (Relay, curve, Uniswap V3/V4) as steps for the wallet to sign |
 | `POST /api/quote` | Raw Relay quote (used for the bridge leg of sells) |

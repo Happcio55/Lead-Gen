@@ -34,7 +34,8 @@ const RULES = {
   crashed: 'The price has already collapsed over the last day.',
   wash: 'Trading volume looks inflated compared with the liquidity behind it.',
   unlisted: 'It is still on its launch curve and has not reached a DEX pool yet.',
-  few_holders: 'Very few wallets hold it so far.'
+  few_holders: 'Very few wallets hold it so far.',
+  too_early: 'Wait a few minutes: there isn\u2019t enough trading yet to tell whether this launch is healthy.'
 };
 
 const lc = s => s.charAt(0).toLowerCase() + s.slice(1);

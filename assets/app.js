@@ -25,10 +25,11 @@
   };
   const fmtPrice = n => n == null ? '—' : n >= 1 ? '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + n.toPrecision(3);
   const scoreClass = s => s == null ? '' : s >= 7 ? 's-hi' : s >= 4 ? 's-mid' : 's-lo';
-  const scoreColor = s => s >= 7 ? '#3ee59a' : s >= 4 ? '#ffb547' : '#ff5470';
+  const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const scoreColor = s => cssVar(s >= 7 ? '--green' : s >= 4 ? '--amber' : '--red');
   const ago = t => { if (!t) return '—'; const s = Math.max(0, Math.floor((Date.now() - t) / 1000)); return s < 60 ? s + 's' : s < 3600 ? Math.floor(s / 60) + 'm' : s < 86400 ? Math.floor(s / 3600) + 'h' : Math.floor(s / 86400) + 'd'; };
   const cleanName = n => String(n || '').replace(/\s*•\s*Robinhood Token$/i, '');
-  const hues = ['#b6ff3c', '#6ae3ff', '#a87bff', '#ff8ad8', '#ffb547', '#3ee59a', '#ff7a59', '#7aa2ff'];
+  const hues = ['#b9d08f', '#e8cf9a', '#d98b60', '#8fb8a3', '#c9a77c', '#a7c48a', '#e09a6d', '#9fb0a2'];
   const hashStr = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); };
 
   function avatar(t, cls = '') {
@@ -194,11 +195,13 @@
         <span class="slabel" id="${id}Lab"></span>
         <ul class="flags" id="${id}Flags"></ul>
       </div>
+      ${id === 'rp' ? chartHTML(id) : ''}
       <div class="sai">
         <div class="aih"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" fill="currentColor"/></svg>Kairo AI</div>
         <p id="${id}Ai"><span class="skl w100"></span><span class="skl w70"></span></p>
       </div>
       <div class="rstats" id="${id}Stats"></div>
+      ${id === 'rp' ? `<div class="tradelist" id="${id}Trades" hidden></div>` : ''}
       <div class="rlinks" id="${id}Links"></div>
       <p class="snote">Computed from public on-chain data at the time shown. Not financial advice.</p>
     </div>`;
@@ -239,9 +242,105 @@
     ].join('');
     const links = [];
     if (safeUrl(t.explorer)) links.push(`<a href="${esc(t.explorer)}" target="_blank" rel="noopener">Explorer ↗</a>`);
-    if (t.market && safeUrl(t.market.url)) links.push(`<a href="${esc(t.market.url)}" target="_blank" rel="noopener">Chart ↗</a>`);
+    if (t.market && safeUrl(t.market.url)) links.push(`<a href="${esc(t.market.url)}" target="_blank" rel="noopener">DexScreener ↗</a>`);
     if (t.scoredAt) links.push(`<span style="color:var(--dim)">Scored ${ago(t.scoredAt)} ago</span>`);
     $('#' + id + 'Links').innerHTML = links.join('');
+  }
+
+  // ---------- live chart (TradingView Lightweight Charts, fed by our own on-chain candles) ----------
+  const TFS = [['1s', 1], ['1m', 60], ['5m', 300], ['15m', 900], ['1h', 3600]];
+  const SUB = '₀₁₂₃₄₅₆₇₈₉';
+  // Tiny prices the way traders read them: 0.0₅4297 = 0.000004297.
+  function fmtSmall(p) {
+    if (!isFinite(p)) return '';
+    const a = Math.abs(p);
+    if (a >= 1000) return p.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    if (a >= 1) return p.toFixed(a >= 100 ? 2 : 3);
+    if (a === 0) return '0';
+    const zeros = Math.floor(-Math.log10(a)); // zeros between the decimal point and the first digit
+    if (zeros < 4) return p.toPrecision(4);
+    const digits = Math.round(a * 10 ** (zeros + 4)).toString().slice(0, 4).replace(/0+$/, '') || '0';
+    return '0.0' + String(zeros).split('').map(d => SUB[d]).join('') + digits;
+  }
+  const rgba = (hexColor, a) => { const h = hexColor.replace('#', ''); return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`; };
+  function chartHTML(id) {
+    return `<div class="chartbox"><div class="ctool">
+      <div class="seg" data-tf>${TFS.map(([l, v]) => `<button type="button" data-v="${v}"${v === 60 ? ' class="on"' : ''}>${l}</button>`).join('')}</div>
+      <span class="live"><i class="dot"></i>Live from chain</span>
+      <div class="seg" data-mode><button type="button" data-v="price" class="on">Price</button><button type="button" data-v="mc">MCap</button></div>
+    </div><div class="chart" id="${id}Chart"></div></div>`;
+  }
+  let live = null;
+  function stopChart() {
+    if (!live) return;
+    clearTimeout(live.timer);
+    try { live.chart.remove(); } catch { /* already gone */ }
+    live = null;
+  }
+  function startChart(id, address, explorer) {
+    stopChart();
+    const el = $('#' + id + 'Chart');
+    if (!el || !window.LightweightCharts) return;
+    const L = window.LightweightCharts;
+    const up = cssVar('--green'), down = cssVar('--red');
+    const chart = L.createChart(el, {
+      autoSize: true,
+      layout: { background: { type: 'solid', color: 'transparent' }, textColor: cssVar('--mute'), fontFamily: 'JetBrains Mono, monospace', fontSize: 11 },
+      grid: { vertLines: { color: 'rgba(255,240,215,.04)' }, horzLines: { color: 'rgba(255,240,215,.04)' } },
+      rightPriceScale: { borderVisible: false },
+      timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+      crosshair: { mode: L.CrosshairMode.Normal },
+      localization: { locale: 'en-US', priceFormatter: fmtSmall }
+    });
+    const candles = chart.addCandlestickSeries({ upColor: up, downColor: down, wickUpColor: up, wickDownColor: down, borderVisible: false, priceFormat: { type: 'custom', formatter: fmtSmall, minMove: 1e-12 } });
+    const vol = chart.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: '' });
+    vol.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+    live = { id, address, explorer, tf: 60, mode: 'price', chart, candles, vol, fitted: false, seen: new Set(), timer: null, up, down };
+    const box = el.closest('.chartbox');
+    const seg = (sel, fn) => box.querySelector(sel).addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b || !live) return;
+      $$('button', b.parentNode).forEach(x => x.classList.toggle('on', x === b));
+      fn(b.dataset.v);
+      live.fitted = false;
+      pollChart();
+    });
+    seg('[data-tf]', v => { live.tf = Number(v); chart.applyOptions({ timeScale: { secondsVisible: live.tf < 60 } }); });
+    seg('[data-mode]', v => { live.mode = v; });
+    pollChart();
+  }
+  async function pollChart() {
+    if (!live) return;
+    const cur = live;
+    clearTimeout(cur.timer);
+    try {
+      const d = await api(`/chart/${cur.address}?tf=${cur.tf}`);
+      if (live !== cur) return;
+      const k = cur.mode === 'mc' && d.supply ? d.supply : 1;
+      const el = $('#' + cur.id + 'Chart');
+      const empty = el.querySelector('.chartempty');
+      if (!d.candles.length && !empty) el.insertAdjacentHTML('beforeend', '<div class="chartempty">No trades on-chain yet — the chart starts with the first buy.</div>');
+      if (d.candles.length && empty) empty.remove();
+      cur.candles.setData(d.candles.map(c => ({ time: c.time, open: c.open * k, high: c.high * k, low: c.low * k, close: c.close * k })));
+      cur.vol.setData(d.candles.map(c => ({ time: c.time, value: c.volume, color: rgba(c.close >= c.open ? cur.up : cur.down, 0.35) })));
+      if (!cur.fitted && d.candles.length) { cur.chart.timeScale().fitContent(); cur.fitted = true; }
+      renderTrades(cur, d.trades);
+    } catch { /* keep the last frame; retry next tick */ }
+    if (live === cur) cur.timer = setTimeout(pollChart, 3000);
+  }
+  function renderTrades(cur, trades) {
+    const box = $('#' + cur.id + 'Trades');
+    if (!box) return;
+    box.hidden = !trades.length;
+    if (!trades.length) return;
+    const base = safeUrl(cur.explorer) ? new URL(cur.explorer).origin : null;
+    box.innerHTML = '<div class="trow2 head"><span>Age</span><span>Side</span><span>USD</span><span>Amount</span><span>Tx</span></div>' + trades.map(tr => {
+      const fresh = !cur.seen.has(tr.tx) && cur.seen.size > 0;
+      return `<div class="trow2${fresh ? ' new' : ''}"><span>${ago(tr.time * 1000)}</span><span class="${tr.buy ? 'b' : 's'}">${tr.buy ? 'Buy' : 'Sell'}</span>
+        <span>${tr.usd != null ? '$' + fmtNum(tr.usd) : fmtNum(tr.eth) + ' ETH'}</span><span>${fmtNum(tr.tokens)}</span>
+        <span>${base ? `<a href="${esc(base)}/tx/${esc(tr.tx)}" target="_blank" rel="noopener">${esc(short(tr.trader || tr.tx))}</a>` : ''}</span></div>`;
+    }).join('');
+    trades.forEach(tr => cur.seen.add(tr.tx));
   }
 
   // Landing showcase
@@ -277,6 +376,7 @@
   function closeModal(m) {
     if (m.hidden) return;
     m.hidden = true;
+    if (m === modal) stopChart();
     if (modal.hidden && picker.hidden) document.body.style.overflow = '';
     if (lastFocus) lastFocus.focus();
   }
@@ -285,6 +385,7 @@
     current = null;
     $('#repBody').innerHTML = '<div class="scanning"><div class="spin"></div><div>Reading the chain…<br><small>holders, snipers, creator wallet, contract and liquidity</small></div></div>';
     $('#repTitle').textContent = 'Token report';
+    $('.sheet', modal).classList.add('wide');
     openModal(modal);
     try {
       const t = await api('/token/' + address);
@@ -299,10 +400,13 @@
           <span class="slabel s-hi">Issued by Robinhood · not scored</span></div>
           <div class="rstats"><div><span>Price</span><b>${fmtPrice(m.priceUsd)}</b></div><div><span>24h</span><b class="${(m.change24 ?? 0) >= 0 ? 'up' : 'dn'}">${fmtPct(m.change24)}</b></div><div><span>Volume 24h</span><b>${fmtUsd(m.vol24)}</b></div></div>
           <div class="rlinks">${safeUrl(t.explorer) ? `<a href="${esc(t.explorer)}" target="_blank" rel="noopener">Explorer ↗</a>` : ''}${m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener">Chart ↗</a>` : ''}</div>
+          ${chartHTML('rp')}<div class="tradelist" id="rpTrades" hidden></div>
           <p class="snote">Stock tokens are not available to persons in the United States and are restricted in other countries.</p></div>`;
+        startChart('rp', t.address, t.explorer);
       } else {
         $('#repBody').innerHTML = scoreCardHTML('rp');
         fillScore('rp', t);
+        startChart('rp', t.address, t.explorer);
       }
     } catch (e) {
       closeModal(modal);
