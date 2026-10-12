@@ -21,6 +21,7 @@ let lastRefill = Date.now();
 let reqId = 0;
 let urlIdx = 0;
 const BATCH = 25;
+const UA = 'Mozilla/5.0 (compatible; Kairo/1.0; +https://github.com/happcio55/lead-gen)';
 // Endpoints that just failed sit out for a while so traffic moves to the healthy ones.
 const benched = new Map();
 function pickUrl() {
@@ -102,7 +103,8 @@ async function sendBatch(batch) {
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      // The public endpoint's firewall rejects unknown clients (Node's default user agent gets 403s from datacenter IPs).
+      headers: { 'content-type': 'application/json', 'user-agent': UA, accept: 'application/json' },
       body: JSON.stringify(batch.length === 1 ? payload[0] : payload),
       signal: AbortSignal.timeout(25000)
     });
