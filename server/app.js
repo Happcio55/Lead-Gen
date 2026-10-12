@@ -2,6 +2,7 @@
 import { getAddress, isAddress, parseAbi } from 'viem';
 import { ADDR, CHAIN_ID, DEFAULT_RPC, EXPLORER } from '../shared/chain.js';
 import { IPFS_GATEWAYS, parseLogo } from './meme.js';
+import { createGecko } from './gecko.js';
 
 const LOGO_ABI = parseAbi(['function logo() view returns (string)']);
 const MAX_LOGO_BYTES = 3_500_000;
@@ -19,7 +20,7 @@ const RPC_METHODS = new Set([
 ]);
 
 // `defer` keeps a promise running after the response is sent (Vercel's waitUntil).
-export function createApi({ indexer, lazy = false, defer = null, env = process.env, log = console }) {
+export function createApi({ indexer, gecko = createGecko({ log: console }), lazy = false, defer = null, env = process.env, log = console }) {
   const rpcUrl = env.RH_RPC_URL || DEFAULT_RPC;
   const privyAppId = env.PRIVY_APP_ID || DEFAULT_PRIVY_APP_ID;
 
@@ -34,9 +35,14 @@ export function createApi({ indexer, lazy = false, defer = null, env = process.e
     await Promise.race([settled, new Promise((r) => setTimeout(r, 6000))]);
   }
 
-  function boardPayload() {
+  async function boardPayload() {
     // Robinhood Chain memecoins only: no stables, stock tokens, wrapped assets or test spam.
     const rows = indexer.board().filter((r) => r.meme);
+    // Add launches from every other DEX on the chain (Pons, Uniswap v2/v3) via GeckoTerminal.
+    // Our own indexer stays the source for pools it tracks, since those can be traded in-app.
+    const ours = new Set(rows.map((r) => r.token.toLowerCase()));
+    const ext = await gecko.rows(indexer.meta().ethUsd).catch(() => []);
+    for (const r of ext) if (!ours.has(r.token.toLowerCase())) rows.push(r);
     // Most relevant first: recent activity, then newest.
     rows.sort((a, b) => Math.max(b.lastSwapAt, b.createdAt) - Math.max(a.lastSwapAt, a.createdAt));
     const feed = indexer.feed.filter((f) => indexer.tokens.get(f.token)?.meme);
@@ -115,13 +121,19 @@ export function createApi({ indexer, lazy = false, defer = null, env = process.e
         await fresh();
         if (!indexer.status.synced) json(res, 503, { syncing: true, meta: indexer.meta() });
         // The CDN may serve this for a second, so many viewers share one computation.
-        else json(res, 200, boardPayload(), 'public, s-maxage=1, stale-while-revalidate=4');
+        else json(res, 200, await boardPayload(), 'public, s-maxage=1, stale-while-revalidate=4');
       } else if (/^\/api\/pool\/0x[0-9a-fA-F]{64}$/.test(pathname)) {
         await fresh();
         const id = pathname.slice('/api/pool/'.length).toLowerCase();
         const bucket = Math.min(3600_000, Math.max(1000, Number(url.searchParams.get('bucket')) || 15_000));
         const d = indexer.detail(id, { bucketMs: bucket });
         if (d) json(res, 200, d, 'public, s-maxage=1, stale-while-revalidate=4');
+        else json(res, 404, { error: 'pool not tracked' });
+      } else if (/^\/api\/pool\/gt-0x[0-9a-fA-F]{40,64}$/.test(pathname)) {
+        const id = pathname.slice('/api/pool/'.length).toLowerCase();
+        const bucket = Math.max(1000, Number(url.searchParams.get('bucket')) || 15_000);
+        const d = await gecko.detail(id, { bucketMs: bucket, ethUsd: indexer.meta().ethUsd });
+        if (d) json(res, 200, d, 'public, s-maxage=10, stale-while-revalidate=20');
         else json(res, 404, { error: 'pool not tracked' });
       } else if (/^\/api\/logo\/0x[0-9a-fA-F]{40}$/.test(pathname)) {
         await serveLogo(res, pathname.slice('/api/logo/'.length));

@@ -22,6 +22,7 @@ const TIERS = [
 
 export function Home({ board, now }) {
   const rows = board.rows;
+  const tradeable = useMemo(() => rows.filter((r) => r.source !== 'gecko'), [rows]);
   const surging = useMemo(
     () => rows.filter((r) => laneOf(r, now) === 'hot').sort((a, b) => b.vol5mUsd - a.vol5mUsd).slice(0, 5),
     // re-rank every few seconds, not every tick
@@ -33,7 +34,7 @@ export function Home({ board, now }) {
 
   return (
     <div className="home">
-      <Stage rows={rows} surging={surging} top={top} feed={board.feed} now={now} ethUsd={board.meta?.ethUsd || 0} fresh={fresh} />
+      <Stage rows={rows} tradeable={tradeable} surging={surging} top={top} feed={board.feed} now={now} ethUsd={board.meta?.ethUsd || 0} fresh={fresh} />
 
       <section className="hero-copy">
         <h1>
@@ -259,7 +260,7 @@ function BuyFeed({ feed, now, ethUsd }) {
 }
 
 // Front-page stage: Rudy in the middle, live cards from the board orbiting him.
-function Stage({ rows, surging, top, feed, now, ethUsd, fresh }) {
+function Stage({ rows, tradeable, surging, top, feed, now, ethUsd, fresh }) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const iv = setInterval(() => setTick((t) => t + 1), 3500);
@@ -359,7 +360,7 @@ function Stage({ rows, surging, top, feed, now, ethUsd, fresh }) {
 
         <div className="fc fc-buy floaty d2">
           <span className="eyebrow">Quick buy</span>
-          <QuickBuyCard candidates={(surging.length ? surging : top).slice(0, 3)} ethUsd={ethUsd} compact />
+          <QuickBuyCard candidates={tradeable.slice().sort((a, b) => b.vol5mUsd - a.vol5mUsd).slice(0, 3)} ethUsd={ethUsd} compact />
         </div>
 
         <div className="fc-pills">

@@ -32,15 +32,21 @@ export function Drawer({ id, board }) {
 
   if (!row) {
     return (
-      <aside className="drawer">
+      <div className="drawer token-page">
+        <button className="back-btn" onClick={() => (history.state?.coin ? history.back() : closeDrawer())}>
+          ← Back
+        </button>
         <div className="drawer-loading">{missing ? 'This pool is no longer tracked.' : 'Loading pool…'}</div>
-      </aside>
+      </div>
     );
   }
 
   const supply = detail?.supply || (row.priceEth ? row.mcapUsd / (row.priceEth * ethUsd || 1) : 0);
   return (
-    <aside className="drawer">
+    <div className="drawer token-page">
+      <button className="back-btn" onClick={() => (history.state?.coin ? history.back() : closeDrawer())}>
+        ← Back
+      </button>
       <header className="drawer-head">
         <Avatar token={row.token} symbol={row.symbol} logo={row.logo} size={48} />
         <div className="drawer-title">
@@ -71,13 +77,11 @@ export function Drawer({ id, board }) {
               </a>
             )}
             <span className="chip dim">{age(now - row.createdAt)} old</span>
+            {row.source === 'gecko' && <span className="chip">{row.dexName}</span>}
           </div>
         </div>
         <button className={`icon-btn star ${watched ? 'on' : ''}`} onClick={() => toggleWatch(id)}>
           {watched ? '★' : '☆'}
-        </button>
-        <button className="icon-btn" onClick={closeDrawer} aria-label="Close">
-          ✕
         </button>
       </header>
 
@@ -95,10 +99,17 @@ export function Drawer({ id, board }) {
             <small>1h</small>
             <Delta v={row.ch1h}>{pct(row.ch1h)}</Delta>
           </div>
-          <div>
-            <small>ATH</small>
-            <span>{usd(row.athUsd)}</span>
-          </div>
+          {row.source === 'gecko' ? (
+            <div>
+              <small>Liquidity</small>
+              <span>{usd(row.liqUsd)}</span>
+            </div>
+          ) : (
+            <div>
+              <small>ATH</small>
+              <span>{usd(row.athUsd)}</span>
+            </div>
+          )}
         </div>
 
         <div className="chart-card">
@@ -143,7 +154,7 @@ export function Drawer({ id, board }) {
           {detail && !detail.swaps.length && <div className="empty">No trades yet.</div>}
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
 
@@ -166,6 +177,7 @@ function TradePanel({ row, ethUsd }) {
   const v = pos ? valuePosition(pos, row, ethUsd) : null;
 
   const read = rudyRead(row);
+  if (row.source === 'gecko') return <ExternalTrade row={row} />;
   return (
     <div className="trade">
       {read && (
@@ -412,3 +424,24 @@ function CandleChart({ candles, scale }) {
   );
 }
 
+
+// Coins launched on Pons or Uniswap v2/v3: in-app trading covers Uniswap v4 pools only for now.
+function ExternalTrade({ row }) {
+  const gt = `https://www.geckoterminal.com/robinhood/pools/${row.poolAddress}`;
+  return (
+    <div className="trade ext-trade">
+      <div className="rudy-tip">
+        <Rudy mood="neutral" size={44} track />
+        <span>
+          ${row.symbol} trades on {row.dexName}. Buying right here works for Uniswap v4 coins so far, so trade this one on GeckoTerminal for now.
+        </span>
+      </div>
+      <div className="trade-body">
+        <a className="cta big" href={gt} target="_blank" rel="noreferrer">
+          Trade ${row.symbol} on GeckoTerminal ↗
+        </a>
+        <div className="trade-hint">Price, chart and trades on this page come from GeckoTerminal.</div>
+      </div>
+    </div>
+  );
+}
