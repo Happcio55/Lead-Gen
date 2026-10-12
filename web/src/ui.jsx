@@ -73,7 +73,7 @@ export function Toasts() {
     <div className="toasts">
       {toasts.map((t) => (
         <div key={t.id} className={`toast ${t.kind}`} onClick={() => dismiss(t.id)}>
-          <Rudy mood={t.kind === 'error' ? 'worried' : t.kind === 'success' ? 'cheer' : 'happy'} size={34} blink={false} className="toast-rudy" />
+          <Rudy mood={t.kind === 'error' ? 'worried' : t.kind === 'success' ? 'cheer' : 'happy'} size={34} className="toast-rudy" />
           <span className="toast-msg">{t.msg}</span>
           {t.link && (
             <a href={t.link} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>

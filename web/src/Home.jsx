@@ -43,7 +43,7 @@ export function Home({ board, now }) {
           <em>before the crowd.</em>
         </h1>
         <div>
-          <p className="lede">Live Uniswap v4 pools on Robinhood Chain. Log in with email, buy in one click, exit on autopilot.</p>
+          <p className="lede">Every new memecoin on Robinhood Chain, live from Pons and Uniswap. Log in with email, buy in one click, exit on autopilot.</p>
           <div className="cta-row">
             <button className="cta big-pill" onClick={() => setView('terminal')}>
               Open the terminal

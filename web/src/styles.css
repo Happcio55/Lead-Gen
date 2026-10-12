@@ -734,25 +734,11 @@ mark { background: none; color: var(--accent); padding: 0; }
 .account-btn { border-color: var(--line); }
 
 /* ---------- Rudy ---------- */
-.rudy { display: block; overflow: visible; flex: none; }
-.rudy .r-mouth, .rudy .r-sweat, .rudy .r-brow-worry, .rudy .r-tongue, .rudy .r-spark { display: none; }
-.rudy.mood-neutral .r-m-neutral,
-.rudy.mood-happy .r-m-happy,
-.rudy.mood-cheer .r-m-cheer,
-.rudy.mood-cheer .r-tongue,
-.rudy.mood-cheer .r-spark,
-.rudy.mood-worried .r-m-worried,
-.rudy.mood-worried .r-sweat,
-.rudy.mood-worried .r-brow-worry { display: inline; }
-.rudy .r-lid { transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(0); }
-.rudy.blink .r-lid { animation: rudy-blink 5s infinite; }
-.rudy.mood-worried .r-lid { transform: scaleY(0.28); animation: none; }
-.rudy .r-pupils { transition: transform 0.12s ease-out; }
-.rudy.mood-cheer .r-head { transform-box: fill-box; transform-origin: 50% 100%; animation: rudy-hop 0.55s ease-in-out infinite alternate; }
-.rudy .r-sweat { animation: rudy-drip 1.6s ease-in infinite; }
-@keyframes rudy-blink { 0%, 93%, 100% { transform: scaleY(0); } 96% { transform: scaleY(1); } }
-@keyframes rudy-hop { from { transform: translateY(0) rotate(-2deg); } to { transform: translateY(-6px) rotate(2deg); } }
-@keyframes rudy-drip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(8px); opacity: 0; } }
+.rudy { display: block; flex: none; object-fit: contain; -webkit-mask-image: linear-gradient(#000 80%, transparent 97%); mask-image: linear-gradient(#000 80%, transparent 97%); user-select: none; -webkit-user-drag: none; transform-origin: 50% 90%; transition: translate 0.25s ease-out, rotate 0.25s ease-out; }
+.rudy.mood-cheer { animation: rudy-hop 0.55s ease-in-out infinite alternate; }
+.rudy.mood-worried { animation: rudy-shiver 2.4s ease-in-out infinite; }
+@keyframes rudy-hop { from { transform: translateY(0) rotate(-2deg); } to { transform: translateY(-6%) rotate(2deg); } }
+@keyframes rudy-shiver { 0%, 80%, 100% { transform: none; } 84% { transform: translateX(-1.5%); } 88% { transform: translateX(1.5%); } 92% { transform: translateX(-1%); } }
 
 .toast { box-shadow: var(--shadow-lg); border: 0; }
 .toast-rudy { margin: -4px 0; }
@@ -771,8 +757,8 @@ mark { background: none; color: var(--accent); padding: 0; }
 .orbit.o1 { width: min(1100px, 92vw); height: 300px; opacity: 0.7; }
 .orbit.o2 { width: min(760px, 70vw); height: 200px; border-style: dashed; opacity: 0.6; }
 .hero-rudy { position: relative; z-index: 2; filter: drop-shadow(0 30px 40px rgba(20, 24, 32, 0.18)); }
-.hero-rudy .rudy .r-head { transform-box: fill-box; transform-origin: 50% 100%; animation: rudy-breathe 4s ease-in-out infinite; }
-@keyframes rudy-breathe { 50% { transform: scale(1.015, 0.99); } }
+.hero-rudy .rudy:not(.mood-cheer) { animation: rudy-breathe 4s ease-in-out infinite; }
+@keyframes rudy-breathe { 50% { transform: translateY(-1.5%) scale(1.012, 0.995); } }
 .pedestal { position: absolute; left: 50%; top: calc(50% + 150px); width: 330px; height: 64px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 22%, transparent), transparent); }
 .bubble {
   position: absolute; z-index: 3; right: calc(50% + 110px); top: 40px; max-width: 260px; padding: 12px 16px;
@@ -840,7 +826,7 @@ mark { background: none; color: var(--accent); padding: 0; }
   .hero-copy { grid-template-columns: minmax(0, 1fr); gap: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .floaty, .rudy.blink .r-lid, .rudy.mood-cheer .r-head, .rudy .r-sweat, .hero-rudy .rudy .r-head { animation: none; }
+  .floaty, .rudy, .hero-rudy .rudy { animation: none !important; }
 }
 
 /* ---------- coin page (full page, not a side window) ---------- */
