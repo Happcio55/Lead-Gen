@@ -566,7 +566,7 @@
 
   // ---------- wallet (EIP-6963 discovery, EIP-1193 calls) ----------
   const wallets = new Map();
-  const wallet = { provider: null, address: null, chainId: null, info: null };
+  const wallet = { provider: null, address: null, chainId: null, info: null, embedded: false };
   window.addEventListener('eip6963:announceProvider', e => {
     const d = e.detail;
     if (d && d.info && d.provider && !wallets.has(d.info.uuid)) { wallets.set(d.info.uuid, d); renderWalletList(); }
@@ -579,6 +579,8 @@
   }
 
   async function connect() {
+    // With Privy configured, one modal covers email, Google and browser wallets.
+    if (window.KairoPrivy && window.KairoPrivy.ready) { window.KairoPrivy.login(); return; }
     const list = [...wallets.values()];
     if (list.length > 1) {
       return openPicker({
@@ -626,14 +628,35 @@
     requestQuote();
   }
   function disconnect() {
-    wallet.provider = null; wallet.address = null; wallet.info = null;
+    if (wallet.info && wallet.info.uuid === 'privy' && window.KairoPrivy && window.KairoPrivy.authenticated) window.KairoPrivy.logout();
+    resetWallet();
+  }
+  function resetWallet() {
+    wallet.provider = null; wallet.address = null; wallet.info = null; wallet.embedded = false;
     $('#navConnect').hidden = false; $('#navAcct').hidden = true;
-    $('#wc2Label').textContent = 'Connect wallet';
+    $('#wc2Label').textContent = window.KairoPrivy ? 'Log in with email, Google or a wallet' : 'Connect wallet';
     $$('.navport').forEach(a => { a.hidden = true; });
     swap.balance = null;
     renderWalletList(); renderSwap();
     toast('Disconnected');
   }
+  // Privy login (optional): loaded only when the server has a PRIVY_APP_ID.
+  window.addEventListener('kairo:privy-wallet', e => {
+    const d = e.detail;
+    if (wallet.address === String(d.address).toLowerCase() && wallet.info && wallet.info.uuid === 'privy') return;
+    wallet.embedded = Boolean(d.embedded);
+    useProvider(d.provider, { uuid: 'privy', name: d.embedded ? (d.label || 'Kairo account') : 'Wallet', icon: '' });
+  });
+  window.addEventListener('kairo:privy-logout', () => { if (wallet.info && wallet.info.uuid === 'privy') resetWallet(); });
+  api('/config').then(c => {
+    if (!c.privyAppId) return;
+    const sc = document.createElement('script');
+    sc.type = 'module';
+    sc.src = 'assets/login/login.js';
+    document.head.appendChild(sc);
+    $('#navConnect').innerHTML = 'Log in';
+    $('#wc2Label').textContent = 'Log in with email, Google or a wallet';
+  }).catch(() => {});
   $('#navConnect').addEventListener('click', connect);
   $('#walletConnect2').addEventListener('click', () => (wallet.address ? toast('Already connected') : connect()));
   $('#navAcct').addEventListener('click', disconnect);
@@ -995,6 +1018,7 @@
       $('#pfBody').innerHTML = `
         <div class="pfhead"><div><small>Total on Robinhood Chain</small><div class="tot">${fmtMoney(p.totalUsd || 0)}</div></div>
           <small>${fmtNum(p.eth.amount)} ETH${p.eth.valueUsd != null ? ' · ' + fmtMoney(p.eth.valueUsd) : ''} · ${short(p.address)}</small></div>
+        ${wallet.embedded ? `<div class="pfdeposit">Your Kairo wallet: <code>${esc(p.address)}</code> <button type="button" data-copy="${esc(p.address)}">Copy</button><br><small>Send ETH on Robinhood Chain to this address, or pay from any chain in the swap box with a connected wallet.</small></div>` : ''}
         <div class="pflist">
           <div class="pfrow head"><span>Token</span><span>Value</span><span>24h</span><span></span></div>
           ${rows || '<div class="pickempty">No tokens found yet. Buy something and it shows up here.</div>'}
@@ -1006,6 +1030,8 @@
   }
   pfModal.addEventListener('click', e => {
     if (e.target === pfModal || e.target.closest('[data-close]')) return closeModal(pfModal);
+    const copy = e.target.closest('[data-copy]');
+    if (copy) { (navigator.clipboard ? navigator.clipboard.writeText(copy.dataset.copy) : Promise.reject()).then(() => toast('Address copied'), () => toast(copy.dataset.copy)); return; }
     const btn = e.target.closest('[data-act]');
     const row = e.target.closest('.pfrow[data-a]');
     if (!btn || !row) return;

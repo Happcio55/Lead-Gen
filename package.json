@@ -6,7 +6,8 @@
   "description": "AI token scanner and cross-chain DEX front-end for Robinhood Chain",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node --watch server/index.js"
+    "dev": "node --watch server/index.js",
+    "build:login": "npm --prefix client install --no-audit --no-fund && npm --prefix client run build"
   },
   "engines": {
     "node": ">=20"

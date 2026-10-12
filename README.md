@@ -16,6 +16,8 @@ AI token scanner and cross-chain swap front-end for Robinhood Chain (chain ID 46
 - **Simulated quotes.** Every on-chain trade is simulated with `eth_simulateV1` before it is offered. The minimum output comes from that simulation, and a venue is only used if the tokens are shown to arrive at your address.
 - **Live charts.** Candles, volume and a live trades list are built from on-chain trade events (launch-curve buys and sells, Uniswap V3 and V4 swaps), so fresh launches get a chart too. They are drawn with [TradingView Lightweight Charts](https://github.com/tradingview/lightweight-charts). Timeframes run from 1 s to 1 h, with a price or market-cap view.
 - **Stock tokens.** These are discovered on-chain from their `TransferWithScaledUI` events and priced from DexScreener.
+- **Log in with email or Google.** Optional [Privy](https://privy.io) login creates an embedded wallet for people without one; browser wallets keep working. Enabled by setting `PRIVY_APP_ID`.
+- **Portfolio.** Holdings on Robinhood Chain with live value, 24h change, and profit/loss for trades made in Kairo, plus one-click sell.
 - **Self-custody.** Any browser wallet (EIP-6963 / `window.ethereum`) works. Every transaction is signed by the user.
 
 ## Run it
@@ -30,6 +32,8 @@ npm start            # http://localhost:8080
 - **Render:** New → Blueprint → pick this repo. `render.yaml` sets up the service, a persistent disk and the env vars.
 - **Anywhere with Docker:** `docker build -t kairo . && docker run -p 8080:8080 -v kairo-data:/data -e ANTHROPIC_API_KEY=… kairo`
 
+The Privy login bundle is built from `client/` (its own dependencies) with `npm run build:login`; the Docker image does this automatically.
+
 On first start the server backfills the last 24 hours of launches in the background, then keeps following the chain. State is saved to `data/state.json`.
 
 | Variable | Default | What it does |
@@ -41,6 +45,7 @@ On first start the server backfills the last 24 hours of launches in the backgro
 | `ANTHROPIC_API_KEY` | – | Enables Claude-written explanations |
 | `AI_MODEL` | `claude-opus-5-5` | Claude model used for explanations |
 | `RELAY_API_KEY` | – | Optional Relay API key for higher limits |
+| `PRIVY_APP_ID` | – | Enables email/Google login with an embedded wallet (create an app at dashboard.privy.io) |
 | `DATA_DIR` | `./data` | Where state is stored |
 
 Requires Node.js 20 or newer.
@@ -59,6 +64,8 @@ Requires Node.js 20 or newer.
 | `POST /api/route` | Best route for a buy/sell (Relay, curve, Uniswap V3/V4) as steps for the wallet to sign |
 | `POST /api/quote` | Raw Relay quote (used for the bridge leg of sells) |
 | `GET /api/balance?chainId=&address=&token=` | Native or ERC-20 balance |
+| `GET /api/portfolio?address=&extra=` | A wallet's holdings on Robinhood Chain with USD values |
+| `GET /api/config` | Public client config (Privy app id) |
 
 ## Notes
 
