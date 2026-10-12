@@ -1,4 +1,4 @@
-// Gomo HTTP API, shared by the local server (server/index.js) and the Vercel function (api/[...path].js).
+// Vestas HTTP API, shared by the local server (server/index.js) and the Vercel function (api/[...path].js).
 import { getAddress, isAddress, parseAbi } from 'viem';
 import { ADDR, CHAIN_ID, DEFAULT_RPC, EXPLORER } from '../shared/chain.js';
 import { IPFS_GATEWAYS, parseLogo } from './meme.js';
@@ -7,7 +7,7 @@ const LOGO_ABI = parseAbi(['function logo() view returns (string)']);
 const MAX_LOGO_BYTES = 3_500_000;
 
 const BOARD_LIMIT = 400;
-// Gomo's Privy app (a public client id, safe to ship). PRIVY_APP_ID overrides it.
+// Vestas's Privy app (a public client id, safe to ship). PRIVY_APP_ID overrides it.
 const DEFAULT_PRIVY_APP_ID = 'cmv527g7j03lv0fjyt8xsqzqs';
 
 // Reads the browser may make through the proxy. Writes are limited to broadcasting
