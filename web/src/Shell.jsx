@@ -5,7 +5,7 @@ import { useEthBalance } from './data.js';
 import { age, copy, eth, num, pct, short, usd } from './lib.js';
 import { openDrawer, set, setSettings, setView, toast, toggleWatch, useStore } from './store.js';
 import { useTrader, valuePosition } from './trading.js';
-import { Avatar, Delta, Modal, NumField, Spark, Toggle } from './ui.jsx';
+import { Avatar, Delta, Icon, Modal, NumField, Spark, Toggle } from './ui.jsx';
 import { useWallet } from './wallet.jsx';
 
 export function TopBar({ meta, status, onSearch, onSettings }) {
@@ -48,7 +48,7 @@ export function TopBar({ meta, status, onSearch, onSettings }) {
         <kbd>⌘K</kbd>
       </button>
 
-      <div className={`quick ${view === 'terminal' ? '' : 'hide'}`}>
+      <div className="quick hide">
         <span>⚡ Quick buy</span>
         {presets.map((p) => (
           <button key={p} className={quickBuy === p ? 'on' : ''} onClick={() => setSettings({ quickBuy: p })}>
@@ -414,5 +414,43 @@ export function Settings({ onClose }) {
         </div>
       </div>
     </Modal>
+  );
+}
+
+// Bottom status bar for the terminal: wallet, holdings and watchlist toggles, chain status.
+export function StatusBar({ board, panel, onToggle }) {
+  const wallet = useWallet();
+  const bal = useEthBalance(wallet.address);
+  const key = wallet.address?.toLowerCase();
+  const holdings = useStore((s) => (key ? Object.keys(s.positions[key] || {}).length : 0));
+  const watching = useStore((s) => s.watchlist.length);
+  const meta = board.meta;
+  const live = board.status === 'live';
+  return (
+    <footer className="statusbar">
+      <button className="sb-item" onClick={() => (wallet.authenticated ? null : wallet.login())} title={wallet.address || 'Log in'}>
+        <Icon name="wallet" />
+        {wallet.authenticated ? `${bal == null ? '…' : eth(bal, 4)} Ξ` : 'Log in'}
+      </button>
+      <button className={`sb-item ${panel === 'holdings' ? 'on' : ''}`} onClick={() => onToggle('holdings')}>
+        <Icon name="layers" /> Holdings <span className="sb-count">{holdings}</span>
+      </button>
+      <button className={`sb-item ${panel === 'watch' ? 'on' : ''}`} onClick={() => onToggle('watch')}>
+        <Icon name="star" /> Watchlist <span className="sb-count">{watching}</span>
+      </button>
+      <span className="sb-spacer" />
+      <span className="sb-item static">
+        <i>ETH</i> {usd(meta?.ethUsd, { compact: false })}
+      </span>
+      <span className="sb-item static">
+        <i>GAS</i> {meta ? `${meta.gasGwei} gwei` : '—'}
+      </span>
+      <span className="sb-item static">
+        <i>POOLS</i> {num(meta?.pools)}
+      </span>
+      <span className={`sb-item static sb-live ${live ? 'ok' : 'bad'}`} title={`Block ${meta?.head ?? '—'}`}>
+        <b /> {live ? 'Live' : board.status}
+      </span>
+    </footer>
   );
 }
