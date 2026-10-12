@@ -7,21 +7,25 @@ const TF_SEC = { '1s': 1, '15s': 15, '30s': 30, '1m': 60, '5m': 300, '15m': 900,
 const isSec = (tf) => TF_SEC[tf] < 60
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim()
 
+// Candles from on-chain trades. Like TradingView, each candle opens where the previous one
+// closed, so a single trade still draws a real body instead of a flat dash.
 function candlesFromTrades(trades, step) {
-  const m = new Map()
+  const out = []
   for (const t of [...trades].sort((a, b) => a.t - b.t)) {
     if (!t.price) continue
     const time = Math.floor(t.t / 1000 / step) * step
-    const c = m.get(time)
-    if (!c) m.set(time, { time, open: t.price, high: t.price, low: t.price, close: t.price, value: t.usd })
-    else {
-      c.high = Math.max(c.high, t.price)
-      c.low = Math.min(c.low, t.price)
-      c.close = t.price
-      c.value += t.usd
+    const last = out[out.length - 1]
+    if (last && last.time === time) {
+      last.high = Math.max(last.high, t.price)
+      last.low = Math.min(last.low, t.price)
+      last.close = t.price
+      last.value += t.usd
+    } else {
+      const open = last ? last.close : t.price
+      out.push({ time, open, high: Math.max(open, t.price), low: Math.min(open, t.price), close: t.price, value: t.usd })
     }
   }
-  return [...m.values()]
+  return out
 }
 
 export default function Chart({ pool, tf, mode, myTrades, entryMc }) {
@@ -35,6 +39,14 @@ export default function Chart({ pool, tf, mode, myTrades, entryMc }) {
   const k = mode === 'mc' ? supply : 1
   const scale = (c) => ({ time: c.time, open: c.open * k, high: c.high * k, low: c.low * k, close: c.close * k })
   const fmt = (v) => (mode === 'mc' ? '$' + fmtCompact(v, 2) : '$' + fmtTiny(v))
+  // frame the newest ~90 candles at a fixed width, like TradingView
+  const frame = () => {
+    const ts = api.current.chart?.timeScale()
+    if (!ts) return
+    const n = raw.current.length
+    ts.applyOptions({ barSpacing: 9 })
+    ts.setVisibleLogicalRange({ from: Math.max(-4, n - 90), to: n + 6 })
+  }
   // async loaders call the latest paint (current trades, mode and timeframe), never a stale copy
   const paintRef = useRef(null)
   paintRef.current = () => paint()
@@ -46,7 +58,7 @@ export default function Chart({ pool, tf, mode, myTrades, entryMc }) {
       grid: { vertLines: { visible: false }, horzLines: { color: css('--line') } },
       crosshair: { mode: CrosshairMode.Normal, vertLine: { color: css('--fg-4'), width: 1, style: 3, labelBackgroundColor: css('--fg') }, horzLine: { color: css('--fg-4'), width: 1, style: 3, labelBackgroundColor: css('--fg') } },
       rightPriceScale: { borderColor: css('--line'), scaleMargins: { top: 0.14, bottom: 0.2 } },
-      timeScale: { borderColor: css('--line'), timeVisible: true, secondsVisible: false, rightOffset: 8 },
+      timeScale: { borderColor: css('--line'), timeVisible: true, secondsVisible: false, rightOffset: 6, barSpacing: 9, minBarSpacing: 2 },
       localization: { locale: 'en-US' },
     })
     const candles = chart.addSeries(CandlestickSeries, {
@@ -155,7 +167,7 @@ export default function Chart({ pool, tf, mode, myTrades, entryMc }) {
     setStatus(raw.current.length ? 'ok' : 'loading')
     if (raw.current.length) {
       paintRef.current()
-      api.current.chart.timeScale().fitContent()
+      frame()
     }
     const load = async (first) => {
       try {
@@ -174,7 +186,7 @@ export default function Chart({ pool, tf, mode, myTrades, entryMc }) {
         if (!data.length) return setStatus('empty')
         setStatus('ok')
         paintRef.current()
-        if (first && !hadData) api.current.chart.timeScale().fitContent()
+        if (first && !hadData) frame()
       } catch {
         if (alive && !raw.current.length) setStatus('error')
       }
