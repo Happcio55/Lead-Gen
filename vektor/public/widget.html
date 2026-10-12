@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vektor assistant</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  html, body { height: 100%; }
+  body { background: #0d0d12; overflow: hidden; }
+  .w { display: flex; flex-direction: column; height: 100%; }
+  .w-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .w-head .brand-name { font-size: 16px; }
+  .w-head small { color: var(--text-3); font-size: 12px; }
+  .w-close { margin-left: auto; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--text-2); }
+  .w-close:hover { background: rgba(255,255,255,.06); }
+  .w .chat { flex: 1; height: auto; min-height: 0; }
+  .chat--compact .chat-chips { grid-template-columns: 1fr; }
+  .chat--compact .chat-chip:nth-child(n+4) { display: none; }
+  .chat--compact .chat-empty-title { font-size: 20px; }
+  .chat--compact .chat-log { padding: 16px 14px; }
+  .chat--compact .chat-meta { display: none; }
+  .chat--compact .chat-form { display: flex; align-items: flex-end; gap: 8px; }
+  .chat--compact .chat-bar { padding: 0; }
+  .chat-mode[aria-selected="true"] { background: var(--accent); color: #fff; }
+  .chat-send { background: var(--accent); color: #fff; }
+  .w-foot { padding: 0 14px 10px; font-size: 11px; color: var(--text-3); text-align: center; }
+  .w-foot a { color: var(--text-2); }
+</style>
+<script src="/config.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+<div class="w">
+  <div class="w-head">
+    <img src="/favicon.svg" alt="" width="24" height="24">
+    <span class="brand-name" data-brand>Vektor</span>
+    <small>code assistant</small>
+    <button class="w-close" id="close" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div id="chat"></div>
+  <p class="w-foot">Powered by <a href="/" target="_blank" rel="noopener" data-brand>Vektor</a> · AI answers can be wrong</p>
+</div>
+<script type="module">
+  import { createChat } from '/chat.js';
+  const params = new URLSearchParams(location.search);
+  const accent = params.get('accent');
+  if (/^#[0-9a-f]{3,8}$/i.test(accent || '')) document.documentElement.style.setProperty('--accent', accent);
+  const name = window.VEKTOR_CONFIG?.name;
+  if (name) document.querySelectorAll('[data-brand]').forEach((el) => { el.textContent = name; });
+
+  const chat = createChat(document.getElementById('chat'), { mode: params.get('mode') || 'code', compact: true });
+  const embedded = window.parent !== window;
+  const close = document.getElementById('close');
+  if (!embedded) close.hidden = true;
+  close.addEventListener('click', () => window.parent.postMessage({ vektor: 'close' }, '*'));
+  window.addEventListener('message', (e) => { if (e.data?.vektor === 'focus') chat.focus(); });
+</script>
+</body>
+</html>

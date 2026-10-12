@@ -1,0 +1,36 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm install",
+  "outputDirectory": "public",
+  "cleanUrls": true,
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 120
+    }
+  },
+  "headers": [
+    {
+      "source": "/embed.js",
+      "headers": [
+        {
+          "key": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "key": "cache-control",
+          "value": "public, max-age=300"
+        }
+      ]
+    },
+    {
+      "source": "/widget",
+      "headers": [
+        {
+          "key": "content-security-policy",
+          "value": "frame-ancestors *"
+        }
+      ]
+    }
+  ]
+}
