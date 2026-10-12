@@ -8,6 +8,7 @@ import { useTrader, valuePosition } from './trading.js';
 import { Avatar, Delta, Icon, Modal, NumField, Spark, Toggle } from './ui.jsx';
 import { useWallet } from './wallet.jsx';
 import { Logo, NAME } from '@brand';
+import { ACCENT } from '@brand-meta';
 
 export function TopBar({ meta, status, onSearch, onSettings }) {
   const wallet = useWallet();
@@ -332,7 +333,7 @@ const ACCENTS = {
 };
 
 export function applyAccent(name) {
-  const [a, b] = ACCENTS[name] || ACCENTS.orange;
+  const [a, b] = ACCENTS[name] || ACCENTS[ACCENT];
   document.documentElement.style.setProperty('--accent', a);
   document.documentElement.style.setProperty('--accent-2', b);
 }

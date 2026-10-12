@@ -35,10 +35,11 @@ const state = {
   palette: false,
 };
 state.settings.filters = { ...DEFAULT_SETTINGS.filters, ...state.settings.filters };
-// The lime default belonged to the old look; switch it once to the new orange.
-if (ACCENT === 'orange' && !load('lookV2', false)) {
-  if (state.settings.accent === 'lime') state.settings.accent = 'orange';
-  save('lookV2', true);
+// Visitors who saved the other brand's default accent get this brand's default, once.
+const OTHER_DEFAULT = ACCENT === 'orange' ? 'lime' : 'orange';
+if (!load(`look:${ACCENT}`, false)) {
+  if (state.settings.accent === OTHER_DEFAULT) state.settings.accent = ACCENT;
+  save(`look:${ACCENT}`, true);
 }
 state.settings.laneBuy = { ...DEFAULT_SETTINGS.laneBuy, ...state.settings.laneBuy };
 state.settings.laneP = { ...DEFAULT_SETTINGS.laneP, ...state.settings.laneP };

@@ -1,5 +1,5 @@
-// Vestas: the gomo-style site with Rudy the raccoon. Plain values, safe to import anywhere.
+// Vestas: the motion-style terminal in stone & lime. Plain values, safe to import anywhere.
 export const BRAND = 'vestas';
 export const NAME = 'Vestas';
-export const ACCENT = 'orange';
-export const PRIVY_APPEARANCE = { accentColor: '#ff6a1f', logo: '/favicon.png' };
+export const ACCENT = 'lime';
+export const PRIVY_APPEARANCE = { accentColor: '#9cc51a', logo: '/favicon.svg' };

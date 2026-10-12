@@ -1,12 +1,12 @@
-# Gomo and Vestas — Robinhood Chain trading terminals
+# Vestas and Ruckus — Robinhood Chain trading terminals
 
 One codebase, two sites with the same features and their own look:
 
-- **Gomo**: a motion-style terminal in stone & lime.
-- **Vestas**: the gomo-style site with Rudy the raccoon, a 3D-rendered mascot.
+- **Vestas**: a motion-style terminal in stone & lime.
+- **Ruckus**: the gomo-style site with Rudy the raccoon, a 3D-rendered mascot.
 
-The brand is picked at build time (`vite.config.js`). `APP_BRAND=gomo` or `APP_BRAND=vestas` forces
-one. On Vercel the `ruckus` project builds Vestas and the `lead-gen` project builds Gomo. Locally the
+The brand is picked at build time (`vite.config.js`). `APP_BRAND=vestas` or `APP_BRAND=ruckus` forces
+one. On Vercel the `ruckus` project builds Ruckus and the `lead-gen` project builds Vestas. Locally the
 default is Vestas. Brand pieces live in `web/src/brand/` (logo, mascot, front page, styles, Privy
 colours). Everything else is shared.
 
@@ -86,7 +86,7 @@ second, so all viewers share the same work.
    - `PRIVY_APP_ID` *(optional)*: the App ID from step 1. Vestas's own app id is built in as the default, so only set this to use a different Privy app.
    - `RH_RPC_URL` *(optional)*: your own Robinhood Chain RPC, if you have one.
 
-      - `APP_BRAND` *(optional)*: `gomo` or `vestas`, to override which site this project builds.
+      - `APP_BRAND` *(optional)*: `vestas` or `ruckus`, to override which site this project builds.
 
    Then click **Deploy**.
 4. In Privy, add your Vercel URL (e.g. `https://vestas-yourname.vercel.app`) and any custom domain
