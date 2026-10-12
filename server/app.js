@@ -26,13 +26,14 @@ export function createApi({ indexer, gecko = createGecko({ log: console, client:
 
   // In serverless mode every data request brings the index up to date first. A cold instance's
   // backfill takes ~10-20s: answer "syncing" after a few seconds and let it finish in the background.
+  // A slow RPC or price call must never hold the board: once synced, answer within a couple of
+  // seconds with what is indexed and let the catch-up finish in the background.
   async function fresh() {
     if (!lazy) return;
     const work = indexer.ensureFresh();
-    if (indexer.status.synced) return work;
     const settled = work.then(() => true, () => true);
     defer?.(settled);
-    await Promise.race([settled, new Promise((r) => setTimeout(r, 6000))]);
+    await Promise.race([settled, new Promise((r) => setTimeout(r, indexer.status.synced ? 2500 : 6000))]);
   }
 
   async function boardPayload() {

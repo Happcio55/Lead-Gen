@@ -10,7 +10,8 @@ export function useBoard() {
     let timer;
     const tick = async () => {
       try {
-        const res = await fetch('/api/board', { cache: 'no-store' });
+        // A hung request must not freeze the board: give up and poll again.
+        const res = await fetch('/api/board', { cache: 'no-store', signal: AbortSignal.timeout(8000) });
         const body = await res.json();
         if (stop) return;
         if (res.status === 503 || body.syncing) setState((s) => ({ ...s, meta: body.meta, status: 'syncing' }));
@@ -52,7 +53,7 @@ export function usePoolDetail(id, bucketMs) {
     setMissing(false);
     const load = async () => {
       try {
-        const res = await fetch(`/api/pool/${id}?bucket=${bucketMs}`);
+        const res = await fetch(`/api/pool/${id}?bucket=${bucketMs}`, { signal: AbortSignal.timeout(8000) });
         if (res.status === 404) return !stop && setMissing(true);
         const d = await res.json();
         if (!stop) setDetail(d);

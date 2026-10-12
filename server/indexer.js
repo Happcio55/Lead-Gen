@@ -22,7 +22,7 @@ const STALE_MS = 3 * 3600_000; // drop pools with no swaps for this long (unless
 export class Indexer {
   constructor({ rpcUrl, backfillBlocks = 36_000n, pollMs = 1500, log = console } = {}) {
     // cacheTime 0: viem otherwise caches eth_blockNumber for 4s, which would throttle every poll.
-    this.client = createPublicClient({ chain: robinhood, cacheTime: 0, transport: http(rpcUrl, { batch: true, retryCount: 3 }) });
+    this.client = createPublicClient({ chain: robinhood, cacheTime: 0, transport: http(rpcUrl, { batch: true, retryCount: 2, timeout: 8_000 }) });
     this.backfillBlocks = BigInt(backfillBlocks);
     this.pollMs = pollMs;
     this.log = log;
