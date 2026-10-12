@@ -1,4 +1,5 @@
 // Rate-limited JSON-RPC access to Robinhood Chain, exposed both as raw `rpc()` and a viem client.
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { createPublicClient, custom, defineChain } from 'viem';
 import { config, ADDR } from './config.js';
 
@@ -10,8 +11,13 @@ export const robinhood = defineChain({
   contracts: { multicall3: { address: ADDR.MULTICALL3 } }
 });
 
-// Two priority lanes; cheap calls are packed into JSON-RPC batches (one HTTP request, many calls).
-const lanes = { high: [], low: [] };
+// Three priority lanes, cheap calls packed into JSON-RPC batches (one HTTP request, many calls):
+// urgent = a person is waiting (report, portfolio, quote), high = live indexing/scoring, low = backfill.
+const lanes = { urgent: [], high: [], low: [] };
+const ctx = new AsyncLocalStorage();
+// Run fn with its RPC calls in the urgent lane; background() opts back out for work it spawns.
+export const urgent = fn => ctx.run({ urgent: true }, fn);
+export const background = fn => ctx.run({ urgent: false }, fn);
 let active = 0;
 let tokens = config.rpcRps;
 // Adaptive rate: drops when the RPC rate-limits us, creeps back up while requests succeed.
@@ -48,7 +54,7 @@ function refill() {
 }
 
 function nextBatch() {
-  const lane = lanes.high.length ? lanes.high : lanes.low;
+  const lane = lanes.urgent.length ? lanes.urgent : lanes.high.length ? lanes.high : lanes.low;
   if (!lane.length) return null;
   // eth_getLogs responses can be large, so they travel alone.
   if (lane[0].method === 'eth_getLogs') return [lane.shift()];
@@ -70,7 +76,7 @@ function pump() {
     active++;
     sendBatch(batch).finally(() => { active--; pump(); });
   }
-  if ((lanes.high.length || lanes.low.length) && !timer) {
+  if ((lanes.urgent.length || lanes.high.length || lanes.low.length) && !timer) {
     timer = setTimeout(() => { timer = null; pump(); }, Math.ceil(1000 / rate));
   }
 }
@@ -90,7 +96,7 @@ function retry(job, delay) {
   if (!job.low && job.attempt > 8) { rpcStats.errors++; job.reject(new RpcError('RPC unavailable', 'RETRY')); return; }
   rpcStats.retries++;
   const wait = Math.min(job.low ? 30000 : 15000, delay * 2 ** Math.min(job.attempt - 1, 6)) + Math.random() * 500;
-  setTimeout(() => { (job.low ? lanes.low : lanes.high).unshift(job); pump(); }, wait);
+  setTimeout(() => { laneFor(job).unshift(job); pump(); }, wait);
 }
 
 async function sendBatch(batch) {
@@ -134,9 +140,12 @@ async function sendBatch(batch) {
 }
 
 // low=true for background work (historical backfill) so live scoring is never starved.
+const laneFor = job => (job.low ? lanes.low : job.urgent ? lanes.urgent : lanes.high);
+
 export function rpc(method, params = [], low = false) {
   return new Promise((resolve, reject) => {
-    (low ? lanes.low : lanes.high).push({ method, params, resolve, reject, low });
+    const job = { method, params, resolve, reject, low, urgent: !low && ctx.getStore()?.urgent === true };
+    laneFor(job).push(job);
     pump();
   });
 }

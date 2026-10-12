@@ -12,6 +12,8 @@ export const config = {
   // How far back to look for launches when the server starts with an empty database.
   backfillHours: Number(process.env.BACKFILL_HOURS || 24),
   anthropicKey: process.env.ANTHROPIC_API_KEY || '',
+  // Privy app id (dashboard.privy.io) enables email/Google login with an embedded wallet. Optional.
+  privyAppId: process.env.PRIVY_APP_ID || '',
   aiModel: process.env.AI_MODEL || 'claude-opus-5-5',
   relayApi: process.env.RELAY_API || 'https://api.relay.link',
   relayApiKey: process.env.RELAY_API_KEY || '',

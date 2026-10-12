@@ -653,6 +653,27 @@ img.tk, img.ci { object-fit: cover; background: rgba(255,255,255,.08); }
 .trow2.new { animation: slidein .6s var(--ease); }
 @media (max-width: 600px) { .trow2 { grid-template-columns: 44px 40px 1fr 1fr; } .trow2 > :last-child { display: none; } }
 
+/* portfolio */
+.pfhead { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding: 18px 20px 6px; flex-wrap: wrap; }
+.pfhead .tot { font-size: 40px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.pfhead small { display: block; color: var(--dim); font-size: 13px; font-family: var(--mono); }
+.pflist { padding: 8px 12px 20px; display: grid; gap: 2px; }
+.pfrow { display: grid; grid-template-columns: 1fr 120px 120px 150px; gap: 12px; align-items: center; padding: 10px 10px; border-radius: 14px; font-variant-numeric: tabular-nums; }
+.pfrow:hover { background: rgba(255,255,255,.04); }
+.pfrow.head { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+.pfrow.head:hover { background: none; }
+.pfrow > span:not(:first-child) { text-align: right; }
+.pfrow .acts { display: flex; gap: 6px; justify-content: flex-end; }
+.pfrow .acts button { padding: 6px 10px; border-radius: 9px; font-size: 12px; font-weight: 600; border: 1px solid var(--line2); }
+.pfrow .acts button:hover { background: rgba(255,255,255,.07); }
+.pfrow small { display: block; color: var(--dim); font-size: 12px; font-family: var(--mono); }
+.pnl { font-size: 12px; font-family: var(--mono); }
+@media (max-width: 640px) {
+  .pfrow { grid-template-columns: 1fr 100px; }
+  .pfrow > :nth-child(3), .pfrow > :nth-child(4) { display: none; }
+  .pfhead .tot { font-size: 32px; }
+}
+
 /* reveal */
 .rv { opacity: 0; transform: translateY(28px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
 .rv.in { opacity: 1; transform: none; }

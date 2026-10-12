@@ -11,9 +11,10 @@ import { fetchMarkets } from './market.js';
 import { explain, aiEnabled } from './ai.js';
 import * as relay from './relay.js';
 import { buildRoute } from './route.js';
-import { chartData } from './trades.js';
-import { rpcStats } from './rpc.js';
+import { chartData, ethPrice } from './trades.js';
+import { rpcStats, urgent, background } from './rpc.js';
 import { getTrending, fillLogos, logoFor } from './gecko.js';
+import { portfolio } from './portfolio.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const isAddr = a => /^0x[0-9a-f]{40}$/.test(a);
@@ -142,7 +143,7 @@ function ensureScored(address) {
   const a = adhoc.get(address);
   if ((!a || Date.now() - a.score.scoredAt > 15 * 60e3) && !adhocPending.has(address) && adhocPending.size < 3) {
     adhocPending.add(address);
-    scoreAdhoc(address).catch(e => console.warn('[adhoc]', address, e.message)).finally(() => adhocPending.delete(address));
+    background(() => scoreAdhoc(address)).catch(e => console.warn('[adhoc]', address, e.message)).finally(() => adhocPending.delete(address));
   }
   return a || null;
 }
@@ -212,8 +213,9 @@ function serveStatic(req, res, pathname) {
 }
 
 const routes = {
-  'GET /api/pulse': () => {
+  'GET /api/pulse': async () => {
     const day = within24h();
+    const ethUsd = await ethPrice().catch(() => null);
     return {
       block: chain.tip,
       blockMs: chain.blockMs,
@@ -222,6 +224,7 @@ const routes = {
       scored24h: day.filter(t => t.score).length,
       stocks: Object.keys(db.stocks).length,
       backfill: backfillProgress(),
+      ethUsd,
       ai: aiEnabled()
     };
   },
@@ -286,6 +289,13 @@ const routes = {
       send(res, 422, { message: /revert|execution reverted/i.test(e.message) ? 'The trade would fail at current prices' : e.message });
     }
   },
+  'GET /api/config': () => ({ privyAppId: config.privyAppId || null, chainId: config.chainId }),
+  'GET /api/portfolio': async (q, body, res) => {
+    const address = (q.get('address') || '').toLowerCase();
+    if (!isAddr(address)) return send(res, 400, { message: 'Invalid address' });
+    const extra = (q.get('extra') || '').split(',').map(s => s.trim().toLowerCase()).filter(isAddr).slice(0, 50);
+    send(res, 200, await portfolio(address, extra));
+  },
   'GET /api/health': () => ({ ok: true, tip: chain.tip, queue: queue.length, scoring: running, rpc: rpcStats, tokens: Object.keys(db.tokens).length })
 };
 
@@ -295,7 +305,9 @@ async function cachedStockMarkets(addrs) {
   return stockCache.data;
 }
 
-const server = http.createServer(async (req, res) => {
+// Every HTTP request is someone waiting: its RPC calls jump ahead of background indexing.
+const server = http.createServer((req, res) => urgent(() => handle(req, res)));
+async function handle(req, res) {
   const url = new URL(req.url, 'http://x');
   const key = `${req.method} ${url.pathname}`;
   try {
@@ -322,7 +334,7 @@ const server = http.createServer(async (req, res) => {
     console.warn('[http]', key, e.message);
     if (!res.headersSent) send(res, 500, { error: e.message });
   }
-});
+}
 
 // ---------------- boot ----------------
 load();

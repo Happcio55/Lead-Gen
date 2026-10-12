@@ -23,6 +23,7 @@
     if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
     return n.toLocaleString('en-US', { maximumFractionDigits: n < 1 ? 6 : n < 1000 ? 4 : 0 });
   };
+  const fmtMoney = n => n == null || !isFinite(n) ? '—' : '$' + n.toLocaleString('en-US', { minimumFractionDigits: Math.abs(n) < 1000 ? 2 : 0, maximumFractionDigits: 2 });
   const fmtPrice = n => n == null ? '—' : n >= 1 ? '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + n.toPrecision(3);
   const scoreClass = s => s == null ? '' : s >= 7 ? 's-hi' : s >= 4 ? 's-mid' : 's-lo';
   const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -84,7 +85,7 @@
   }
 
   // ---------- pulse ----------
-  const pulse = { block: 0, at: 0, blockMs: 100 };
+  const pulse = { block: 0, at: 0, blockMs: 100, ethUsd: null };
   function setPulse(k, v) {
     $$(`[data-pulse="${k}"]`).forEach(el => {
       if (el.textContent === v) return;
@@ -95,7 +96,7 @@
   async function loadPulse() {
     try {
       const p = await api('/pulse');
-      pulse.block = p.block; pulse.at = Date.now(); pulse.blockMs = p.blockMs || 100;
+      pulse.block = p.block; pulse.at = Date.now(); pulse.blockMs = p.blockMs || 100; pulse.ethUsd = p.ethUsd || pulse.ethUsd;
       setPulse('flagged', p.flagged24h.toLocaleString('en-US'));
       setPulse('tokens', p.tokens24h.toLocaleString('en-US') + (p.backfill && !p.backfill.done ? ` · indexing ${Math.round(p.backfill.progress * 100)}%` : ''));
       setPulse('blockMs', p.blockMs ? p.blockMs + ' ms' : '—');
@@ -377,7 +378,7 @@
     if (m.hidden) return;
     m.hidden = true;
     if (m === modal) stopChart();
-    if (modal.hidden && picker.hidden) document.body.style.overflow = '';
+    if (modal.hidden && picker.hidden && $('#portfolio').hidden) document.body.style.overflow = '';
     if (lastFocus) lastFocus.focus();
   }
   async function openReport(address) {
@@ -456,7 +457,7 @@
   });
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
-    if (!picker.hidden) closeModal(picker); else if (!modal.hidden) closeModal(modal);
+    if (!picker.hidden) closeModal(picker); else if (!modal.hidden) closeModal(modal); else if (!$('#portfolio').hidden) closeModal($('#portfolio'));
   });
 
   const tokenRow = t => `<button class="pickrow" type="button" data-v="${esc(t.address)}">${avatar(t)}<div><b>${esc(cleanName(t.name))}</b><small>$${esc(t.symbol)}${t.stock ? ' · stock' : t.createdAt ? ' · ' + ago(t.createdAt) : ''}</small></div>${t.score != null ? `<span class="fs ${scoreClass(t.score)}">${t.score}</span>` : ''}</button>`;
@@ -619,6 +620,7 @@
     $('#navAcct').hidden = false;
     $('#acctAddr').textContent = short(wallet.address);
     $('#wc2Label').textContent = 'Connected · ' + short(wallet.address);
+    $$('.navport').forEach(a => { a.hidden = false; });
     renderWalletList();
     refreshBalance();
     requestQuote();
@@ -627,6 +629,7 @@
     wallet.provider = null; wallet.address = null; wallet.info = null;
     $('#navConnect').hidden = false; $('#navAcct').hidden = true;
     $('#wc2Label').textContent = 'Connect wallet';
+    $$('.navport').forEach(a => { a.hidden = true; });
     swap.balance = null;
     renderWalletList(); renderSwap();
     toast('Disconnected');
@@ -887,6 +890,7 @@
   async function execute() {
     if (!wallet.address) return connect();
     const t = swap.target;
+    const amountIn = parseUnits(payInput.value, inDecimals());
     swap.busy = true; renderSwap(); note('');
     resetSteps();
     stepUI(1, 'now', 'Sign in your wallet');
@@ -930,6 +934,15 @@
       stepUI(1, 'done', 'Signed');
       stepUI(2, 'done', 'Settled on-chain');
       stepUI(3, 'now', `~${receivedText} landed in your wallet`);
+      // Remember what this trade cost / returned so the portfolio can show profit and loss.
+      const outAmount = unitsToNum(BigInt(plan.amountOut), plan.outDecimals);
+      if (swap.mode === 'buy') {
+        const usd = plan.inUsd ?? (swap.origin === RH && pulse.ethUsd ? unitsToNum(amountIn, 18) * pulse.ethUsd : null);
+        logTrade({ side: 'buy', token: t.address, usd, tokens: outAmount });
+      } else {
+        const usd = plan.outUsd ?? (pulse.ethUsd && (chainById(swap.origin) || {}).symbol === 'ETH' ? outAmount * pulse.ethUsd : null);
+        logTrade({ side: 'sell', token: t.address, usd, tokens: unitsToNum(amountIn, t.decimals) });
+      }
       toast(`Done — about ${receivedText} in your wallet`, 5000);
       payInput.value = '';
     } catch (e) {
@@ -943,6 +956,71 @@
     requestQuote();
   }
   $('#swGo').addEventListener('click', () => (wallet.address ? execute() : connect()));
+
+  // ---------- portfolio ----------
+  const pfModal = $('#portfolio');
+  const tradeKey = () => 'kairo.trades.' + (wallet.address || 'none');
+  function readTrades() { try { return JSON.parse(localStorage.getItem(tradeKey()) || '[]'); } catch { return []; } }
+  function logTrade(entry) {
+    try {
+      const list = readTrades();
+      list.push({ ...entry, at: Date.now() });
+      localStorage.setItem(tradeKey(), JSON.stringify(list.slice(-500)));
+    } catch { /* storage unavailable: PnL just won't show */ }
+  }
+  // Net USD put into a token through Kairo (buys minus sells), or null if we never traded it here.
+  function netInvested(address) {
+    const mine = readTrades().filter(x => x.token === address && x.usd != null);
+    if (!mine.length) return null;
+    return mine.reduce((sum, x) => sum + (x.side === 'buy' ? x.usd : -x.usd), 0);
+  }
+  async function openPortfolio() {
+    if (!wallet.address) return connect();
+    $('#pfBody').innerHTML = '<div class="scanning"><div class="spin"></div><div>Reading your wallet on Robinhood Chain…</div></div>';
+    openModal(pfModal);
+    const extra = [...new Set(readTrades().map(x => x.token))].slice(0, 50).join(',');
+    try {
+      const p = await api(`/portfolio?address=${wallet.address}${extra ? '&extra=' + extra : ''}`);
+      if (pfModal.hidden) return;
+      const rows = p.items.map(it => {
+        const inv = netInvested(it.address);
+        const pnl = inv != null && it.valueUsd != null ? it.valueUsd - inv : null;
+        return `<div class="pfrow" data-a="${esc(it.address)}">
+          <span class="fn">${avatar(it)}<div><b>${esc(cleanName(it.name))}</b><small>${fmtNum(it.amount)} ${esc(it.symbol)}${it.stock ? ' · stock' : ''}</small></div></span>
+          <span>${fmtMoney(it.valueUsd)}${pnl != null ? `<small class="pnl ${pnl >= 0 ? 'up' : 'dn'}">${pnl >= 0 ? '+' : '−'}${fmtMoney(Math.abs(pnl))} via Kairo</small>` : ''}</span>
+          <span class="${(it.change24 ?? 0) >= 0 ? 'up' : 'dn'}">${fmtPct(it.change24)}</span>
+          <span class="acts"><button type="button" data-act="report">Report</button><button type="button" data-act="sell">Sell</button></span>
+        </div>`;
+      }).join('');
+      $('#pfBody').innerHTML = `
+        <div class="pfhead"><div><small>Total on Robinhood Chain</small><div class="tot">${fmtMoney(p.totalUsd || 0)}</div></div>
+          <small>${fmtNum(p.eth.amount)} ETH${p.eth.valueUsd != null ? ' · ' + fmtMoney(p.eth.valueUsd) : ''} · ${short(p.address)}</small></div>
+        <div class="pflist">
+          <div class="pfrow head"><span>Token</span><span>Value</span><span>24h</span><span></span></div>
+          ${rows || '<div class="pickempty">No tokens found yet. Buy something and it shows up here.</div>'}
+        </div>`;
+      pfModal._items = p.items;
+    } catch (e) {
+      $('#pfBody').innerHTML = `<div class="pickempty">${esc(e.message)}</div>`;
+    }
+  }
+  pfModal.addEventListener('click', e => {
+    if (e.target === pfModal || e.target.closest('[data-close]')) return closeModal(pfModal);
+    const btn = e.target.closest('[data-act]');
+    const row = e.target.closest('.pfrow[data-a]');
+    if (!btn || !row) return;
+    const it = (pfModal._items || []).find(x => x.address === row.dataset.a);
+    if (!it) return;
+    closeModal(pfModal);
+    if (btn.dataset.act === 'report') return openReport(it.address);
+    // Sell: load the token into the swap box with the full balance filled in.
+    setTarget({ ...it, stock: it.stock });
+    setMode('sell');
+    payInput.value = formatUnits(BigInt(it.balance), it.decimals);
+    requestQuote();
+    $('#hero').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+  });
+  $$('.navport').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openPortfolio(); }));
 
   // ---------- chrome: nav, menu, shortcuts, fx ----------
   const nav = $('#topnav');

@@ -27,7 +27,7 @@ const int = (data, i, bits = 256) => signed(word(data, i) & ((1n << BigInt(bits)
 const abs = v => (v < 0n ? -v : v);
 
 let ethUsd = { at: 0, v: null };
-async function ethPrice() {
+export async function ethPrice() {
   if (Date.now() - ethUsd.at < 60e3 && ethUsd.v) return ethUsd.v;
   const m = await fetchMarket(ADDR.WETH).catch(() => null);
   if (m?.priceUsd) ethUsd = { at: Date.now(), v: m.priceUsd };

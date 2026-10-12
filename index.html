@@ -34,6 +34,7 @@
       <a href="#feed">Explore</a>
       <a href="#score">Score</a>
       <a href="#stocks">Stocks</a>
+      <a href="#portfolio" class="navport" hidden>Portfolio</a>
     </nav>
     <form class="nsearch" id="navSearch" role="search">
       <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -54,6 +55,7 @@
     <a href="#score">Kairo score</a>
     <a href="#route">Chains</a>
     <a href="#stocks">Stock tokens</a>
+    <a href="#portfolio" class="navport" hidden>Portfolio</a>
   </nav>
 </header>
 
@@ -290,6 +292,13 @@
       <button class="btn btn-ghost" type="button" id="repCopy">Copy address</button>
       <button class="btn btn-acc" type="button" id="repBuy">Buy this token</button>
     </div>
+  </div>
+</div>
+<div class="modal" id="portfolio" hidden role="dialog" aria-modal="true" aria-labelledby="pfTitle">
+  <div class="sheet wide">
+    <div class="mh"><span class="ey" id="pfTitle">Portfolio</span><button class="x" type="button" data-close aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+    <div id="pfBody"></div>
   </div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
