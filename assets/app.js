@@ -163,12 +163,12 @@
       trending = items;
       items.forEach(t => known.set(t.address, t));
       const mq = items.slice(0, 14).map(t =>
-        `<span class="mi">${avatar(t)}<b>$${esc(t.symbol)}</b><i class="${(t.change24 ?? 0) >= 0 ? 'up' : 'dn'}">${fmtPct(t.change24)}</i><span class="fs ${scoreClass(t.score)}">${t.score}</span></span>`).join('');
+        `<span class="mi">${avatar(t)}<b>$${esc(t.symbol)}</b><i class="${(t.change24 ?? 0) >= 0 ? 'up' : 'dn'}">${fmtPct(t.change24)}</i><span class="fs ${scoreClass(t.score)}">${t.score ?? '…'}</span></span>`).join('');
       $('#marq').innerHTML = mq + mq;
       const seen = new Set();
       const chips = items.filter(t => { const k = t.name.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
       $('#tryChips').innerHTML = chips.slice(0, 3).map(t =>
-        `<button class="trychip" type="button" data-a="${esc(t.address)}">${avatar(t)}${esc(t.name.slice(0, 18))}<span class="sc ${scoreClass(t.score)}">${t.score}</span></button>`).join('');
+        `<button class="trychip" type="button" data-a="${esc(t.address)}">${avatar(t)}${esc(t.name.slice(0, 18))}<span class="sc ${scoreClass(t.score)}">${t.score ?? '…'}</span></button>`).join('');
     } catch { /* ignore */ }
   }
   $('#tryChips').addEventListener('click', e => {
@@ -468,7 +468,7 @@
       items.forEach(t => known.set(t.address, t));
       return items.map(tokenRow).join('');
     }
-    return '<div class="picklab">Trending launches</div>' + trending.slice(0, 8).map(tokenRow).join('') +
+    return '<div class="picklab">Trending on Robinhood Chain</div>' + trending.slice(0, 8).map(tokenRow).join('') +
       '<div class="picklab">Stock tokens</div>' + stocks.slice(0, 10).map(s => tokenRow({ ...s, stock: true })).join('');
   }
   function openSearchPicker(q) {
@@ -505,7 +505,8 @@
       origins = r.origins; dest = r.destination;
       $$('[data-chains]').forEach(el => { el.textContent = origins.length; });
       renderChains();
-      if (!swap.origin) setOrigin(origins.find(c => c.id === 8453) ? 8453 : origins[0].id);
+      // Default to paying with ETH already on Robinhood Chain; users pick another chain if their funds are elsewhere.
+      if (!swap.origin) setOrigin(RH);
     } catch { /* retry later */ setTimeout(loadChains, 5000); }
   }
   function renderChains() {
@@ -554,7 +555,7 @@
       items.forEach(s => known.set(s.address, { ...s, stock: true }));
       $('#stockGrid').innerHTML = items.slice(0, 8).map(s => `
         <button type="button" class="stile" data-a="${esc(s.address)}" style="text-align:left">
-          <span class="tk" style="background:linear-gradient(135deg,#1d2133,#2a3048);color:#fff">${esc(s.symbol.slice(0, 5))}</span>
+          ${safeUrl(s.image) ? `<img class="tk" src="${esc(s.image)}" alt="" loading="lazy">` : `<span class="tk" style="background:linear-gradient(135deg,#2a2620,#3a342a);color:var(--text)">${esc(s.symbol.slice(0, 5))}</span>`}
           <b>${esc(s.symbol)}</b><span class="nm">${esc(cleanName(s.name))}</span>
           <span class="px">${fmtPrice(s.priceUsd)}</span><span class="ch ${(s.change24 ?? 0) >= 0 ? 'up' : 'dn'}">${fmtPct(s.change24)}</span>${spark(s)}
         </button>`).join('');
@@ -987,11 +988,13 @@
   loadStocks(); setInterval(loadStocks, 60000);
   // Preload the swap with the best-scored trending token that can actually be traded right now.
   async function pickDefaultTarget() {
-    const ranked = trending.slice().sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 6);
+    // Prefer scored, liquid tokens; unscored trending tokens rank as neutral until their score arrives.
+    const ranked = trending.filter(t => (t.liquidityUsd || 0) >= 10000)
+      .sort((a, b) => (b.score ?? 6) - (a.score ?? 6) || (b.liquidityUsd || 0) - (a.liquidityUsd || 0)).slice(0, 6);
     for (const t of ranked) {
       if (swap.target) return;
       try {
-        await api('/route', { body: { user: QUOTE_USER, chainId: swap.origin || 8453, token: t.address, side: 'buy', amount: (10n ** 16n).toString(), slippageBps: swap.slip } });
+        await api('/route', { body: { user: QUOTE_USER, chainId: swap.origin || RH, token: t.address, side: 'buy', amount: (10n ** 16n).toString(), slippageBps: swap.slip } });
         if (!swap.target) setTarget(t);
         return;
       } catch { /* try the next one */ }

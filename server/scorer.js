@@ -163,7 +163,8 @@ export async function analyze(t) {
 
   if (top10Pct >= 50) { L -= 2.5; flag('concentrated', 'bad', `Top 10 holders (excluding the creator) own ${fmtPct(top10Pct)} of supply`, 2.5); }
   else if (top10Pct >= 30) { L -= 1; flag('concentrated', 'warn', `Top 10 holders (excluding the creator) own ${fmtPct(top10Pct)} of supply`, 1); }
-  else flag('spread', 'ok', `Top 10 holders own ${fmtPct(top10Pct)} of supply`);
+  // Only claim a healthy spread when we saw the full holder history (older tokens are read partially).
+  else if (complete) flag('spread', 'ok', `Top 10 holders own ${fmtPct(top10Pct)} of supply`);
 
   if (code) {
     const live = !code.renounced;

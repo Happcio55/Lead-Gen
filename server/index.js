@@ -13,6 +13,7 @@ import * as relay from './relay.js';
 import { buildRoute } from './route.js';
 import { chartData } from './trades.js';
 import { rpcStats } from './rpc.js';
+import { getTrending, fillLogos, logoFor } from './gecko.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const isAddr = a => /^0x[0-9a-f]{40}$/.test(a);
@@ -93,9 +94,13 @@ function brief(t) {
     liquidityUsd: t.market?.liquidityUsd ?? null,
     marketCap: t.market?.marketCap ?? t.market?.fdv ?? null,
     listed: Boolean(t.market?.listed),
-    image: t.market?.image || null
+    image: t.market?.image || logoFor(t.address)
   };
 }
+
+// Keep the front page clean: names like these stay searchable but are never featured.
+const BLOCKED = /\b(porn\w*|nsfw|xxx|sex\w*|nude\w*|cum|dick\w*|cock\w*|pussy|tits?|boob\w*|fuck\w*|shit\w*|nazi\w*|hitler|rape\w*|nigg\w*|fag\w*|retard\w*|kkk|pedo\w*|onlyfans)\b/i;
+const clean = t => !BLOCKED.test(`${t.name} ${t.symbol}`);
 
 async function full(t) {
   return {
@@ -120,12 +125,43 @@ async function full(t) {
 }
 
 const adhoc = new Map(); // on-demand reports for tokens we don't track
+const adhocPending = new Set();
+
+async function scoreAdhoc(address) {
+  const t = await analyzeAddress(address);
+  if (!t) return null;
+  const { score, market } = await analyze(t);
+  Object.assign(t, { score, market });
+  if (adhoc.size > 500) adhoc.delete(adhoc.keys().next().value);
+  adhoc.set(address, t);
+  return t;
+}
+// Score in the background; the feed shows the token right away and the score fills in.
+function ensureScored(address) {
+  if (db.tokens[address]?.score) return db.tokens[address];
+  const a = adhoc.get(address);
+  if ((!a || Date.now() - a.score.scoredAt > 15 * 60e3) && !adhocPending.has(address) && adhocPending.size < 3) {
+    adhocPending.add(address);
+    scoreAdhoc(address).catch(e => console.warn('[adhoc]', address, e.message)).finally(() => adhocPending.delete(address));
+  }
+  return a || null;
+}
+
+// GeckoTerminal trending, merged with our own scores where we have them.
+async function trendingBriefs() {
+  const list = (await getTrending()).filter(clean);
+  return list.map(g => {
+    const t = ensureScored(g.address);
+    const b = t ? brief(t) : {};
+    return { ...b, ...g, score: b.score ?? null, label: b.label ?? null, topFlag: b.topFlag ?? null, image: g.image || b.image || null };
+  });
+}
 
 async function report(address) {
   if (db.stocks[address]) {
     const s = db.stocks[address];
     const m = (await fetchMarkets([address]))[address];
-    return { stock: true, address, name: s.name, symbol: s.symbol, decimals: s.decimals, market: m, explorer: `${config.explorer}/token/${address}` };
+    return { stock: true, address, name: s.name, symbol: s.symbol, decimals: s.decimals, image: logoFor(address), market: m, explorer: `${config.explorer}/token/${address}` };
   }
   let t = db.tokens[address];
   if (t) {
@@ -134,13 +170,8 @@ async function report(address) {
   }
   const cached = adhoc.get(address);
   if (cached && Date.now() - cached.score.scoredAt < 10 * 60e3) return full(cached);
-  t = await analyzeAddress(address);
-  if (!t) return null;
-  const { score, market } = await analyze(t);
-  Object.assign(t, { score, market });
-  if (adhoc.size > 500) adhoc.delete(adhoc.keys().next().value);
-  adhoc.set(address, t);
-  return full(t);
+  t = await scoreAdhoc(address);
+  return t ? full(t) : null;
 }
 
 function within24h() {
@@ -194,22 +225,29 @@ const routes = {
       ai: aiEnabled()
     };
   },
-  'GET /api/feed': (q) => {
+  'GET /api/feed': async (q) => {
     const tab = q.get('tab') || 'new';
     const limit = Math.min(50, Number(q.get('limit')) || 12);
     const minScore = Number(q.get('minScore')) || 0;
-    let list = Object.values(db.tokens).filter(t => t.score && t.score.score >= minScore);
-    if (tab === 'trending') list = list.filter(t => t.market?.listed).sort((a, b) => (b.market.vol24 || 0) - (a.market.vol24 || 0));
-    else if (tab === 'top') list = list.filter(t => t.market?.listed && Date.now() - t.createdAt < 864e5)
-      .sort((a, b) => b.score.score - a.score.score || (b.market.liquidityUsd || 0) - (a.market.liquidityUsd || 0));
-    else list.sort((a, b) => b.createdAt - a.createdAt);
+    if (tab === 'trending') {
+      const items = (await trendingBriefs()).filter(t => (t.score ?? 10) >= minScore);
+      return { tab, items: items.slice(0, limit) };
+    }
+    let list = Object.values(db.tokens).filter(t => t.score && t.score.score >= minScore && clean(t));
+    if (tab === 'top') {
+      // Rated launches that actually trade: real liquidity and volume, and old enough to judge.
+      list = list.filter(t => t.market?.listed && (t.market.liquidityUsd || 0) >= 5000 && (t.market.vol24 || 0) >= 1000 &&
+        Date.now() - t.createdAt > 15 * 60e3 && Date.now() - t.createdAt < 3 * 864e5)
+        .sort((a, b) => b.score.score - a.score.score || (b.market.vol24 || 0) - (a.market.vol24 || 0));
+    } else list.sort((a, b) => b.createdAt - a.createdAt);
     return { tab, items: list.slice(0, limit).map(brief) };
   },
   'GET /api/highlight': async () => {
-    // A recent, actively traded launch with a clear finding, for the landing page's score showcase.
-    const day = within24h().filter(t => t.score && t.market?.listed);
-    const pick = day.sort((a, b) => (b.market.vol24 || 0) - (a.market.vol24 || 0))[0]
-      || Object.values(db.tokens).filter(t => t.score).sort((a, b) => b.createdAt - a.createdAt)[0];
+    // The busiest trending token we've already scored, for the landing page's score showcase.
+    const scored = (await trendingBriefs()).filter(t => t.score != null);
+    const addr = scored[0]?.address;
+    const pick = (addr && (db.tokens[addr] || adhoc.get(addr)))
+      || within24h().filter(t => t.score && t.market?.listed && clean(t)).sort((a, b) => (b.market.vol24 || 0) - (a.market.vol24 || 0))[0];
     return pick ? full(pick) : null;
   },
   'GET /api/search': (q) => {
@@ -218,16 +256,18 @@ const routes = {
     if (isAddr(s)) return { items: [{ address: s }] };
     const match = t => t.symbol.toLowerCase() === s ? 3 : t.symbol.toLowerCase().startsWith(s) ? 2 : t.name.toLowerCase().includes(s) ? 1 : 0;
     const stocks = Object.values(db.stocks).map(t => ({ t, m: match(t) + 1, stock: true }));
-    const launches = Object.values(db.tokens).map(t => ({ t, m: match(t) }));
+    const seen = new Set(Object.keys(db.tokens));
+    const extra = [...adhoc.values()].filter(t => !seen.has(t.address));
+    const launches = Object.values(db.tokens).concat(extra).map(t => ({ t, m: match(t) }));
     const items = stocks.concat(launches).filter(x => x.m > (x.stock ? 1 : 0))
       .sort((a, b) => b.m - a.m || (b.t.market?.vol24 || 0) - (a.t.market?.vol24 || 0)).slice(0, 8)
-      .map(x => (x.stock ? { address: x.t.address, name: x.t.name, symbol: x.t.symbol, stock: true } : brief(x.t)));
+      .map(x => (x.stock ? { address: x.t.address, name: x.t.name, symbol: x.t.symbol, stock: true, image: logoFor(x.t.address) } : brief(x.t)));
     return { items };
   },
   'GET /api/stocks': async () => {
     const list = Object.values(db.stocks);
     const m = await cachedStockMarkets(list.map(s => s.address));
-    return { items: list.map(s => ({ ...s, ...(m[s.address] || {}) })).sort((a, b) => (b.vol24 || 0) - (a.vol24 || 0)) };
+    return { items: list.map(s => ({ ...s, ...(m[s.address] || {}), image: logoFor(s.address) || m[s.address]?.image || null })).sort((a, b) => (b.vol24 || 0) - (a.vol24 || 0)) };
   },
   'GET /api/chains': async () => ({ origins: await relay.originChains(), destination: await relay.destinationChain() }),
   'GET /api/balance': async (q) => ({ balance: await relay.balance(q.get('chainId'), q.get('address'), q.get('token') || null) }),
@@ -292,6 +332,14 @@ console.log(`[kairo] following Robinhood Chain from block ${chain.tip}, ${chain.
 
 Object.values(db.tokens).filter(t => !t.score).sort((a, b) => b.createdAt - a.createdAt).forEach(t => enqueue(t.address));
 setInterval(rescoreTick, 60e3);
+// Logos: stocks first, then the newest launches that don't have one yet.
+async function logoTick() {
+  const want = Object.keys(db.stocks)
+    .concat(Object.values(db.tokens).filter(t => !t.market?.image).sort((a, b) => b.createdAt - a.createdAt).map(t => t.address));
+  await fillLogos(want);
+}
+setInterval(() => logoTick().catch(() => {}), 20e3);
+getTrending().catch(() => {});
 setInterval(() => marketTick().catch(e => console.warn('[market]', e.message)), 30e3);
 setInterval(save, 30e3);
 setInterval(prune, 3600e3);
