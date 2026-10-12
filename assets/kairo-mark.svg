@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>Kairo</title>
+  <defs>
+    <linearGradient id="surface" x1="8" y1="0" x2="56" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e3efb5"/><stop offset="1" stop-color="#abc878"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="62" height="62" rx="19" fill="url(#surface)"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="18.5" stroke="#f1f7d8" stroke-opacity=".45"/>
+  <path d="M16 15h9v34h-9V15Zm13 17 14-17h11L39 32l15 17H43L29 32Z" fill="#192218"/>
+  <path d="m29 24 7-9h-7v9Z" fill="#192218" fill-opacity=".4"/>
+</svg>
