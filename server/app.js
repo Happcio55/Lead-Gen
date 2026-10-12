@@ -1,8 +1,13 @@
-// Surge HTTP API, shared by the local server (server/index.js) and the Vercel function (api/[...path].js).
+// Vestas HTTP API, shared by the local server (server/index.js) and the Vercel function (api/[...path].js).
+import { getAddress, isAddress, parseAbi } from 'viem';
 import { ADDR, CHAIN_ID, DEFAULT_RPC, EXPLORER } from '../shared/chain.js';
+import { IPFS_GATEWAYS, parseLogo } from './meme.js';
+
+const LOGO_ABI = parseAbi(['function logo() view returns (string)']);
+const MAX_LOGO_BYTES = 3_500_000;
 
 const BOARD_LIMIT = 400;
-// Surge's Privy app (a public client id, safe to ship). PRIVY_APP_ID overrides it.
+// Vestas's Privy app (a public client id, safe to ship). PRIVY_APP_ID overrides it.
 const DEFAULT_PRIVY_APP_ID = 'cmv527g7j03lv0fjyt8xsqzqs';
 
 // Reads the browser may make through the proxy. Writes are limited to broadcasting
@@ -30,10 +35,12 @@ export function createApi({ indexer, lazy = false, defer = null, env = process.e
   }
 
   function boardPayload() {
-    const rows = indexer.board();
+    // Robinhood Chain memecoins only: no stables, stock tokens, wrapped assets or test spam.
+    const rows = indexer.board().filter((r) => r.meme);
     // Most relevant first: recent activity, then newest.
     rows.sort((a, b) => Math.max(b.lastSwapAt, b.createdAt) - Math.max(a.lastSwapAt, a.createdAt));
-    return { meta: indexer.meta(), rows: rows.slice(0, BOARD_LIMIT), feed: indexer.feed };
+    const feed = indexer.feed.filter((f) => indexer.tokens.get(f.token)?.meme);
+    return { meta: { ...indexer.meta(), pools: rows.length }, rows: rows.slice(0, BOARD_LIMIT), feed };
   }
 
   async function proxyRpc(body) {
@@ -51,6 +58,46 @@ export function createApi({ indexer, lazy = false, defer = null, env = process.e
       signal: AbortSignal.timeout(15_000),
     });
     return { status: res.status, json: await res.json() };
+  }
+
+  // Token artwork as set at launch (logo() on the token contract). IPFS images are fetched through
+  // public gateways and cached by the CDN for good; plain https logos are redirected, never proxied.
+  async function serveLogo(res, raw) {
+    if (!isAddress(raw)) return json(res, 400, { error: 'bad address' });
+    const address = getAddress(raw);
+    let logo = indexer.tokens.get(address)?.logo;
+    if (logo === undefined) {
+      logo = await indexer.client
+        .readContract({ address, abi: LOGO_ABI, functionName: 'logo' })
+        .then(parseLogo, () => null);
+    }
+    if (!logo) return json(res, 404, { error: 'no logo' }, 'public, s-maxage=3600');
+    if (logo.url) {
+      res.writeHead(302, { location: logo.url, 'cache-control': 'public, s-maxage=86400' });
+      return res.end();
+    }
+    for (const gw of IPFS_GATEWAYS) {
+      try {
+        const r = await fetch(gw + logo.cid, { signal: AbortSignal.timeout(8000) });
+        const type = r.headers.get('content-type') || '';
+        if (!r.ok || !/^image\/(png|jpe?g|gif|webp|avif)/.test(type)) continue;
+        const buf = Buffer.from(await r.arrayBuffer());
+        if (buf.length > MAX_LOGO_BYTES) {
+          res.writeHead(302, { location: gw + logo.cid, 'cache-control': 'public, s-maxage=86400' });
+          return res.end();
+        }
+        res.writeHead(200, {
+          'content-type': type,
+          'content-length': buf.length,
+          // IPFS content never changes, so browsers and the CDN can keep it forever.
+          'cache-control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+        });
+        return res.end(buf);
+      } catch {
+        // try the next gateway
+      }
+    }
+    json(res, 502, { error: 'logo unavailable' }, 'public, s-maxage=300');
   }
 
   // Returns true when the request was an API request (and has been answered).
@@ -75,6 +122,8 @@ export function createApi({ indexer, lazy = false, defer = null, env = process.e
         const d = indexer.detail(id, { bucketMs: bucket });
         if (d) json(res, 200, d, 'public, s-maxage=1, stale-while-revalidate=4');
         else json(res, 404, { error: 'pool not tracked' });
+      } else if (/^\/api\/logo\/0x[0-9a-fA-F]{40}$/.test(pathname)) {
+        await serveLogo(res, pathname.slice('/api/logo/'.length));
       } else if (pathname === '/api/pin' && req.method === 'POST') {
         // Keep pools the user holds from being pruned while they're idle.
         const body = await readBody(req);

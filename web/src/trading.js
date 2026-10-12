@@ -52,7 +52,7 @@ export function useTrader() {
   const busy = useRef(new Set());
 
   const buy = useCallback(
-    async (row, ethAmount) => {
+    async (row, ethAmount, { slippage } = {}) => {
       if (!wallet.authenticated) return wallet.login();
       const key = `buy:${row.token}`;
       if (busy.current.has(key)) return;
@@ -62,7 +62,7 @@ export function useTrader() {
         const pool = poolOf(row);
         const amountIn = parseEther(String(ethAmount));
         const out = await quote(chainClient, pool, { side: 'buy', amountIn });
-        const slip = Math.round(getState().settings.slippage * 100);
+        const slip = Math.round((slippage ?? getState().settings.slippage) * 100);
         const hash = await wallet.send(buildBuyTx(pool, { amountIn, minOut: withSlippage(out, slip) }));
         updateToast(t, { msg: `Buying ${row.symbol}… waiting for confirmation`, link: txUrl(hash) }, 0);
         await confirm(hash);

@@ -40,7 +40,7 @@ export function Home({ board, now }) {
           </h1>
           <p className="lede">Live Uniswap v4 pools on Robinhood Chain. Log in with email, buy in one click, exit on autopilot.</p>
           <a className="underlink" href="#how">
-            How trading on Surge works <span>↗</span>
+            How trading on Vestas works <span>↗</span>
           </a>
           <div className="hero-stats">
             <div>
@@ -68,10 +68,10 @@ export function Home({ board, now }) {
           Every pool and swap is read from Uniswap's PoolManager as it happens. Nothing is delayed, re-priced or filtered behind your back.
         </Pillar>
         <Pillar title="Your keys, your coins">
-          Trades are built in your browser and signed by your own wallet. Surge never holds funds and never sees a private key.
+          Trades are built in your browser and signed by your own wallet. Vestas never holds funds and never sees a private key.
         </Pillar>
         <Pillar title="Exits on autopilot">
-          Set a take-profit, a stop-loss or a trailing stop once. Surge sells for you the moment it triggers.
+          Set a take-profit, a stop-loss or a trailing stop once. Vestas sells for you the moment it triggers.
         </Pillar>
       </section>
 
@@ -90,7 +90,7 @@ export function Home({ board, now }) {
         </div>
         {top.map((r) => (
           <div key={r.id} className="catalogue-row" onClick={() => openDrawer(r.id)}>
-            <Avatar token={r.token} symbol={r.symbol} size={38} />
+            <Avatar token={r.token} symbol={r.symbol} logo={r.logo} size={38} />
             <div className="cat-name">
               <b>{r.name}</b>
               <small>
@@ -111,8 +111,8 @@ export function Home({ board, now }) {
       </section>
 
       <footer className="footer">
-        <span>Surge · Robinhood Chain terminal</span>
-        <span>Not affiliated with Robinhood, Uniswap or Privy. Memecoins are extremely risky, so only trade what you can lose.</span>
+        <span>Vestas · Robinhood Chain terminal</span>
+        <span>Not affiliated with Vestas Wind Systems, Robinhood, Uniswap or Privy. Memecoins are extremely risky, so only trade what you can lose.</span>
       </footer>
     </div>
   );
@@ -144,7 +144,7 @@ function QuickBuyCard({ candidates, ethUsd }) {
       <div className="pick-row">
         {candidates.map((c, i) => (
           <button key={c.id} className={`pick ${i === pick ? 'on' : ''}`} onClick={() => setPick(i)}>
-            <Avatar token={c.token} symbol={c.symbol} size={20} />
+            <Avatar token={c.token} symbol={c.symbol} logo={c.logo} size={20} />
             {c.symbol}
           </button>
         ))}

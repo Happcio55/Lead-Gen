@@ -13,6 +13,11 @@ export const DEFAULT_SETTINGS = {
   pauseOnHover: true,
   sound: false,
   filters: { new: { ...DEFAULT_FILTERS }, hot: { ...DEFAULT_FILTERS }, est: { ...DEFAULT_FILTERS, minLiq: 2000 } },
+  // Per-column quick buy: amount in ETH and the trade preset (P1–P3) it uses.
+  laneBuy: { new: 0.005, hot: 0.005, est: 0.005 },
+  laneP: { new: 0, hot: 0, est: 0 },
+  // Trade presets: slippage per profile (P1 careful … P3 aggressive).
+  tradePresets: [{ slippage: 15 }, { slippage: 25 }, { slippage: 40 }],
 };
 
 const state = {
@@ -29,6 +34,8 @@ const state = {
   palette: false,
 };
 state.settings.filters = { ...DEFAULT_SETTINGS.filters, ...state.settings.filters };
+state.settings.laneBuy = { ...DEFAULT_SETTINGS.laneBuy, ...state.settings.laneBuy };
+state.settings.laneP = { ...DEFAULT_SETTINGS.laneP, ...state.settings.laneP };
 
 const listeners = new Set();
 const PERSIST = ['settings', 'watchlist', 'positions', 'rules', 'trades', 'view'];
@@ -61,6 +68,16 @@ export function setSettings(patch) {
 
 export function setFilter(lane, patch) {
   set({ settings: (s) => ({ ...s, filters: { ...s.filters, [lane]: { ...s.filters[lane], ...patch } } }) });
+}
+
+export function setLaneBuy(lane, patch) {
+  set({
+    settings: (s) => ({
+      ...s,
+      laneBuy: 'amount' in patch ? { ...s.laneBuy, [lane]: patch.amount } : s.laneBuy,
+      laneP: 'p' in patch ? { ...s.laneP, [lane]: patch.p } : s.laneP,
+    }),
+  });
 }
 
 export function resetFilters(lane) {

@@ -1,9 +1,9 @@
 {
-  "name": "surge-terminal",
+  "name": "vestas-terminal",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Surge — a live trading terminal for new Uniswap v4 launches on Robinhood Chain. Privy login, non-custodial ETH trading, TP/SL automation.",
+  "description": "Vestas — a live trading terminal for new Uniswap v4 launches on Robinhood Chain. Privy login, non-custodial ETH trading, TP/SL automation.",
   "scripts": {
     "dev": "concurrently -k -n api,web \"node --watch server/index.js\" \"vite\"",
     "build": "vite build",

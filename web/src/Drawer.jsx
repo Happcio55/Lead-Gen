@@ -41,7 +41,7 @@ export function Drawer({ id, board }) {
   return (
     <aside className="drawer">
       <header className="drawer-head">
-        <Avatar token={row.token} symbol={row.symbol} size={48} />
+        <Avatar token={row.token} symbol={row.symbol} logo={row.logo} size={48} />
         <div className="drawer-title">
           <div>
             <h2>{row.symbol}</h2>
@@ -54,6 +54,21 @@ export function Drawer({ id, board }) {
             <a className="chip" href={tokenUrl(row.token)} target="_blank" rel="noreferrer">
               Explorer ↗
             </a>
+            {row.socials?.x && (
+              <a className="chip" href={row.socials.x} target="_blank" rel="noreferrer noopener">
+                𝕏 ↗
+              </a>
+            )}
+            {row.socials?.tg && (
+              <a className="chip" href={row.socials.tg} target="_blank" rel="noreferrer noopener">
+                Telegram ↗
+              </a>
+            )}
+            {row.socials?.web && (
+              <a className="chip" href={row.socials.web} target="_blank" rel="noreferrer noopener">
+                Website ↗
+              </a>
+            )}
             <span className="chip dim">{age(now - row.createdAt)} old</span>
           </div>
         </div>

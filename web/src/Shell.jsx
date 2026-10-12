@@ -5,7 +5,7 @@ import { useEthBalance } from './data.js';
 import { age, copy, eth, num, pct, short, usd } from './lib.js';
 import { openDrawer, set, setSettings, setView, toast, toggleWatch, useStore } from './store.js';
 import { useTrader, valuePosition } from './trading.js';
-import { Avatar, Delta, Modal, NumField, Spark, Toggle } from './ui.jsx';
+import { Avatar, Delta, Icon, Modal, NumField, Spark, Toggle } from './ui.jsx';
 import { useWallet } from './wallet.jsx';
 
 export function TopBar({ meta, status, onSearch, onSettings }) {
@@ -29,7 +29,7 @@ export function TopBar({ meta, status, onSearch, onSettings }) {
           <circle cx="16" cy="16" r="14" fill="url(#orb)" stroke="rgba(20,20,20,.12)" />
           <path d="M17.6 7 10 17.4h5.2l-1.4 7.6 8-10.6h-5.3z" fill="#141414" />
         </svg>
-        <span>Surge</span>
+        <span>Vestas</span>
       </div>
       <nav className="tabs">
         {[
@@ -48,7 +48,7 @@ export function TopBar({ meta, status, onSearch, onSettings }) {
         <kbd>⌘K</kbd>
       </button>
 
-      <div className={`quick ${view === 'terminal' ? '' : 'hide'}`}>
+      <div className="quick hide">
         <span>⚡ Quick buy</span>
         {presets.map((p) => (
           <button key={p} className={quickBuy === p ? 'on' : ''} onClick={() => setSettings({ quickBuy: p })}>
@@ -98,7 +98,7 @@ function AccountChip() {
   return (
     <div className="account" ref={ref}>
       <button className="account-btn" onClick={() => setOpen((v) => !v)}>
-        <Avatar token={wallet.address} symbol={wallet.label || 'W'} size={22} />
+        <Avatar token={wallet.address} symbol={wallet.label || 'W'} logo={null} size={22} />
         <span className="mono">{bal == null ? '…' : eth(bal, 4)} ETH</span>
       </button>
       {open && (
@@ -140,7 +140,7 @@ export function Rail({ board, now }) {
         {!watch.length && <p className="empty">Star a token (☆) to pin it here.</p>}
         {rows.map((r) => (
           <div key={r.id} className="mini" onClick={() => openDrawer(r.id)}>
-            <Avatar token={r.token} symbol={r.symbol} size={26} />
+            <Avatar token={r.token} symbol={r.symbol} logo={r.logo} size={26} />
             <div>
               <b>{r.symbol}</b>
               <small>{usd(r.mcapUsd)}</small>
@@ -318,7 +318,7 @@ export function Palette({ rows, onClose }) {
         <div className="palette-list">
           {results.map((r, k) => (
             <div key={r.id} className={`palette-item ${k === i ? 'on' : ''}`} onMouseEnter={() => setI(k)} onClick={() => pick(r)}>
-              <Avatar token={r.token} symbol={r.symbol} size={28} />
+              <Avatar token={r.token} symbol={r.symbol} logo={r.logo} size={28} />
               <b>{r.symbol}</b>
               <span className="name">{r.name}</span>
               <span className="mono">{usd(r.mcapUsd)}</span>
@@ -352,7 +352,7 @@ export function Settings({ onClose }) {
     const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'surge-settings.json';
+    a.download = 'vestas-settings.json';
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -362,7 +362,7 @@ export function Settings({ onClose }) {
       set({ settings: (cur) => ({ ...cur, ...parsed, filters: { ...cur.filters, ...(parsed.filters || {}) } }) });
       toast('Settings imported', { kind: 'success' });
     } catch {
-      toast('That file is not a Surge settings export', { kind: 'error' });
+      toast('That file is not a Vestas settings export', { kind: 'error' });
     }
   };
   return (
@@ -414,5 +414,43 @@ export function Settings({ onClose }) {
         </div>
       </div>
     </Modal>
+  );
+}
+
+// Bottom status bar for the terminal: wallet, holdings and watchlist toggles, chain status.
+export function StatusBar({ board, panel, onToggle }) {
+  const wallet = useWallet();
+  const bal = useEthBalance(wallet.address);
+  const key = wallet.address?.toLowerCase();
+  const holdings = useStore((s) => (key ? Object.keys(s.positions[key] || {}).length : 0));
+  const watching = useStore((s) => s.watchlist.length);
+  const meta = board.meta;
+  const live = board.status === 'live';
+  return (
+    <footer className="statusbar">
+      <button className="sb-item" onClick={() => (wallet.authenticated ? null : wallet.login())} title={wallet.address || 'Log in'}>
+        <Icon name="wallet" />
+        {wallet.authenticated ? `${bal == null ? '…' : eth(bal, 4)} Ξ` : 'Log in'}
+      </button>
+      <button className={`sb-item ${panel === 'holdings' ? 'on' : ''}`} onClick={() => onToggle('holdings')}>
+        <Icon name="layers" /> Holdings <span className="sb-count">{holdings}</span>
+      </button>
+      <button className={`sb-item ${panel === 'watch' ? 'on' : ''}`} onClick={() => onToggle('watch')}>
+        <Icon name="star" /> Watchlist <span className="sb-count">{watching}</span>
+      </button>
+      <span className="sb-spacer" />
+      <span className="sb-item static">
+        <i>ETH</i> {usd(meta?.ethUsd, { compact: false })}
+      </span>
+      <span className="sb-item static">
+        <i>GAS</i> {meta ? `${meta.gasGwei} gwei` : '—'}
+      </span>
+      <span className="sb-item static">
+        <i>POOLS</i> {num(meta?.pools)}
+      </span>
+      <span className={`sb-item static sb-live ${live ? 'ok' : 'bad'}`} title={`Block ${meta?.head ?? '—'}`}>
+        <b /> {live ? 'Live' : board.status}
+      </span>
+    </footer>
   );
 }

@@ -1,9 +1,15 @@
 // Live indexer for Uniswap v4 native-ETH pools on Robinhood Chain.
 // Polls PoolManager logs (Initialize + Swap), keeps per-pool market state in memory and
 // exposes compact board rows plus per-pool detail (candles + recent swaps).
-import { createPublicClient, http, getAddress } from 'viem';
+import { createPublicClient, http, getAddress, parseAbi } from 'viem';
 import { ADDR, ERC20_ABI, EVENTS, robinhood } from '../shared/chain.js';
 import { ethPerToken, isTradable, virtualEthReserve } from '../shared/v4.js';
+import { isMemecoin, parseLogo, parseSocials } from './meme.js';
+
+const META_ABI = parseAbi([
+  'function logo() view returns (string)',
+  'function socials() view returns (string, string, string)',
+]);
 
 const MAX_RANGE = 10_000n; // provider cap on blocks per getLogs call
 const MIN_RANGE = 50n;
@@ -192,26 +198,33 @@ export class Indexer {
   }
 
   async loadTokens(addresses) {
-    const calls = addresses.flatMap((address) =>
-      ['name', 'symbol', 'decimals', 'totalSupply'].map((functionName) => ({ address, abi: ERC20_ABI, functionName }))
-    );
-    for (let i = 0; i < calls.length; i += 200) {
-      const chunk = calls.slice(i, i + 200);
+    const PER = 6; // name, symbol, decimals, totalSupply, logo, socials
+    const calls = addresses.flatMap((address) => [
+      ...['name', 'symbol', 'decimals', 'totalSupply'].map((functionName) => ({ address, abi: ERC20_ABI, functionName })),
+      { address, abi: META_ABI, functionName: 'logo' },
+      { address, abi: META_ABI, functionName: 'socials' },
+    ]);
+    for (let i = 0; i < calls.length; i += PER * 40) {
+      const chunk = calls.slice(i, i + PER * 40);
       const res = await this.client.multicall({ contracts: chunk, allowFailure: true });
-      for (let j = 0; j < res.length; j += 4) {
+      for (let j = 0; j < res.length; j += PER) {
         const address = chunk[j].address;
-        const [name, symbol, decimals, supply] = res.slice(j, j + 4);
+        const [name, symbol, decimals, supply, logo, socials] = res.slice(j, j + PER);
         if (decimals.status !== 'success' || supply.status !== 'success') {
           this.tokens.set(address, null);
           continue;
         }
-        this.tokens.set(address, {
+        const token = {
           address,
           name: clean(name.result) || 'Unknown',
           symbol: clean(symbol.result) || '???',
           decimals: Number(decimals.result),
           supply: Number(supply.result) / 10 ** Number(decimals.result),
-        });
+          logo: logo.status === 'success' ? parseLogo(logo.result) : null,
+          socials: socials.status === 'success' ? parseSocials(socials.result) : null,
+        };
+        token.meme = isMemecoin(token);
+        this.tokens.set(address, token);
       }
     }
   }
@@ -364,6 +377,9 @@ export class Indexer {
     return {
       id: p.id,
       token: p.token.address,
+      logo: p.token.logo ? `/api/logo/${p.token.address}` : null,
+      socials: p.token.socials,
+      meme: p.token.meme,
       symbol: p.token.symbol,
       name: p.token.name,
       decimals: p.token.decimals,

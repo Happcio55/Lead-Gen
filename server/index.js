@@ -29,7 +29,7 @@ const MIME = {
 function serveStatic(req, res) {
   if (!fs.existsSync(DIST)) {
     res.writeHead(200, { 'content-type': 'text/plain' });
-    return res.end('Surge API is running. Build the web app with `npm run build`, or use `npm run dev`.');
+    return res.end('Vestas API is running. Build the web app with `npm run build`, or use `npm run dev`.');
   }
   const { pathname } = new URL(req.url, 'http://localhost');
   let file = path.normalize(path.join(DIST, decodeURIComponent(pathname)));
@@ -48,7 +48,7 @@ http
     if (!(await api(req, res))) serveStatic(req, res);
   })
   .listen(PORT, () => {
-    log.info(`[surge] http://localhost:${PORT}  rpc=${RPC_URL}  privy=${process.env.PRIVY_APP_ID ? 'on' : 'off (injected wallets only)'}`);
+    log.info(`[vestas] http://localhost:${PORT}  rpc=${RPC_URL}  privy=${process.env.PRIVY_APP_ID ? 'on' : 'off (injected wallets only)'}`);
   });
 
 indexer.start().catch((e) => {
