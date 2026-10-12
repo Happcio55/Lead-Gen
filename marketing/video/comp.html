@@ -1,0 +1,385 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Kairo promo</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #0d0c0a; --acc: #b9d08f; --acc2: #e8cf9a; --acc3: #d98b60; --ink: #f4efe4; --muted: #a59d8d; --red: #e2705a; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+  #v { position: relative; width: 1920px; height: 1080px; overflow: hidden; font-family: 'Space Grotesk', sans-serif; color: var(--ink); }
+  .abs { position: absolute; }
+  .full { position: absolute; inset: 0; }
+  /* background */
+  .blob { position: absolute; border-radius: 50%; filter: blur(120px); opacity: .55; }
+  .grid { position: absolute; inset: -100px; background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 80px 80px; }
+  /* camera over a site screenshot */
+  .cam { position: absolute; inset: 0; perspective: 2200px; }
+  .stage { position: absolute; left: 0; top: 0; }
+  .stage img { display: block; position: absolute; left: 0; top: 0; border-radius: 26px; }
+  .stage .frame { position: absolute; left: 0; top: 0; border-radius: 26px; box-shadow: 0 0 0 1.5px rgba(255,255,255,.10), 0 60px 160px rgba(0,0,0,.75), 0 0 120px rgba(185,208,143,.10); }
+  .ring { position: absolute; border: 3px solid var(--acc); border-radius: 18px; box-shadow: 0 0 0 6px rgba(185,208,143,.18), 0 0 40px rgba(185,208,143,.45); }
+  .cursor { position: absolute; left: 0; top: 0; width: 44px; height: 44px; transform-origin: 4px 4px; filter: drop-shadow(0 6px 14px rgba(0,0,0,.6)); }
+  .ripple { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; border: 3px solid var(--acc); }
+  /* type */
+  .big { position: absolute; left: 0; right: 0; text-align: center; font-weight: 700; letter-spacing: -.045em; line-height: .88; text-transform: uppercase; white-space: nowrap; }
+  .grad { background: linear-gradient(92deg, var(--acc) 0%, var(--acc2) 55%, var(--acc3) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hot { background: linear-gradient(92deg, var(--acc2), var(--acc3) 45%, var(--red)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .cap { position: absolute; left: 110px; bottom: 96px; font-weight: 700; letter-spacing: -.04em; line-height: .92; text-transform: uppercase; font-size: 112px; }
+  .cap .ln { display: block; overflow: hidden; padding-bottom: .06em; }
+  .cap .ln > span { display: inline-block; }
+  .capbg { position: absolute; left: 0; right: 0; bottom: 0; height: 520px; background: linear-gradient(to top, rgba(13,12,10,.92), rgba(13,12,10,.6) 45%, transparent); }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .tag { position: absolute; font-family: 'JetBrains Mono', monospace; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--acc); font-size: 26px; }
+  .step { position: absolute; left: 96px; top: 84px; display: flex; align-items: center; gap: 28px; z-index: 6; }
+  .step::before { content: ''; position: absolute; left: -96px; top: -84px; width: 1920px; height: 300px; background: linear-gradient(to bottom, rgba(13,12,10,.92), rgba(13,12,10,.55) 55%, transparent); z-index: -1; }
+  .sub, .cap, .capbg, .tag, .logo, .big { z-index: 5; }
+  .step .num { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 30px; color: #0d0c0a; background: var(--acc); border-radius: 16px; padding: 14px 20px; box-shadow: 0 0 40px rgba(185,208,143,.45); }
+  .step .ttl { font-weight: 700; font-size: 74px; letter-spacing: -.04em; text-transform: uppercase; text-shadow: 0 6px 40px rgba(0,0,0,.8); }
+  .sub { z-index: 6; position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%); white-space: nowrap; font-size: 34px; font-weight: 500; padding: 18px 34px; border-radius: 999px; background: rgba(20,19,16,.82); border: 1.5px solid rgba(255,255,255,.12); box-shadow: 0 20px 60px rgba(0,0,0,.5); backdrop-filter: blur(10px); }
+  .sub b { color: var(--acc); font-weight: 600; }
+  .logo { position: absolute; left: 50%; top: 50%; display: flex; align-items: center; gap: 36px; }
+  .logo img { width: 210px; height: 210px; }
+  .logo .wm { font-size: 230px; font-weight: 700; letter-spacing: -.06em; line-height: 1; }
+  .logo .wm i { font-style: normal; color: var(--acc); }
+  .vig { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55)); pointer-events: none; }
+  .grain { position: absolute; inset: -200px; opacity: .07; mix-blend-mode: overlay; pointer-events: none; }
+  .flash { position: absolute; inset: 0; background: #f6f9ec; opacity: 0; pointer-events: none; }
+  .bar { position: absolute; left: 0; top: 0; height: 6px; background: linear-gradient(90deg, var(--acc), var(--acc2), var(--acc3)); }
+</style>
+</head>
+<body>
+<div id="v"></div>
+<script>
+const P = new URLSearchParams(location.search);
+const VID = P.get('v') || 'intro';
+const BPM = 128, B = 60 / BPM, FPS = 30;
+const root = document.getElementById('v');
+const SHOTS = '../shots/';
+
+// ---------- helpers ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const E = {
+  lin: t => t,
+  out: t => 1 - Math.pow(1 - t, 3),
+  in: t => t * t * t,
+  io: t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+  expo: t => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)),
+  back: t => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+};
+// keyframes: [[beat, value], ...]
+function kf(t, keys, e = E.io) {
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 1; i < keys.length; i++) {
+    if (t <= keys[i][0]) {
+      const [t0, v0] = keys[i - 1], [t1, v1] = keys[i];
+      return v0 + (v1 - v0) * e(clamp((t - t0) / (t1 - t0)));
+    }
+  }
+  return keys[keys.length - 1][1];
+}
+function el(tag, cls, parent = root, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html != null) e.innerHTML = html;
+  parent.appendChild(e);
+  return e;
+}
+const scenes = [];
+function scene(b0, b1, node, update) { node.style.display = 'none'; scenes.push({ b0, b1, node, update }); return node; }
+const hits = []; // beats with a flash
+let dropAt = 8;
+
+// ---------- background ----------
+const bg = el('div', 'full');
+const grid = el('div', 'grid', bg);
+const blobs = [
+  [el('div', 'blob', bg), 900, '#4f5f33'],
+  [el('div', 'blob', bg), 760, '#6b4a2c'],
+  [el('div', 'blob', bg), 640, '#3e4a2a'],
+];
+blobs.forEach(([b, s, c]) => { b.style.width = b.style.height = s + 'px'; b.style.background = c; });
+
+// ---------- building blocks ----------
+// Kinetic word(s) that punch in on a beat.
+function punch(b0, b1, html, { size = 200, y = 540, cls = '', shake = 0, out = true } = {}) {
+  const n = el('div', 'big ' + cls, root, html);
+  n.style.fontSize = size + 'px';
+  scene(b0, b1, n, (lb, dur) => {
+    const p = clamp(lb / 0.28);
+    const s = kf(lb, [[0, 1.75], [0.28, 1]], E.expo) * (1 + 0.035 * Math.exp(-((lb % 1) * 7)));
+    const leave = out ? clamp((lb - (dur - 0.18)) / 0.18) : 0;
+    n.style.opacity = Math.min(p * 1.4, 1 - leave);
+    const sh = shake * Math.exp(-lb * 3) * Math.sin(lb * 90);
+    n.style.transform = `translate(${sh * 12}px, ${y - size * 0.44}px) scale(${s * (1 + leave * 0.25)})`;
+    n.style.filter = `blur(${(1 - p) * 18 + leave * 10}px)`;
+    const g = Math.exp(-lb * 4) * 14;
+    n.style.textShadow = cls.includes('grad') || cls.includes('hot') ? 'none' : `${g}px 0 rgba(217,139,96,.7), ${-g}px 0 rgba(185,208,143,.7)`;
+  });
+  n.style.top = '0';
+  return n;
+}
+
+// Caption lines that slide up out of a mask, bottom-left.
+function caption(b0, b1, lines, { size = 112 } = {}) {
+  const wrap = el('div', 'full');
+  el('div', 'capbg', wrap);
+  const c = el('div', 'cap', wrap);
+  c.style.fontSize = size + 'px';
+  const spans = lines.map(l => { const ln = el('span', 'ln', c); return el('span', '', ln, l); });
+  scene(b0, b1, wrap, (lb, dur) => {
+    spans.forEach((s, i) => {
+      const t = lb - i * 0.22;
+      s.style.transform = `translateY(${kf(t, [[0, 110], [0.45, 0]], E.expo)}%)`;
+    });
+    wrap.style.opacity = 1 - clamp((lb - (dur - 0.2)) / 0.2);
+  });
+}
+
+function sub(b0, b1, html) {
+  const n = el('div', 'sub', root, html);
+  scene(b0, b1, n, (lb, dur) => {
+    const p = kf(lb, [[0.1, 0], [0.5, 1]], E.expo);
+    const q = 1 - clamp((lb - (dur - 0.25)) / 0.25);
+    n.style.opacity = Math.min(p, q);
+    n.style.transform = `translateX(-50%) translateY(${(1 - p) * 40}px)`;
+  });
+}
+
+function stepBadge(b0, b1, num, title) {
+  const n = el('div', 'step', root, `<span class="num">${num}</span><span class="ttl">${title}</span>`);
+  const [nb, tt] = n.children;
+  scene(b0, b1, n, (lb, dur) => {
+    const p = kf(lb, [[0, 0], [0.4, 1]], E.expo);
+    const q = 1 - clamp((lb - (dur - 0.2)) / 0.2);
+    n.style.opacity = q;
+    nb.style.transform = `scale(${kf(lb, [[0, 0.2], [0.35, 1]], E.back)})`;
+    tt.style.transform = `translateX(${(1 - p) * -60}px)`;
+    tt.style.opacity = p;
+    tt.style.clipPath = `inset(0 ${(1 - kf(lb, [[0.05, 0], [0.55, 1]], E.expo)) * 100}% 0 0)`;
+  });
+}
+
+// A site screenshot under a moving camera. cam: [[beat, fx, fy, zoom], ...] in screenshot CSS px
+// (half the captured pixel size). Optional tilt, crossfaded second image, cursor path and rings.
+function shot(b0, b1, o) {
+  const cam = el('div', 'cam');
+  const st = el('div', 'stage', cam);
+  st.style.width = o.w + 'px'; st.style.height = o.h + 'px';
+  const fr = el('div', 'frame', st); fr.style.width = o.w + 'px'; fr.style.height = o.h + 'px';
+  const img = el('img', '', st); img.src = SHOTS + o.src; img.width = o.w; img.height = o.h;
+  let img2;
+  if (o.cross) { img2 = el('img', '', st); img2.src = SHOTS + o.cross.src; img2.width = o.w; img2.height = o.h; }
+  const rings = (o.rings || []).map(r => { const n = el('div', 'ring', st); Object.assign(n.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' }); return [n, r]; });
+  let cur, rip = [];
+  if (o.cursor) {
+    cur = el('div', 'cursor', st, '<svg viewBox="0 0 24 24" width="44" height="44"><path d="M4 2.5 19.5 12l-6.8 1.6L16.6 21l-3 1.4-3.9-7.4L4 19.6Z" fill="#fbf8f0" stroke="#0d0c0a" stroke-width="1.4" stroke-linejoin="round"/></svg>');
+    rip = (o.cursor.clicks || []).map(c => [el('div', 'ripple', st), c]);
+  }
+  const keys = i => o.cam.map(k => [k[0], k[i]]);
+  scene(b0, b1, cam, (lb, dur) => {
+    const fx = kf(lb, keys(1)), fy = kf(lb, keys(2));
+    const z = kf(lb, keys(3)) * (1 + 0.012 * lb);
+    const enter = o.enter === 'none' ? 0 : kf(lb, [[0, 1], [0.45, 0]], E.expo);
+    const dir = o.enter === 'up' ? [0, 1] : o.enter === 'left' ? [-1, 0] : [1, 0];
+    const ry = o.tilt ? kf(lb, o.tilt.ry) : 0, rx = o.tilt ? kf(lb, o.tilt.rx) : 0;
+    st.style.transformOrigin = `${fx}px ${fy}px`;
+    st.style.transform = `translate(${960 - fx + dir[0] * enter * 900}px, ${540 - fy + dir[1] * enter * 700}px) rotateY(${ry}deg) rotateX(${rx}deg) scale(${z})`;
+    cam.style.filter = enter > 0.02 ? `blur(${enter * 26}px)` : 'none';
+    const leave = clamp((lb - (dur - 0.12)) / 0.12);
+    cam.style.opacity = 1 - leave;
+    if (img2) {
+      const c = o.cross;
+      if (c.wipe) { const p = kf(lb, [[c.at, 0], [c.at + c.len, 1]], E.io); img2.style.clipPath = `inset(0 ${(1 - p) * 100}% 0 0)`; img2.style.opacity = 1; }
+      else img2.style.opacity = kf(lb, [[c.at, 0], [c.at + c.len, 1]]);
+    }
+    rings.forEach(([n, r]) => {
+      const p = kf(lb, [[r.b0, 0], [r.b0 + 0.35, 1]], E.back);
+      const q = r.b1 != null ? 1 - clamp((lb - r.b1) / 0.25) : 1;
+      n.style.opacity = Math.min(clamp(p), q);
+      n.style.transform = `scale(${0.85 + 0.15 * p + 0.02 * Math.sin(lb * Math.PI * 2)})`;
+    });
+    if (cur) {
+      const path = o.cursor.path;
+      const x = kf(lb, path.map(k => [k[0], k[1]])), y = kf(lb, path.map(k => [k[0], k[2]]));
+      const press = Math.max(0, ...rip.map(([, c]) => Math.exp(-Math.abs(lb - c) * 9)));
+      cur.style.transform = `translate(${x - 4}px, ${y - 4}px) scale(${(1 - press * 0.22) / z * 1.25})`;
+      cur.style.opacity = kf(lb, [[path[0][0], 0], [path[0][0] + 0.2, 1]]);
+      rip.forEach(([n, c]) => {
+        const t = lb - c;
+        const s = t < 0 ? 0 : E.out(clamp(t / 0.6)) * 6;
+        n.style.left = x + 'px'; n.style.top = y + 'px';
+        n.style.transform = `scale(${s / z * 1.4})`;
+        n.style.opacity = t < 0 ? 0 : 1 - clamp(t / 0.6);
+      });
+    }
+  });
+}
+
+function logo(b0, b1, { y = 540, tagline } = {}) {
+  const w = el('div', 'full');
+  const l = el('div', 'logo', w, `<img src="../../assets/kairo-mark.svg"><span class="wm">kairo<i>.</i></span>`);
+  const [mark, wm] = l.children;
+  let tl;
+  if (tagline) { tl = el('div', 'big grad', w, tagline); tl.style.fontSize = '92px'; tl.style.top = (y + 170) + 'px'; }
+  scene(b0, b1, w, (lb, dur) => {
+    const p = kf(lb, [[0, 0], [0.8, 1]], E.expo);
+    mark.style.transform = `rotate(${(1 - p) * -260}deg) scale(${kf(lb, [[0, 0], [0.7, 1]], E.back) * (1 + 0.04 * Math.exp(-((lb % 1) * 6)))})`;
+    wm.style.clipPath = `inset(-20% ${(1 - kf(lb, [[0.4, 0], [1.4, 1]], E.expo)) * 100}% -20% 0)`;
+    l.style.transform = `translate(-50%, calc(-50% + ${y - 540 - (tagline ? 60 : 0)}px))`;
+    if (tl) { const q = kf(lb, [[1.2, 0], [1.8, 1]], E.expo); tl.style.opacity = q; tl.style.transform = `translateY(${(1 - q) * 40}px)`; }
+    w.style.opacity = 1 - clamp((lb - (dur - 0.3)) / 0.3);
+  });
+}
+
+function tagLine(b0, b1, text, x, y) {
+  const n = el('div', 'tag', root, text);
+  n.style.left = x + 'px'; n.style.top = y + 'px';
+  scene(b0, b1, n, (lb, dur) => {
+    const p = kf(lb, [[0, 0], [0.5, 1]], E.expo);
+    n.style.clipPath = `inset(0 ${(1 - p) * 100}% 0 0)`;
+    n.style.opacity = 1 - clamp((lb - (dur - 0.2)) / 0.2);
+  });
+  return n;
+}
+
+// ---------- the two edits ----------
+let TOTAL;
+if (VID === 'intro') {
+  TOTAL = 60; dropAt = 8;
+  logo(0, 4);
+  punch(4, 6, 'New coins.', { size: 230 });
+  punch(6, 8, 'Every <span class="grad">minute.</span>', { size: 230, shake: 1 });
+  punch(8, 10, 'Which ones', { size: 250, shake: 1.5 });
+  punch(10, 12, 'are <span class="hot">rugs?</span>', { size: 290, shake: 2 });
+  // hero headline, pull back to the whole page
+  shot(12, 16, { src: 'hero.png', w: 1600, h: 900, enter: 'up', cam: [[0, 440, 330, 2.1], [2, 470, 360, 1.9], [4, 800, 450, 1.18]] });
+  hits.push(12, 16, 24, 32, 36, 40, 44, 48);
+  // feed, tilted
+  shot(16, 24, { src: 'feed-top.png', w: 1600, h: 837, tilt: { ry: [[0, -22], [8, -8]], rx: [[0, 10], [8, 4]] },
+    cam: [[0, 1062, 420, 1.35], [8, 1062, 470, 1.55]],
+    rings: [{ x: 1290, y: 225, w: 70, h: 500, b0: 3 }] });
+  caption(16.5, 24, ['Every launch.', '<span class="grad">Rated live.</span>']);
+  // report: score, AI, chart
+  shot(24, 32, { src: 'report.png', w: 1600, h: 900,
+    cam: [[0, 500, 200, 2.5], [2.6, 500, 200, 2.7], [3.2, 800, 750, 1.9], [5.2, 800, 750, 2.0], [5.8, 800, 520, 1.55], [8, 800, 500, 1.5]] });
+  caption(24.3, 27, ['Scored', '<span class="grad">1 to 10.</span>']);
+  caption(27.2, 29.6, ['AI tells you', '<span class="grad">why.</span>']);
+  caption(29.8, 32, ['Live charts.', '<span class="grad">Straight from chain.</span>'], { size: 100 });
+  // cross-chain
+  shot(32, 36, { src: 'route.png', w: 1600, h: 746, tilt: { ry: [[0, 16], [4, 6]], rx: [[0, 6], [4, 2]] }, enter: 'left',
+    cam: [[0, 1062, 330, 1.5], [4, 1062, 360, 1.7]] });
+  caption(32.3, 36, ['Pay from', '<span class="grad">30 chains.</span>']);
+  shot(36, 40, { src: 'swap-hero.png', w: 1600, h: 900,
+    cam: [[0, 1124, 470, 1.6], [2, 1124, 650, 2.2], [4, 1124, 740, 2.6]],
+    cursor: { path: [[0.5, 1500, 900], [2.2, 1124, 764], [4, 1124, 764]], clicks: [2.4] } });
+  caption(36.3, 40, ['One signature.', '<span class="grad">Bridged & bought.</span>'], { size: 104 });
+  // stocks
+  shot(40, 44, { src: 'stocks.png', w: 1600, h: 575, tilt: { ry: [[0, -18], [4, -6]], rx: [[0, 8], [4, 3]] },
+    cam: [[0, 1062, 300, 1.55], [4, 1062, 290, 1.75]] });
+  caption(40.3, 44, ['Stocks.', '<span class="grad">On-chain.</span>']);
+  // portfolio
+  shot(44, 48, { src: 'portfolio.png', w: 1600, h: 900, enter: 'up',
+    cam: [[0, 500, 140, 2.4], [1.5, 520, 160, 2.2], [4, 800, 470, 1.25]] });
+  caption(44.3, 48, ['Track', '<span class="grad">everything.</span>']);
+  // outro
+  logo(48, 60, { tagline: 'Scan it. Then send it.' });
+  tagLine(52, 60, 'Live on Robinhood Chain', 0, 0).style.cssText += 'left:50%;top:860px;transform:translateX(-50%)';
+} else {
+  TOTAL = 106; dropAt = 8;
+  // title
+  const t1 = tagLine(0.5, 8, 'How to use', 0, 0); t1.style.cssText += 'left:50%;top:330px;translate:-50% 0;font-size:34px';
+  logo(0.5, 8);
+  hits.push(8, 20, 32, 44, 56, 68, 80, 92, 96);
+  // 1. paste a CA
+  stepBadge(8, 20, '01', 'Paste any CA');
+  shot(8, 20, { src: 'hero.png', w: 1600, h: 900, cross: { src: 'swap-hero.png', at: 4.2, len: 1.0, wipe: true },
+    cam: [[0, 800, 450, 1.2], [1.5, 520, 590, 1.9], [9, 560, 590, 2.0], [12, 600, 560, 1.7]],
+    rings: [{ x: 232, y: 556, w: 580, h: 58, b0: 2.2, b1: 6.5 }],
+    cursor: { path: [[1, 1100, 820], [3, 420, 585], [6.4, 420, 585], [8, 745, 585], [12, 745, 585]], clicks: [3.4, 8.4] } });
+  sub(9, 20, 'Drop a <b>token address</b> and hit <b>Scan token</b>');
+  // 2. read the score
+  stepBadge(20, 32, '02', 'Read the score');
+  shot(20, 32, { src: 'report.png', w: 1600, h: 900, enter: 'up',
+    cam: [[0, 520, 200, 2.3], [4, 560, 210, 2.2], [4.8, 800, 750, 1.8], [8, 800, 750, 1.85], [8.8, 800, 520, 1.5], [12, 800, 500, 1.45]],
+    rings: [{ x: 392, y: 92, w: 220, h: 200, b0: 0.8, b1: 4 }, { x: 392, y: 700, w: 816, h: 106, b0: 5.2, b1: 8.2 }] });
+  sub(21, 24.6, '<b>10</b> = clean launch · <b>low</b> = likely rug');
+  sub(25, 28.6, '<b>Kairo AI</b> explains what it found');
+  sub(29, 32, 'Live chart, <b>straight from the chain</b>');
+  // 3. browse the feed
+  stepBadge(32, 44, '03', 'Or browse the feed');
+  shot(32, 44, { src: 'feed-top.png', w: 1600, h: 837, tilt: { ry: [[0, -16], [12, -6]], rx: [[0, 6], [12, 2]] },
+    cam: [[0, 1062, 420, 1.45], [5, 1000, 260, 1.9], [8, 1062, 450, 1.55], [12, 1062, 470, 1.6]],
+    rings: [{ x: 1290, y: 225, w: 70, h: 500, b0: 7, b1: 11.6 }],
+    cursor: { path: [[1, 1300, 700], [3.4, 975, 148], [5, 975, 148], [7, 1250, 420], [12, 1250, 420]], clicks: [3.8] } });
+  sub(33, 44, '<b>New</b>, <b>trending</b> and <b>top rated</b> — every launch scored');
+  // 4. connect
+  stepBadge(44, 56, '04', 'Connect your wallet');
+  shot(44, 56, { src: 'hero.png', w: 1600, h: 900, cross: { src: 'swap-hero.png', at: 4.3, len: 0.6 },
+    cam: [[0, 800, 450, 1.25], [2, 1240, 80, 2.4], [8, 1240, 80, 2.4], [12, 1200, 110, 2.0]],
+    cursor: { path: [[0.6, 900, 500], [3, 1296, 34], [12, 1296, 34]], clicks: [3.6] },
+    rings: [{ x: 1220, y: 14, w: 150, h: 42, b0: 5.2, b1: 11.6 }] });
+  sub(45, 56, 'Your keys <b>stay in your wallet</b>');
+  // 5. pick a chain
+  stepBadge(56, 68, '05', 'Pay from any chain');
+  shot(56, 68, { src: 'picker.png', w: 1600, h: 900, enter: 'up',
+    cam: [[0, 800, 300, 1.7], [12, 800, 600, 1.6]],
+    cursor: { path: [[1, 1100, 700], [3.5, 640, 238], [6, 640, 238], [8.5, 640, 368], [12, 640, 368]], clicks: [] },
+    rings: [{ x: 500, y: 150, w: 600, h: 50, b0: 1.5, b1: 5 }] });
+  sub(57, 68, 'ETH, BNB or POL from <b>30 networks</b>');
+  // 6. buy
+  stepBadge(68, 80, '06', 'Buy in one signature');
+  shot(68, 80, { src: 'swap-hero.png', w: 1600, h: 900,
+    cam: [[0, 1124, 420, 1.55], [3, 1000, 300, 2.2], [6, 1000, 300, 2.2], [8, 1124, 700, 2.1], [12, 1124, 750, 2.3]],
+    rings: [{ x: 900, y: 556, w: 450, h: 50, b0: 6, b1: 9 }],
+    cursor: { path: [[0.8, 1400, 820], [2.6, 960, 298], [6.2, 960, 298], [8.4, 1124, 764], [12, 1124, 764]], clicks: [3, 8.8] } });
+  sub(69, 80, 'Bridge + buy <b>in a single move</b>');
+  // 7. track & sell
+  stepBadge(80, 92, '07', 'Track & sell');
+  shot(80, 92, { src: 'portfolio.png', w: 1600, h: 900, enter: 'up',
+    cam: [[0, 520, 150, 2.2], [4, 540, 160, 2.1], [6, 1000, 480, 1.35], [12, 1000, 520, 1.4]],
+    rings: [{ x: 1090, y: 230, w: 125, h: 640, b0: 7, b1: 11.6 }] });
+  sub(81, 92, 'Live value of <b>everything you hold</b>');
+  // outro
+  logo(92, 106, { tagline: 'Scan it. Then send it.' });
+  tagLine(96, 106, 'Live on Robinhood Chain', 0, 0).style.cssText += 'left:50%;top:860px;transform:translateX(-50%)';
+}
+
+// ---------- overlays ----------
+const vig = el('div', 'vig');
+const grainCanvas = document.createElement('canvas');
+grainCanvas.width = grainCanvas.height = 256;
+{ const g = grainCanvas.getContext('2d'); const d = g.createImageData(256, 256); let s = 9;
+  for (let i = 0; i < d.data.length; i += 4) { s = (s * 1664525 + 1013904223) >>> 0; const v = s >>> 24; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+  g.putImageData(d, 0, 0); }
+const grain = el('div', 'grain'); grain.style.backgroundImage = `url(${grainCanvas.toDataURL()})`;
+const flash = el('div', 'flash');
+const bar = el('div', 'bar');
+window.DURATION = TOTAL * B;
+
+// ---------- clock ----------
+window.seek = function (t) {
+  const tb = t / B;
+  for (const s of scenes) {
+    const on = tb >= s.b0 && tb < s.b1;
+    s.node.style.display = on ? '' : 'none';
+    if (on) s.update(tb - s.b0, s.b1 - s.b0, tb);
+  }
+  const pulse = tb >= dropAt ? Math.exp(-((tb % 1) * 5)) : 0;
+  blobs[0][0].style.transform = `translate(${-200 + Math.sin(tb * 0.21) * 260}px, ${-260 + Math.cos(tb * 0.17) * 160}px) scale(${1 + pulse * 0.06})`;
+  blobs[1][0].style.transform = `translate(${1240 + Math.cos(tb * 0.19) * 240}px, ${420 + Math.sin(tb * 0.23) * 200}px)`;
+  blobs[2][0].style.transform = `translate(${560 + Math.sin(tb * 0.13) * 300}px, ${700 + Math.cos(tb * 0.11) * 120}px)`;
+  blobs.forEach(([b]) => (b.style.opacity = 0.42 + pulse * 0.18));
+  grid.style.transform = `translate(${(tb * 10) % 80}px, ${(tb * 6) % 80}px)`;
+  const f = Math.round(t * FPS);
+  grain.style.transform = `translate(${(f * 37) % 200 - 100}px, ${(f * 53) % 200 - 100}px)`;
+  let fl = 0;
+  for (const h of hits.concat([dropAt])) { const d = tb - h; if (d >= 0 && d < 1) fl = Math.max(fl, Math.exp(-d * 9) * 0.55); }
+  flash.style.opacity = fl;
+  bar.style.width = (100 * clamp(t / window.DURATION)) + '%';
+};
+window.ready = Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => {}))]);
+seek(0);
+</script>
+</body>
+</html>

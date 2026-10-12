@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Vestas posts</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #eef1ec; --bg2: #e3e8df; --card: #fff; --line: #d7ddd2; --text: #141820; --muted: #5f6876; --acc: #ff6a1f; --acc2: #e8590c; --up: #12a150; --ink: #1c2027; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #888; display: flex; flex-wrap: wrap; gap: 40px; padding: 40px; font-family: 'Figtree', sans-serif; }
+  .post { position: relative; width: 1080px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--text); }
+  .post .grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(20,24,32,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(20,24,32,.055) 1px, transparent 1px); background-size: 54px 54px; }
+  .post .glow { position: absolute; border-radius: 50%; filter: blur(90px); }
+  .brand { position: absolute; left: 64px; top: 58px; display: flex; align-items: center; gap: 16px; font-family: 'Bricolage Grotesque'; font-weight: 800; font-size: 44px; letter-spacing: -.03em; }
+  .brand svg { width: 64px; height: 64px; }
+  .chip { position: absolute; right: 64px; top: 66px; font-family: 'JetBrains Mono'; font-weight: 700; font-size: 20px; letter-spacing: .12em; text-transform: uppercase; padding: 12px 20px; border-radius: 999px; background: var(--card); border: 2px solid var(--line); display: flex; align-items: center; gap: 10px; }
+  .chip i { width: 12px; height: 12px; border-radius: 50%; background: var(--up); box-shadow: 0 0 0 5px rgba(18,161,80,.18); }
+  .headline { position: absolute; left: 64px; right: 64px; font-family: 'Bricolage Grotesque'; font-weight: 800; letter-spacing: -.055em; line-height: .86; text-transform: uppercase; }
+  .headline .o { color: var(--acc); }
+  .sub { position: absolute; left: 64px; right: 64px; font-size: 36px; font-weight: 600; color: var(--muted); line-height: 1.25; }
+  .sub b { color: var(--text); }
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 56px; display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono'; font-weight: 600; font-size: 22px; color: var(--muted); letter-spacing: .04em; }
+  .foot .pill { background: var(--text); color: #fff; padding: 12px 22px; border-radius: 14px; font-weight: 700; }
+  .rudy { position: absolute; }
+  .stamp { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--acc); color: #fff; font-family: 'Bricolage Grotesque'; font-weight: 800; text-transform: uppercase; text-align: center; line-height: .9; box-shadow: 0 20px 50px rgba(255,106,31,.35); }
+  .bar { position: absolute; left: 64px; right: 64px; height: 30px; border-radius: 999px; background: var(--card); border: 2px solid var(--line); overflow: hidden; }
+  .bar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: repeating-linear-gradient(-45deg, var(--acc) 0 22px, var(--acc2) 22px 44px); }
+  .addr { position: absolute; left: 64px; right: 64px; background: var(--card); border: 2px solid var(--line); border-radius: 26px; padding: 26px 30px; display: flex; align-items: center; gap: 20px; box-shadow: 0 2px 4px rgba(20,24,32,.05), 0 24px 60px rgba(20,24,32,.12); }
+  .addr .lab { font-family: 'JetBrains Mono'; font-weight: 700; font-size: 22px; color: #fff; background: var(--acc); padding: 8px 14px; border-radius: 10px; }
+  .addr .ca { font-family: 'JetBrains Mono'; font-weight: 600; font-size: 38px; letter-spacing: .02em; color: var(--text); flex: 1; }
+  .addr .ca em { font-style: normal; color: #b9c0c9; }
+  .addr .cur { width: 4px; height: 44px; background: var(--acc); border-radius: 2px; }
+  .tick { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--up); box-shadow: 0 0 0 14px rgba(18,161,80,.16); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <radialGradient id="fur" cx="38%" cy="28%" r="80%"><stop offset="0" stop-color="#d9dee5"/><stop offset=".55" stop-color="#a7b0bc"/><stop offset="1" stop-color="#7d8794"/></radialGradient>
+    <linearGradient id="mask" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b414c"/><stop offset="1" stop-color="#1c2027"/></linearGradient>
+    <radialGradient id="cheek" cx="50%" cy="30%" r="75%"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fbf8f3"/></radialGradient>
+    <radialGradient id="nose" cx="40%" cy="30%" r="70%"><stop offset="0" stop-color="#4b525e"/><stop offset="1" stop-color="#101216"/></radialGradient>
+    <radialGradient id="gloss" cx="35%" cy="20%" r="60%"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="flame" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#e8590c"/><stop offset=".55" stop-color="#ff6a1f"/><stop offset="1" stop-color="#ffc24a"/></linearGradient>
+    <!-- Rudy the raccoon, Vestas' mascot (from the Vestas app), cheering -->
+    <symbol id="rudy" viewBox="0 0 200 200">
+      <g stroke="#ff6a1f" stroke-width="6" stroke-linecap="round"><path d="M26 44 L12 32"/><path d="M174 44 L188 32"/><path d="M100 18 L100 4"/></g>
+      <path d="M40 74 C30 44 40 18 60 20 C74 22 84 42 86 60 Z" fill="url(#fur)"/>
+      <path d="M160 74 C170 44 160 18 140 20 C126 22 116 42 114 60 Z" fill="url(#fur)"/>
+      <path d="M50 62 C46 44 51 32 60 33 C68 35 73 46 74 56 Z" fill="#1c2027"/>
+      <path d="M150 62 C154 44 149 32 140 33 C132 35 127 46 126 56 Z" fill="#1c2027"/>
+      <path d="M100 38 C152 38 180 66 180 114 C180 160 147 186 100 186 C53 186 20 160 20 114 C20 66 48 38 100 38 Z" fill="url(#fur)"/>
+      <path d="M100 42 C93 54 92 66 100 78 C108 66 107 54 100 42 Z" fill="#7d8794" opacity=".75"/>
+      <path d="M30 106 C34 82 60 74 82 86 C90 91 96 96 100 100 C104 96 110 91 118 86 C140 74 166 82 170 106 C172 124 156 134 136 128 C122 124 110 120 100 120 C90 120 78 124 64 128 C44 134 28 124 30 106 Z" fill="url(#mask)"/>
+      <circle cx="72" cy="105" r="19" fill="#fff"/><circle cx="128" cy="105" r="19" fill="#fff"/>
+      <circle cx="74" cy="107" r="10.5" fill="#121418"/><circle cx="126" cy="107" r="10.5" fill="#121418"/>
+      <circle cx="78.5" cy="102" r="3.6" fill="#fff"/><circle cx="130.5" cy="102" r="3.6" fill="#fff"/>
+      <ellipse cx="48" cy="146" rx="12" ry="7" fill="#ff8a4c" opacity=".35"/><ellipse cx="152" cy="146" rx="12" ry="7" fill="#ff8a4c" opacity=".35"/>
+      <path d="M62 146 C62 126 80 120 100 120 C120 120 138 126 138 146 C138 166 120 176 100 176 C80 176 62 166 62 146 Z" fill="url(#cheek)"/>
+      <path d="M87 132 C87 124 113 124 113 132 C113 140 105 145 100 145 C95 145 87 140 87 132 Z" fill="url(#nose)"/>
+      <ellipse cx="95" cy="129" rx="5" ry="2.4" fill="#fff" opacity=".55"/>
+      <path d="M82 152 Q100 178 118 152 Z" fill="#1c2027" stroke="#1c2027" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M91 162 Q100 175 109 162 Q100 157 91 162 Z" fill="#ff6f7d"/>
+      <path d="M100 38 C152 38 180 66 180 114 C150 80 60 70 24 100 C30 62 56 38 100 38 Z" fill="url(#gloss)"/>
+    </symbol>
+    <symbol id="fire" viewBox="0 0 100 130">
+      <path d="M50 4C58 30 84 44 84 80c0 26-16 46-34 46S16 106 16 80c0-18 10-28 16-36 2 12 8 18 14 20C42 46 40 24 50 4Z" fill="url(#flame)"/>
+      <path d="M50 58c6 14 18 20 18 38 0 14-8 24-18 24s-18-10-18-24c0-10 6-16 10-20 2 6 4 9 8 10-2-10-2-18 0-28Z" fill="#ffd77a"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- 1. dev supply burnt -->
+<div class="post" id="p1">
+  <div class="grid"></div>
+  <div class="glow" style="width:720px;height:720px;left:420px;top:180px;background:rgba(255,106,31,.32)"></div>
+  <div class="brand"><svg><use href="#rudy"/></svg>Vestas</div>
+  <div class="chip"><i></i>Verified on-chain</div>
+  <svg class="rudy" style="left:600px;top:250px;width:400px;height:400px"><use href="#rudy"/></svg>
+  <svg style="position:absolute;left:610px;top:560px;width:120px;height:156px"><use href="#fire"/></svg>
+  <svg style="position:absolute;left:730px;top:600px;width:140px;height:182px"><use href="#fire"/></svg>
+  <svg style="position:absolute;left:870px;top:570px;width:110px;height:143px"><use href="#fire"/></svg>
+  <div class="headline" style="top:250px;font-size:168px">Dev<br>supply<br><span class="o">burnt.</span></div>
+  <div class="sub" style="top:790px">Sent to the <b>dead address</b>. Nothing left for the dev to dump.</div>
+  <div class="foot"><span>0x000…dEaD</span><span class="pill">Check the tx ↓</span></div>
+</div>
+
+<!-- 2. dex paid -->
+<div class="post" id="p2">
+  <div class="grid"></div>
+  <div class="glow" style="width:820px;height:820px;left:130px;top:120px;background:rgba(255,106,31,.26)"></div>
+  <div class="brand"><svg><use href="#rudy"/></svg>Vestas</div>
+  <div class="chip"><i></i>Live now</div>
+  <svg class="rudy" style="left:290px;top:150px;width:500px;height:500px"><use href="#rudy"/></svg>
+  <div class="tick" style="left:700px;top:500px;width:150px;height:150px"><svg width="86" height="86" viewBox="0 0 24 24"><path d="m4.5 12.5 4.8 4.8L19.5 7" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div class="headline" style="top:680px;font-size:220px;text-align:center">Dex <span class="o">paid</span></div>
+  <div class="sub" style="top:880px;text-align:center">Logo, socials &amp; info are <b>live on DexScreener</b>.</div>
+</div>
+
+<!-- 3. CA on the website -->
+<div class="post" id="p3">
+  <div class="grid"></div>
+  <div class="glow" style="width:700px;height:700px;left:-120px;top:420px;background:rgba(255,106,31,.25)"></div>
+  <div class="brand"><svg><use href="#rudy"/></svg>Vestas</div>
+  <div class="chip"><i></i>Coming to web</div>
+  <svg class="rudy" style="left:800px;top:140px;width:220px;height:220px"><use href="#rudy"/></svg>
+  <div class="headline" style="top:340px;font-size:140px">The CA is<br>being added<br>to the <span class="o">web.</span></div>
+  <div class="addr" style="top:745px"><span class="lab">CA</span><span class="ca">0x<em>••••••••••••••••••••••</em></span><span class="cur"></span></div>
+  <div class="bar" style="top:895px"><span style="width:78%"></span></div>
+  <div class="foot"><span>Adding to the site…</span><span class="pill">78%</span></div>
+</div>
+</body>
+</html>

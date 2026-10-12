@@ -1,0 +1,5 @@
+# Re-creatable with capture.cjs / beat.cjs / render.cjs
+shots/
+out/*.wav
+out/*-still-*.jpg
+out/*.log
