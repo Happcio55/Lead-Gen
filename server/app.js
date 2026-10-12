@@ -1,4 +1,4 @@
-// Vestas HTTP API, shared by the local server (server/index.js) and the Vercel function (api/[...path].js).
+// Vestas HTTP API, shared by the local server (server/index.js) and the Vercel function (api/index.js).
 import { getAddress, isAddress, parseAbi } from 'viem';
 import { ADDR, CHAIN_ID, DEFAULT_RPC, EXPLORER } from '../shared/chain.js';
 import { IPFS_GATEWAYS, parseLogo } from './meme.js';
