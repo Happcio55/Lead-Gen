@@ -181,3 +181,15 @@ export function Socials({ pool, size = 13 }) {
 }
 
 export const mcTier = (mc = 0) => (mc >= 1e6 ? 't3' : mc >= 1e5 ? 't2' : mc >= 3e4 ? 't1' : 't0')
+
+// Robinhood Chain mark: a dark feather on a lime disc.
+export function ChainMark({ size = 18 }) {
+  return (
+    <svg className="chain-mark" width={size} height={size} viewBox="0 0 32 32" aria-label="Robinhood Chain" role="img">
+      <circle cx="16" cy="16" r="16" fill="#c9ff3f" />
+      <path d="M12.2 20.6C11.4 15.3 15.6 8.9 24.4 6.6c-.5 3.1-1.3 5.4-2.4 7.1l-2.3.4 1.6.8c-1.4 1.9-3.1 3.2-4.9 4.2l-2.4-.1 1.2 1c-1.2.5-2.3.7-3.5.6Z" fill="#0d1a05" />
+      <path d="M9 25.2 13.6 19.6" stroke="#0d1a05" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M13.2 19.8C15.6 15.8 18.4 12.3 22.3 9.1" stroke="#c9ff3f" strokeWidth="0.9" strokeLinecap="round" fill="none" />
+    </svg>
+  )
+}

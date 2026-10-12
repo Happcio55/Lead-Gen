@@ -120,8 +120,8 @@ h1, h2, h3, .p-h h2 { font-family: var(--f-head); }
 .tk-item span { font-family: var(--f-mono); font-size: 11px; }
 .tk-up { color: var(--lime); } .tk-down { color: #ff9b8a; }
 
-.logo-img { width: 34px; height: 34px; filter: drop-shadow(0 4px 8px rgba(74, 52, 25, .25)); transition: transform .3s; }
-.logo:hover .logo-img { transform: rotate(-8deg) scale(1.05); }
+.logo-img { width: 34px; height: 34px; border-radius: 9px; box-shadow: 0 0 0 1px var(--line-2), 0 6px 14px -6px rgba(20, 20, 19, .5); transition: transform .3s; }
+.logo:hover .logo-img { transform: scale(1.06); }
 .logo .word { font-family: var(--f-head); font-weight: 700; font-size: 17px; letter-spacing: -0.03em; }
 .logo .word em { font-style: normal; background: var(--lime); color: var(--lime-ink); padding: 0 5px 1px; margin-left: 3px; border-radius: 5px; display: inline-block; transform: rotate(-2deg); }
 .pill.icon { width: 32px; padding: 0; justify-content: center; }
@@ -524,3 +524,5 @@ tr.big td { font-weight: 700; }
 .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
 .pulse-bar .src button { font-weight: 700; }
 .col-head h3 { cursor: help; }
+
+.chain-mark { flex: none; display: block; filter: drop-shadow(0 0 6px rgba(201, 255, 63, .35)); }

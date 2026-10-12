@@ -4,7 +4,7 @@ import { market, pollNewPairs, pollTrending, pollTop, loadNewPairsPage2, prefetc
 import { pons } from '../lib/pons.js'
 import { paper, account, buy, updateSettings } from '../lib/paper.js'
 import { fmtAge, fmtUsdC, fmtPct, fmtEth, parseAmount, fmtCompact } from '../lib/format.js'
-import { Icon, EthIcon, TokenLogo, Socials, CopyAddr, useNow, toast, mcTier } from '../components/ui.jsx'
+import { Icon, EthIcon, TokenLogo, Socials, CopyAddr, useNow, toast, mcTier, ChainMark } from '../components/ui.jsx'
 
 const BOOT = Date.now()
 // Stablecoins and wrapped majors are not memecoins; keep them off the board.
@@ -369,7 +369,7 @@ export default function Pulse() {
   return (
     <main className="pulse">
       <div className="pulse-bar">
-        <h1>Pulse <span className="chain-ic">RH</span></h1>
+        <h1>Pulse <ChainMark size={20} /></h1>
         <div className="seg big src">
           <button className={prefs.source === 'pons' ? 'on' : ''} onClick={() => setPrefs({ source: 'pons' })} title="Pons launchpad, read live from the chain">
             Pons

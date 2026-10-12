@@ -7,7 +7,7 @@ import { fmtEth, fmtSignedEth, fmtPct, fmtCompact, fmtUsdC, fmtAge, shortAddr } 
 import { wallet, availableWallets, connect, disconnect } from '../lib/wallet.js'
 import { pons } from '../lib/pons.js'
 import { storage } from '../lib/store.js'
-import { Icon, EthIcon, toast, useNow } from './ui.jsx'
+import { Icon, EthIcon, ChainMark, toast, useNow } from './ui.jsx'
 
 function useClickAway(open, setOpen) {
   const ref = useRef(null)
@@ -40,7 +40,7 @@ function ChainPicker() {
   return (
     <div className="rel" ref={ref}>
       <button className="pill" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <span className="chain-ic">{ACTIVE_CHAIN.short}</span>
+        <ChainMark />
         <span className="hide-s">{ACTIVE_CHAIN.name}</span>
         <Icon name="chev" size={12} />
       </button>
@@ -49,7 +49,7 @@ function ChainPicker() {
           <h4>Network</h4>
           {CHAINS.map((c) => (
             <button key={c.id} className="pop-item" disabled={!c.live} onClick={() => setOpen(false)}>
-              <span className={'chain-ic' + (c.live ? '' : ' off')}>{c.short.slice(0, 3)}</span>
+              {c.id === 'robinhood' ? <ChainMark /> : <span className={'chain-ic' + (c.live ? '' : ' off')}>{c.short.slice(0, 3)}</span>}
               {c.name}
               <span className="tag" style={{ color: c.live ? 'var(--lime)' : 'var(--bronze)' }}>{c.live ? 'Live' : 'Soon'}</span>
             </button>
@@ -307,7 +307,7 @@ export function TopBar({ route, theme, setTheme }) {
   return (
     <header className="top">
       <a href="#/" className="logo" aria-label="Paper Pulse">
-        <img src="/logo-96.png" alt="" width="34" height="34" className="logo-img" />
+        <img src="/logo-sq-96.png" alt="" width="34" height="34" className="logo-img" />
         <span className="word">Paper<em>Pulse</em></span>
       </a>
       <nav className="nav">
