@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { hueOf } from './lib.js';
 import { dismiss, useStore } from './store.js';
-import { Rudy } from './Rudy.jsx';
 
 // Logos that failed to load, so a broken image is never retried on re-render.
 const brokenLogos = new Set();
@@ -73,7 +72,7 @@ export function Toasts() {
     <div className="toasts">
       {toasts.map((t) => (
         <div key={t.id} className={`toast ${t.kind}`} onClick={() => dismiss(t.id)}>
-          <Rudy mood={t.kind === 'error' ? 'worried' : t.kind === 'success' ? 'cheer' : 'happy'} size={34} className="toast-rudy" />
+          <span className="toast-dot" />
           <span className="toast-msg">{t.msg}</span>
           {t.link && (
             <a href={t.link} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
